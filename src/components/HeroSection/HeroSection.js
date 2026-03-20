@@ -1,355 +1,409 @@
-import React, { useState, useEffect } from "react";
-import {
-  Box,
-  Typography,
-  TextField,
-  Button,
-  Container,
-  InputAdornment,
-  Chip,
-} from "@mui/material";
-import { Search, TrendingUp, Security, Speed } from "@mui/icons-material";
-import { Icon } from "@iconify/react";
-import { motion, AnimatePresence } from "framer-motion";
+import React, { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import useSound from "../../hooks/useSound";
+import { motion, AnimatePresence } from "framer-motion";
 import { useTheme } from "../../context/ThemeContext";
-import SearchModal from "../SearchModal/SearchModal";
 import apiService from "../../services/api";
 import styles from "./HeroSection.module.css";
 
-import HERO_BG_1 from "../../assets/hero-1.jpg";
-import HERO_BG_2 from "../../assets/hero-2.jpg";
-import HERO_BG_3 from "../../assets/hero-3.jpg";
+const defaultBanners = [
+  {
+    id: 1,
+    title: "Flash Sale",
+    subtitle: "Up to 70% Off on Electronics",
+    cta: "Shop Now",
+    link: "/products?category=electronics",
+    gradient: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+  },
+  {
+    id: 2,
+    title: "New Arrivals",
+    subtitle: "Discover Latest Fashion Trends",
+    cta: "Explore",
+    link: "/products?category=clothing",
+    gradient: "linear-gradient(135deg, #f093fb 0%, #f5576c 100%)",
+  },
+  {
+    id: 3,
+    title: "Ethnic Collection",
+    subtitle: "Traditional Meets Modern",
+    cta: "Shop Collection",
+    link: "/products?category=womens-ethnic-wear",
+    gradient: "linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)",
+  },
+];
+
+const categoryIconMap = {
+  electronics: "M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z",
+  clothing: "M21 3H3v18h18V3zm-2 16H5V5h14v14z",
+  "home-garden": "M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z",
+  "sports-fitness": "M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z",
+  books: "M18 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z",
+  laptops: "M20 18c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2H4c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2H0v2h24v-2h-4z",
+  audio: "M12 1c-4.97 0-9 4.03-9 9v7c0 1.66 1.34 3 3 3h3v-8H5v-2c0-3.87 3.13-7 7-7s7 3.13 7 7v2h-4v8h3c1.66 0 3-1.34 3-3v-7c0-4.97-4.03-9-9-9z",
+};
+
+const categoryColorMap = {
+  electronics: "#667eea",
+  clothing: "#764ba2",
+  "home-garden": "#4caf50",
+  "sports-fitness": "#ff9800",
+  books: "#e91e63",
+  laptops: "#2196f3",
+  audio: "#9c27b0",
+};
+
+const slideVariants = {
+  enter: { opacity: 0, scale: 1.05 },
+  center: { opacity: 1, scale: 1 },
+  exit: { opacity: 0, scale: 0.95 },
+};
 
 const HeroSection = () => {
   const navigate = useNavigate();
-  const { play } = useSound();
   const { isDarkMode } = useTheme();
-  const [searchQuery, setSearchQuery] = useState("");
   const [currentSlide, setCurrentSlide] = useState(0);
-  const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
-  const [popularProducts, setPopularProducts] = useState([]);
+  const [banners, setBanners] = useState(defaultBanners);
+  const [categories, setCategories] = useState([]);
+  const [isPaused, setIsPaused] = useState(false);
 
-  const slides = [
-    {
-      image: HERO_BG_1,
-      title: "Shop Your Favorite Products",
-      subtitle: "Instantly",
-      description:
-        "Fast, secure, and reliable shopping for all your favorite items. Get your orders delivered quickly!",
-    },
-    {
-      image: HERO_BG_2,
-      title: "Exclusive Deals",
-      subtitle: "24/7 Support",
-      description:
-        "Best prices guaranteed with round-the-clock customer support. We're always here for you!",
-    },
-    {
-      image: HERO_BG_3,
-      title: "Premium Products & More",
-      subtitle: "Global Coverage",
-      description:
-        "Access a wide range of products from multiple categories worldwide. Shop without limits!",
-    },
-  ];
-
-  const trustBadges = [
-    { icon: <Speed />, text: "Instant Delivery", subtext: "1-5 min" },
-    { icon: <Security />, text: "Secure Checkout", subtext: "SSL Protected" },
-    { icon: <TrendingUp />, text: "24/7 Support", subtext: "Always Online" },
-  ];
-
-  // Fetch popular/trending products
+  // Fetch banners from API with fallback to defaults
   useEffect(() => {
-    const fetchPopularProducts = async () => {
+    const fetchBanners = async () => {
       try {
-        // Fetch trending products first, fallback to featured if needed
-        const trendingResponse = await apiService.products.getTrending(4);
-        if (trendingResponse.success && trendingResponse.data.length > 0) {
-          setPopularProducts(trendingResponse.data.slice(0, 4));
-        } else {
-          // Fallback to featured products
-          const featuredResponse = await apiService.products.getFeatured(4);
-          if (featuredResponse.success) {
-            setPopularProducts(featuredResponse.data.slice(0, 4));
-          }
+        const data = await apiService.banners.getAll();
+        if (data && data.length > 0) {
+          setBanners(data);
         }
-      } catch (error) {
-        console.error("Error fetching popular products:", error);
+      } catch {
+        // Use default banners silently
       }
     };
-
-    fetchPopularProducts();
+    fetchBanners();
   }, []);
 
+  // Fetch categories
   useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const data = await apiService.categories.getAll();
+        if (Array.isArray(data)) {
+          // Only show top-level categories (no parentId)
+          const topLevel = data.filter((c) => !c.parentId && c.isActive);
+          setCategories(topLevel.slice(0, 8));
+        }
+      } catch {
+        console.error("Failed to load categories");
+      }
+    };
+    fetchCategories();
+  }, []);
+
+  // Auto-slide
+  useEffect(() => {
+    if (isPaused) return;
     const interval = setInterval(() => {
-      setCurrentSlide((prev) => (prev + 1) % slides.length);
+      setCurrentSlide((prev) => (prev + 1) % banners.length);
     }, 5000);
     return () => clearInterval(interval);
-  }, [slides.length]);
+  }, [banners.length, isPaused]);
 
-  const handleSearchClick = () => {
-    play();
-    setIsSearchModalOpen(true);
-  };
+  const goToSlide = useCallback((index) => {
+    setCurrentSlide(index);
+  }, []);
 
-  const handleSearchInputFocus = () => {
-    play();
-    setIsSearchModalOpen(true);
-  };
+  const goToPrev = useCallback(() => {
+    setCurrentSlide((prev) => (prev - 1 + banners.length) % banners.length);
+  }, [banners.length]);
 
-  const handleQuickSearch = (query) => {
-    play();
-    setSearchQuery(query);
-    setIsSearchModalOpen(true);
-  };
+  const goToNext = useCallback(() => {
+    setCurrentSlide((prev) => (prev + 1) % banners.length);
+  }, [banners.length]);
 
-  const handleGameTagClick = (productId) => {
-    play();
-    navigate(`/products/${productId}`);
-  };
+  const handleBannerClick = useCallback(
+    (link) => {
+      if (link) navigate(link);
+    },
+    [navigate]
+  );
 
-  const handleCloseSearchModal = () => {
-    setIsSearchModalOpen(false);
-    setSearchQuery("");
+  const handleCategoryClick = useCallback(
+    (slug) => {
+      navigate(`/products?category=${slug}`);
+    },
+    [navigate]
+  );
+
+  const getCategoryColor = (slug) => {
+    return categoryColorMap[slug] || "#667eea";
   };
 
   return (
-    <Box
+    <section
       className={styles.heroSection}
       data-theme={isDarkMode ? "dark" : "light"}
     >
-      {/* Background Slider */}
-      <AnimatePresence mode="wait">
-        <motion.div
-          key={currentSlide}
-          className={styles.backgroundSlide}
-          initial={{ opacity: 0, scale: 1.1 }}
-          animate={{ opacity: 1, scale: 1 }}
-          exit={{ opacity: 0 }}
-          transition={{ duration: 1.2 }}
-          style={{
-            backgroundImage: `url(${slides[currentSlide].image})`,
-          }}
-        />
-      </AnimatePresence>
-
-      {/* Overlay with Pattern */}
-      <Box className={styles.overlay}>
-        <div className={styles.overlayPattern} />
-      </Box>
-
-      {/* Content */}
-      <Container maxWidth="lg" className={styles.content}>
-        <motion.div
-          initial={{ y: 30, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          transition={{ duration: 0.8 }}
-          className={styles.contentInner}
+      {/* Main Hero Area */}
+      <div className={styles.heroMain}>
+        {/* Banner Carousel */}
+        <div
+          className={styles.carouselContainer}
+          onMouseEnter={() => setIsPaused(true)}
+          onMouseLeave={() => setIsPaused(false)}
         >
-          {/* Glassmorphism Container */}
-          <Box className={styles.glassContainer}>
-            {/* Badge */}
-            <motion.div
-              initial={{ scale: 0 }}
-              animate={{ scale: 1 }}
-              transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
-              className={styles.heroBadge}
-            >
-              <Icon icon="mdi:lightning-bolt" className={styles.badgeIcon} />
-              <span>Trusted by 50,000+ Customers</span>
-            </motion.div>
-
-            {/* Title */}
-            <Typography variant="h1" className={styles.title}>
-              <motion.span
-                key={`title-${currentSlide}`}
-                initial={{ y: 20, opacity: 0 }}
-                animate={{ y: 0, opacity: 1 }}
-                transition={{ duration: 0.5 }}
-                className={styles.titleMain}
-              >
-                {slides[currentSlide].title}
-              </motion.span>
-              <motion.span
-                key={`subtitle-${currentSlide}`}
-                initial={{ y: 20, opacity: 0 }}
-                animate={{ y: 0, opacity: 1 }}
-                transition={{ duration: 0.5, delay: 0.1 }}
-                className={styles.titleGradient}
-              >
-                {slides[currentSlide].subtitle}
-              </motion.span>
-            </Typography>
-
-            {/* Description */}
-            <Typography variant="h6" className={styles.description}>
-              <motion.span
-                key={`desc-${currentSlide}`}
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ duration: 0.5, delay: 0.2 }}
-              >
-                {slides[currentSlide].description}
-              </motion.span>
-            </Typography>
-
-            {/* Search Bar */}
-            <motion.div
-              initial={{ y: 20, opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
-              transition={{ delay: 0.3, duration: 0.5 }}
-              className={styles.searchContainer}
-            >
-              <Box
-                className={styles.searchWrapper}
-                onClick={handleSearchInputFocus}
-              >
-                <TextField
-                  fullWidth
-                  placeholder="Search for products, brands, categories..."
-                  value={searchQuery}
-                  onFocus={handleSearchInputFocus}
-                  readOnly
-                  className={styles.searchInput}
-                  InputProps={{
-                    startAdornment: (
-                      <InputAdornment position="start">
-                        <Search className={styles.searchIcon} />
-                      </InputAdornment>
-                    ),
-                  }}
-                />
-                <Button
-                  variant="contained"
-                  onClick={handleSearchClick}
-                  className={styles.searchButton}
-                >
-                  <span className={styles.searchButtonText}>Search</span>
-                  <Icon icon="mdi:arrow-right" className={styles.searchButtonIcon} />
-                </Button>
-              </Box>
-            </motion.div>
-
-            {/* Popular Products */}
-            {popularProducts.length > 0 && (
+          <div className={styles.carouselInner}>
+            <AnimatePresence mode="wait">
               <motion.div
-                initial={{ y: 20, opacity: 0 }}
-                animate={{ y: 0, opacity: 1 }}
-                transition={{ delay: 0.4, duration: 0.5 }}
-                className={styles.popularSearches}
+                key={currentSlide}
+                className={styles.slide}
+                style={{ background: banners[currentSlide]?.gradient }}
+                variants={slideVariants}
+                initial="enter"
+                animate="center"
+                exit="exit"
+                transition={{ duration: 0.5, ease: "easeInOut" }}
               >
-                <Typography className={styles.popularLabel}>
-                  <Icon icon="mdi:fire" className={styles.popularIcon} />
-                  Popular:
-                </Typography>
-                <Box className={styles.chipsContainer}>
-                  {popularProducts.map((product, index) => (
-                    <motion.div
-                      key={product.id}
-                      initial={{ opacity: 0, scale: 0.8 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      transition={{ delay: 0.5 + index * 0.08 }}
+                <div className={styles.slideContent}>
+                  <motion.span
+                    className={styles.slideLabel}
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.2 }}
+                  >
+                    Limited Time Offer
+                  </motion.span>
+                  <motion.h2
+                    className={styles.slideTitle}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.1 }}
+                  >
+                    {banners[currentSlide]?.title}
+                  </motion.h2>
+                  <motion.p
+                    className={styles.slideSubtitle}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.2 }}
+                  >
+                    {banners[currentSlide]?.subtitle}
+                  </motion.p>
+                  <motion.button
+                    className={styles.slideCta}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.3 }}
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={() =>
+                      handleBannerClick(banners[currentSlide]?.link)
+                    }
+                  >
+                    {banners[currentSlide]?.cta}
+                    <svg
+                      width="16"
+                      height="16"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
                     >
-                      <Chip
-                        label={product.name}
-                        onClick={() => handleGameTagClick(product.id)}
-                        className={styles.searchChip}
-                        clickable
-                      />
-                    </motion.div>
-                  ))}
-                </Box>
+                      <path d="M5 12h14M12 5l7 7-7 7" />
+                    </svg>
+                  </motion.button>
+                </div>
+
+                {/* Decorative circles */}
+                <div className={styles.slideDecor}>
+                  <div className={styles.decorCircle1} />
+                  <div className={styles.decorCircle2} />
+                  <div className={styles.decorCircle3} />
+                </div>
               </motion.div>
-            )}
+            </AnimatePresence>
 
-            {/* Trust Badges */}
-            <motion.div
-              initial={{ y: 20, opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
-              transition={{ delay: 0.6, duration: 0.5 }}
-              className={styles.trustBadges}
+            {/* Arrow Navigation */}
+            <button
+              className={`${styles.arrowBtn} ${styles.arrowLeft}`}
+              onClick={goToPrev}
+              aria-label="Previous slide"
             >
-              {trustBadges.map((badge, index) => (
-                <motion.div
-                  key={badge.text}
-                  initial={{ y: 20, opacity: 0 }}
-                  animate={{ y: 0, opacity: 1 }}
-                  transition={{ delay: 0.7 + index * 0.1 }}
-                  className={styles.badge}
-                  whileHover={{ y: -3, scale: 1.02 }}
-                >
-                  <Box className={styles.badgeIconWrapper}>{badge.icon}</Box>
-                  <Box className={styles.badgeContent}>
-                    <Typography className={styles.badgeText}>
-                      {badge.text}
-                    </Typography>
-                    <Typography className={styles.badgeSubtext}>
-                      {badge.subtext}
-                    </Typography>
-                  </Box>
-                </motion.div>
-              ))}
-            </motion.div>
-          </Box>
-        </motion.div>
+              <svg
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="M15 18l-6-6 6-6" />
+              </svg>
+            </button>
+            <button
+              className={`${styles.arrowBtn} ${styles.arrowRight}`}
+              onClick={goToNext}
+              aria-label="Next slide"
+            >
+              <svg
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="M9 18l6-6-6-6" />
+              </svg>
+            </button>
 
-        {/* Slide Indicators */}
-        <Box className={styles.slideIndicators}>
-          {slides.map((_, index) => (
-            <Box
-              key={index}
-              className={`${styles.indicator} ${
-                index === currentSlide ? styles.indicatorActive : ""
-              }`}
-              onClick={() => {
-                play();
-                setCurrentSlide(index);
+            {/* Dot Navigation */}
+            <div className={styles.dotsContainer}>
+              {banners.map((_, index) => (
+                <button
+                  key={index}
+                  className={`${styles.dot} ${
+                    index === currentSlide ? styles.dotActive : ""
+                  }`}
+                  onClick={() => goToSlide(index)}
+                  aria-label={`Go to slide ${index + 1}`}
+                />
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Right Sidebar - Promo Cards */}
+        <div className={styles.sidebar}>
+          <motion.div
+            className={styles.promoCard}
+            initial={{ opacity: 0, x: 30 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.3, duration: 0.5 }}
+            whileHover={{ scale: 1.02 }}
+            onClick={() => navigate("/products?sort=discount")}
+          >
+            <div
+              className={styles.promoCardBg}
+              style={{
+                background:
+                  "linear-gradient(135deg, #ff6b35 0%, #f7c948 100%)",
               }}
             />
-          ))}
-        </Box>
-      </Container>
+            <div className={styles.promoCardContent}>
+              <span className={styles.promoTag}>Deal of the Day</span>
+              <h3 className={styles.promoTitle}>Up to 50% Off</h3>
+              <p className={styles.promoText}>
+                Top picks at unbeatable prices
+              </p>
+              <span className={styles.promoLink}>
+                Shop Now
+                <svg
+                  width="14"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2.5"
+                >
+                  <path d="M5 12h14M12 5l7 7-7 7" />
+                </svg>
+              </span>
+            </div>
+          </motion.div>
 
-      {/* Animated Elements */}
-      <motion.div
-        className={styles.floatingElement1}
-        animate={{
-          y: [-20, 20, -20],
-          rotate: [0, 10, 0],
-        }}
-        transition={{
-          duration: 8,
-          repeat: Infinity,
-          ease: "easeInOut",
-        }}
-      />
-      <motion.div
-        className={styles.floatingElement2}
-        animate={{
-          y: [20, -20, 20],
-          rotate: [0, -10, 0],
-        }}
-        transition={{
-          duration: 10,
-          repeat: Infinity,
-          ease: "easeInOut",
-        }}
-      />
+          <motion.div
+            className={styles.promoCard}
+            initial={{ opacity: 0, x: 30 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.45, duration: 0.5 }}
+            whileHover={{ scale: 1.02 }}
+            onClick={() => navigate("/products?sort=newest")}
+          >
+            <div
+              className={styles.promoCardBg}
+              style={{
+                background:
+                  "linear-gradient(135deg, #11998e 0%, #38ef7d 100%)",
+              }}
+            />
+            <div className={styles.promoCardContent}>
+              <span className={styles.promoTag}>Just Launched</span>
+              <h3 className={styles.promoTitle}>New Arrivals</h3>
+              <p className={styles.promoText}>
+                Fresh styles added every day
+              </p>
+              <span className={styles.promoLink}>
+                Explore
+                <svg
+                  width="14"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2.5"
+                >
+                  <path d="M5 12h14M12 5l7 7-7 7" />
+                </svg>
+              </span>
+            </div>
+          </motion.div>
+        </div>
+      </div>
 
-      {/* Bottom Gradient Fade */}
-      <div className={styles.bottomFade} />
-
-      {/* Search Modal */}
-      <SearchModal
-        isOpen={isSearchModalOpen}
-        onClose={handleCloseSearchModal}
-        initialQuery={searchQuery}
-      />
-    </Box>
+      {/* Category Quick Links */}
+      {categories.length > 0 && (
+        <motion.div
+          className={styles.categoryBar}
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.5, duration: 0.5 }}
+        >
+          <div className={styles.categoryScroll}>
+            {categories.map((category, index) => (
+              <motion.div
+                key={category.id}
+                className={styles.categoryItem}
+                initial={{ opacity: 0, y: 15 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.55 + index * 0.06 }}
+                whileHover={{ y: -4 }}
+                onClick={() => handleCategoryClick(category.slug)}
+              >
+                <div
+                  className={styles.categoryIcon}
+                  style={{
+                    background: `linear-gradient(135deg, ${getCategoryColor(
+                      category.slug
+                    )}22, ${getCategoryColor(category.slug)}44)`,
+                    border: `2px solid ${getCategoryColor(category.slug)}33`,
+                  }}
+                >
+                  <svg
+                    width="24"
+                    height="24"
+                    viewBox="0 0 24 24"
+                    fill={getCategoryColor(category.slug)}
+                  >
+                    <path
+                      d={
+                        categoryIconMap[category.slug] ||
+                        "M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z"
+                      }
+                    />
+                  </svg>
+                </div>
+                <span className={styles.categoryLabel}>{category.name}</span>
+              </motion.div>
+            ))}
+          </div>
+        </motion.div>
+      )}
+    </section>
   );
 };
 

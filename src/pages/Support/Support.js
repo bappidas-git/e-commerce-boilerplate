@@ -1,417 +1,130 @@
 import React, { useState } from "react";
-import {
-  Container,
-  Typography,
-  Box,
-  Card,
-  CardContent,
-  Grid,
-  TextField,
-  Button,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
-  Alert,
-} from "@mui/material";
-import {
-  Email,
-  Chat,
-  Phone,
-  AccessTime,
-  Send,
-  Help,
-  ShoppingCart,
-  Payment,
-  LocalShipping,
-  BugReport,
-} from "@mui/icons-material";
+import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
-import { useNavigate } from "react-router-dom";
-import Swal from "sweetalert2";
-import useSound from "../../hooks/useSound";
-import Breadcrumb from "../../components/Breadcrumb/Breadcrumb";
+import { useTheme } from "../../context/ThemeContext";
 import apiService from "../../services/api";
+import { APP_NAME, SUPPORT_EMAIL, SUPPORT_PHONE } from "../../utils/constants";
+import { isEmailValid } from "../../utils/helpers";
 import styles from "./Support.module.css";
 
 const Support = () => {
-  const navigate = useNavigate();
-  const { play } = useSound();
+  const { isDarkMode } = useTheme();
   const [formData, setFormData] = useState({
-    name: "",
-    email: "",
-    orderNumber: "",
-    category: "",
-    subject: "",
-    message: "",
+    name: "", email: "", phone: "", orderNumber: "",
+    category: "general", subject: "", message: "",
   });
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSubmitted, setIsSubmitted] = useState(false);
 
   const categories = [
-    { value: "order", label: "Order Issue", icon: <ShoppingCart /> },
-    { value: "payment", label: "Payment Problem", icon: <Payment /> },
-    { value: "delivery", label: "Delivery Issue", icon: <LocalShipping /> },
-    { value: "technical", label: "Technical Support", icon: <BugReport /> },
-    { value: "other", label: "Other", icon: <Help /> },
+    { value: "general", label: "General Inquiry" },
+    { value: "order", label: "Order Related" },
+    { value: "shipping", label: "Shipping & Delivery" },
+    { value: "returns", label: "Returns & Refunds" },
+    { value: "product", label: "Product Information" },
+    { value: "payment", label: "Payment Issues" },
+    { value: "account", label: "Account & Login" },
+    { value: "other", label: "Other" },
   ];
 
-  const contactMethods = [
-    {
-      icon: <Email />,
-      title: "Email Support",
-      description: "support@mystore.com",
-      detail: "Response within 24 hours",
-    },
-    {
-      icon: <Chat />,
-      title: "Live Chat",
-      description: "Chat with our team",
-      detail: "Available 9 AM - 6 PM IST",
-    },
-    {
-      icon: <Phone />,
-      title: "Phone Support",
-      description: "+91 1234 567 890",
-      detail: "Mon - Sat, 10 AM - 5 PM IST",
-    },
-    {
-      icon: <AccessTime />,
-      title: "Business Hours",
-      description: "Mon - Sat",
-      detail: "9:00 AM - 6:00 PM IST",
-    },
-  ];
-
-  const handleInputChange = (e) => {
+  const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
-    if (errors[name]) {
-      setErrors((prev) => ({ ...prev, [name]: "" }));
-    }
+    if (errors[name]) setErrors((prev) => ({ ...prev, [name]: "" }));
   };
 
-  const validateForm = () => {
+  const validate = () => {
     const newErrors = {};
-
-    if (!formData.name.trim()) {
-      newErrors.name = "Name is required";
-    }
-
-    if (!formData.email.trim()) {
-      newErrors.email = "Email is required";
-    } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
-      newErrors.email = "Please enter a valid email";
-    }
-
-    if (!formData.category) {
-      newErrors.category = "Please select a category";
-    }
-
-    if (!formData.subject.trim()) {
-      newErrors.subject = "Subject is required";
-    }
-
-    if (!formData.message.trim()) {
-      newErrors.message = "Message is required";
-    } else if (formData.message.trim().length < 20) {
-      newErrors.message = "Please provide more details (at least 20 characters)";
-    }
-
+    if (!formData.name.trim()) newErrors.name = "Name is required";
+    if (!formData.email.trim()) newErrors.email = "Email is required";
+    else if (!isEmailValid(formData.email)) newErrors.email = "Invalid email";
+    if (!formData.subject.trim()) newErrors.subject = "Subject is required";
+    if (!formData.message.trim()) newErrors.message = "Message is required";
+    else if (formData.message.trim().length < 20) newErrors.message = "At least 20 characters";
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    play();
-
-    if (!validateForm()) {
-      return;
-    }
-
+    if (!validate()) return;
     setIsSubmitting(true);
-
     try {
-      await apiService.leads.createContactLead({
-        name: formData.name,
-        email: formData.email,
-        orderNumber: formData.orderNumber,
-        category: formData.category,
-        subject: formData.subject,
-        message: formData.message,
-      });
-
+      await apiService.leads.createContact(formData);
+      setIsSubmitted(true);
+      setFormData({ name: "", email: "", phone: "", orderNumber: "", category: "general", subject: "", message: "" });
+    } catch {
+      setErrors({ submit: "Failed to send. Please try again." });
+    } finally {
       setIsSubmitting(false);
-      Swal.fire({
-        icon: "success",
-        title: "Message Sent!",
-        text: "Thank you for contacting us. We'll respond within 24 hours.",
-        confirmButtonColor: "#667eea",
-      });
-      setFormData({
-        name: "",
-        email: "",
-        orderNumber: "",
-        category: "",
-        subject: "",
-        message: "",
-      });
-    } catch (error) {
-      setIsSubmitting(false);
-      Swal.fire({
-        icon: "error",
-        title: "Oops!",
-        text: "Something went wrong. Please try again later.",
-        confirmButtonColor: "#667eea",
-      });
     }
   };
 
-  const handleNavigateToHelp = () => {
-    play();
-    navigate("/help");
-  };
+  if (isSubmitted) {
+    return (
+      <div className={`${styles.container} ${isDarkMode ? styles.dark : ""}`}>
+        <motion.div className={styles.successCard} initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}>
+          <div className={styles.successIcon}>&#10003;</div>
+          <h2>Message Sent!</h2>
+          <p>Thank you for reaching out. We'll respond within 24 hours.</p>
+          <button className={styles.primaryBtn} onClick={() => setIsSubmitted(false)}>Send Another</button>
+        </motion.div>
+      </div>
+    );
+  }
 
   return (
-    <motion.div
-      className={styles.supportPage}
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      transition={{ duration: 0.3 }}
-    >
-      <Container maxWidth="lg">
-        <Breadcrumb items={[{ label: "Support" }]} />
-
-        {/* Hero Section */}
-        <Box className={styles.heroSection}>
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
-          >
-            <Typography variant="h3" className={styles.pageTitle}>
-              How Can We Help?
-            </Typography>
-            <Typography variant="body1" className={styles.pageSubtitle}>
-              Our support team is here to assist you. Choose your preferred contact method or send us a message.
-            </Typography>
-          </motion.div>
-        </Box>
-
-        {/* Quick Help Banner */}
-        <Alert
-          severity="info"
-          className={styles.helpBanner}
-          action={
-            <Button color="inherit" size="small" onClick={handleNavigateToHelp}>
-              View FAQ
-            </Button>
-          }
-        >
-          <Typography variant="body2">
-            Looking for quick answers? Check out our <strong>Help Center</strong> for frequently asked questions.
-          </Typography>
-        </Alert>
-
-        {/* Contact Methods */}
-        <Grid container spacing={3} className={styles.contactMethods}>
-          {contactMethods.map((method, index) => (
-            <Grid item xs={6} sm={3} key={index}>
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.3, delay: index * 0.1 }}
-              >
-                <Card className={styles.contactCard}>
-                  <CardContent className={styles.contactCardContent}>
-                    <Box className={styles.contactIcon}>{method.icon}</Box>
-                    <Typography variant="subtitle2" className={styles.contactTitle}>
-                      {method.title}
-                    </Typography>
-                    <Typography variant="body2" className={styles.contactDescription}>
-                      {method.description}
-                    </Typography>
-                    <Typography variant="caption" className={styles.contactDetail}>
-                      {method.detail}
-                    </Typography>
-                  </CardContent>
-                </Card>
-              </motion.div>
-            </Grid>
-          ))}
-        </Grid>
-
-        {/* Contact Form */}
-        <Card className={styles.formCard}>
-          <CardContent className={styles.formContent}>
-            <Typography variant="h5" className={styles.formTitle}>
-              Send Us a Message
-            </Typography>
-            <Typography variant="body2" className={styles.formSubtitle}>
-              Fill out the form below and we'll get back to you as soon as possible.
-            </Typography>
-
-            <form onSubmit={handleSubmit} className={styles.form}>
-              <Grid container spacing={3}>
-                <Grid item xs={12} sm={6}>
-                  <TextField
-                    fullWidth
-                    label="Your Name"
-                    name="name"
-                    value={formData.name}
-                    onChange={handleInputChange}
-                    error={!!errors.name}
-                    helperText={errors.name}
-                    className={styles.textField}
-                  />
-                </Grid>
-                <Grid item xs={12} sm={6}>
-                  <TextField
-                    fullWidth
-                    label="Email Address"
-                    name="email"
-                    type="email"
-                    value={formData.email}
-                    onChange={handleInputChange}
-                    error={!!errors.email}
-                    helperText={errors.email}
-                    className={styles.textField}
-                  />
-                </Grid>
-                <Grid item xs={12} sm={6}>
-                  <TextField
-                    fullWidth
-                    label="Order Number (Optional)"
-                    name="orderNumber"
-                    value={formData.orderNumber}
-                    onChange={handleInputChange}
-                    placeholder="e.g., ORD-12345"
-                    className={styles.textField}
-                  />
-                </Grid>
-                <Grid item xs={12} sm={6}>
-                  <FormControl fullWidth error={!!errors.category} className={styles.textField}>
-                    <InputLabel>Category</InputLabel>
-                    <Select
-                      name="category"
-                      value={formData.category}
-                      label="Category"
-                      onChange={handleInputChange}
-                    >
-                      {categories.map((cat) => (
-                        <MenuItem key={cat.value} value={cat.value}>
-                          <Box className={styles.categoryOption}>
-                            {cat.icon}
-                            <span>{cat.label}</span>
-                          </Box>
-                        </MenuItem>
-                      ))}
-                    </Select>
-                    {errors.category && (
-                      <Typography variant="caption" color="error">
-                        {errors.category}
-                      </Typography>
-                    )}
-                  </FormControl>
-                </Grid>
-                <Grid item xs={12}>
-                  <TextField
-                    fullWidth
-                    label="Subject"
-                    name="subject"
-                    value={formData.subject}
-                    onChange={handleInputChange}
-                    error={!!errors.subject}
-                    helperText={errors.subject}
-                    placeholder="Brief description of your issue"
-                    className={styles.textField}
-                  />
-                </Grid>
-                <Grid item xs={12}>
-                  <TextField
-                    fullWidth
-                    label="Message"
-                    name="message"
-                    value={formData.message}
-                    onChange={handleInputChange}
-                    error={!!errors.message}
-                    helperText={errors.message || "Please provide as much detail as possible"}
-                    multiline
-                    rows={6}
-                    placeholder="Describe your issue or question in detail..."
-                    className={styles.textField}
-                  />
-                </Grid>
-                <Grid item xs={12}>
-                  <Button
-                    type="submit"
-                    variant="contained"
-                    size="large"
-                    endIcon={<Send />}
-                    disabled={isSubmitting}
-                    className={styles.submitButton}
-                  >
-                    {isSubmitting ? "Sending..." : "Send Message"}
-                  </Button>
-                </Grid>
-              </Grid>
-            </form>
-          </CardContent>
-        </Card>
-
-        {/* Additional Info */}
-        <Box className={styles.additionalInfo}>
-          <Grid container spacing={4}>
-            <Grid item xs={12} md={6}>
-              <Card className={styles.infoCard}>
-                <CardContent>
-                  <Typography variant="h6" className={styles.infoTitle}>
-                    Response Times
-                  </Typography>
-                  <Box className={styles.infoList}>
-                    <Box className={styles.infoItem}>
-                      <Typography variant="body2">Email Support</Typography>
-                      <Typography variant="body2" className={styles.infoValue}>
-                        Within 24 hours
-                      </Typography>
-                    </Box>
-                    <Box className={styles.infoItem}>
-                      <Typography variant="body2">Live Chat</Typography>
-                      <Typography variant="body2" className={styles.infoValue}>
-                        Immediate
-                      </Typography>
-                    </Box>
-                    <Box className={styles.infoItem}>
-                      <Typography variant="body2">Order Issues</Typography>
-                      <Typography variant="body2" className={styles.infoValue}>
-                        Priority - Within 12 hours
-                      </Typography>
-                    </Box>
-                  </Box>
-                </CardContent>
-              </Card>
-            </Grid>
-            <Grid item xs={12} md={6}>
-              <Card className={styles.infoCard}>
-                <CardContent>
-                  <Typography variant="h6" className={styles.infoTitle}>
-                    Before You Contact Us
-                  </Typography>
-                  <Box className={styles.tipsList}>
-                    <Typography variant="body2">• Have your order number ready</Typography>
-                    <Typography variant="body2">• Check your spam folder for delivery emails</Typography>
-                    <Typography variant="body2">• Verify your order details are correct</Typography>
-                    <Typography variant="body2">• Allow up to 30 minutes for processing</Typography>
-                  </Box>
-                </CardContent>
-              </Card>
-            </Grid>
-          </Grid>
-        </Box>
-      </Container>
-    </motion.div>
+    <div className={`${styles.container} ${isDarkMode ? styles.dark : ""}`}>
+      <div className={styles.breadcrumb}><Link to="/">Home</Link> <span>/</span> <span>Support</span></div>
+      <motion.div className={styles.header} initial={{ y: -20, opacity: 0 }} animate={{ y: 0, opacity: 1 }}>
+        <h1>Contact Support</h1>
+        <p>We're here to help with any questions or concerns.</p>
+      </motion.div>
+      <div className={styles.content}>
+        <motion.div className={styles.contactInfo} initial={{ x: -30, opacity: 0 }} animate={{ x: 0, opacity: 1 }} transition={{ delay: 0.1 }}>
+          <div className={styles.infoCard}><div className={styles.infoIcon}>&#9993;</div><h3>Email Us</h3><p>{SUPPORT_EMAIL}</p><span>Response within 24 hrs</span></div>
+          <div className={styles.infoCard}><div className={styles.infoIcon}>&#9742;</div><h3>Call Us</h3><p>{SUPPORT_PHONE}</p><span>Mon-Sat, 9am-8pm IST</span></div>
+          <div className={styles.infoCard}><div className={styles.infoIcon}>&#128172;</div><h3>Live Chat</h3><p>Chat with our team</p><span>Available 24/7</span></div>
+          <div className={styles.quickLinks}><h3>Quick Links</h3><Link to="/help">FAQs</Link><Link to="/orders">Track Order</Link><Link to="/refund">Refund Policy</Link></div>
+        </motion.div>
+        <motion.form className={styles.form} onSubmit={handleSubmit} initial={{ x: 30, opacity: 0 }} animate={{ x: 0, opacity: 1 }} transition={{ delay: 0.2 }}>
+          <h2>Send a Message</h2>
+          <div className={styles.formRow}>
+            <div className={styles.formGroup}>
+              <label>Full Name *</label>
+              <input type="text" name="name" value={formData.name} onChange={handleChange} placeholder="Your name" className={errors.name ? styles.inputError : ""} />
+              {errors.name && <span className={styles.error}>{errors.name}</span>}
+            </div>
+            <div className={styles.formGroup}>
+              <label>Email *</label>
+              <input type="email" name="email" value={formData.email} onChange={handleChange} placeholder="your@email.com" className={errors.email ? styles.inputError : ""} />
+              {errors.email && <span className={styles.error}>{errors.email}</span>}
+            </div>
+          </div>
+          <div className={styles.formRow}>
+            <div className={styles.formGroup}><label>Phone</label><input type="tel" name="phone" value={formData.phone} onChange={handleChange} placeholder="+91 9876543210" /></div>
+            <div className={styles.formGroup}><label>Order Number</label><input type="text" name="orderNumber" value={formData.orderNumber} onChange={handleChange} placeholder="ORD-XXXXXX" /></div>
+          </div>
+          <div className={styles.formGroup}>
+            <label>Category</label>
+            <select name="category" value={formData.category} onChange={handleChange}>{categories.map((c) => <option key={c.value} value={c.value}>{c.label}</option>)}</select>
+          </div>
+          <div className={styles.formGroup}>
+            <label>Subject *</label>
+            <input type="text" name="subject" value={formData.subject} onChange={handleChange} placeholder="Brief description" className={errors.subject ? styles.inputError : ""} />
+            {errors.subject && <span className={styles.error}>{errors.subject}</span>}
+          </div>
+          <div className={styles.formGroup}>
+            <label>Message *</label>
+            <textarea name="message" value={formData.message} onChange={handleChange} placeholder="Describe your issue..." rows={5} className={errors.message ? styles.inputError : ""} />
+            {errors.message && <span className={styles.error}>{errors.message}</span>}
+          </div>
+          {errors.submit && <div className={styles.submitError}>{errors.submit}</div>}
+          <button type="submit" className={styles.primaryBtn} disabled={isSubmitting}>{isSubmitting ? "Sending..." : "Send Message"}</button>
+        </motion.form>
+      </div>
+    </div>
   );
 };
 

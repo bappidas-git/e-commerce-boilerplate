@@ -1,261 +1,85 @@
 import React from "react";
-import { Container, Typography, Box, Card, CardContent, Alert, Button } from "@mui/material";
-import { Warning, CheckCircle, Cancel, Info } from "@mui/icons-material";
+import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
-import { useNavigate } from "react-router-dom";
-import useSound from "../../hooks/useSound";
-import Breadcrumb from "../../components/Breadcrumb/Breadcrumb";
+import { useTheme } from "../../context/ThemeContext";
+import { APP_NAME, SUPPORT_EMAIL } from "../../utils/constants";
 import styles from "./RefundPolicy.module.css";
 
 const RefundPolicy = () => {
-  const lastUpdated = "January 1, 2025";
-  const navigate = useNavigate();
-  const { play } = useSound();
+  const { isDarkMode } = useTheme();
 
-  const handleContactSupport = () => {
-    play();
-    navigate("/support");
-  };
+  const eligibleItems = [
+    "Products received damaged or defective",
+    "Wrong product delivered",
+    "Product significantly different from description",
+    "Missing items from the order",
+  ];
 
-  const sections = [
-    {
-      title: "1. Overview",
-      content: [
-        {
-          text: "At My Store, we strive to provide high-quality products and excellent customer service. Due to the nature of our products, our refund policy differs from traditional retail. Please read this policy carefully before making a purchase."
-        }
-      ]
-    },
-    {
-      title: "2. Eligibility for Refunds",
-      content: [
-        {
-          subtitle: "Refunds May Be Granted When:",
-          list: [
-            "You did not receive the purchased product within the specified delivery time",
-            "The product delivered does not match what was ordered",
-            "Technical issues on our end prevented successful delivery",
-            "Duplicate charges occurred due to system errors",
-            "The product code was already used (not by you)"
-          ]
-        },
-        {
-          subtitle: "Refunds Will NOT Be Granted When:",
-          list: [
-            "You provided incorrect shipping information",
-            "You changed your mind after purchase",
-            "The product was successfully delivered to your account",
-            "You violated the game's terms of service",
-            "Your game account was banned or suspended",
-            "The request is made more than 7 days after purchase"
-          ]
-        }
-      ]
-    },
-    {
-      title: "3. Refund Process",
-      content: [
-        {
-          text: "To request a refund, please follow these steps:"
-        },
-        {
-          list: [
-            "Contact our support team within 7 days of your purchase",
-            "Provide your order number and email address",
-            "Explain the reason for your refund request",
-            "Include any relevant screenshots or evidence",
-            "Wait for our team to review your request (1-3 business days)"
-          ]
-        },
-        {
-          text: "Our support team will review your request and respond within 1-3 business days. If approved, refunds will be processed to your original payment method within 5-10 business days."
-        }
-      ]
-    },
-    {
-      title: "4. Refund Methods",
-      content: [
-        {
-          text: "Approved refunds will be processed as follows:"
-        },
-        {
-          list: [
-            "Credit/Debit Card payments: Refunded to the original card (5-10 business days)",
-            "PayPal payments: Refunded to your PayPal account (3-5 business days)",
-            "Digital Wallets: Refunded to the original wallet (3-5 business days)",
-            "Store Credit: Issued immediately as account credit"
-          ]
-        },
-        {
-          text: "In some cases, we may offer store credit instead of a monetary refund. Store credit can be used for future purchases and does not expire."
-        }
-      ]
-    },
-    {
-      title: "5. Partial Refunds",
-      content: [
-        {
-          text: "Partial refunds may be issued in the following situations:"
-        },
-        {
-          list: [
-            "Only a portion of the order was not delivered",
-            "Service disruptions affected partial delivery",
-            "Agreed upon resolution with customer support"
-          ]
-        }
-      ]
-    },
-    {
-      title: "6. Disputed Charges",
-      content: [
-        {
-          text: "If you see a charge you don't recognize, please contact us before disputing with your bank. Chargebacks can result in account suspension and additional fees. We're committed to resolving any issues directly and quickly."
-        }
-      ]
-    },
-    {
-      title: "7. Special Cases",
-      content: [
-        {
-          subtitle: "Pre-Orders",
-          text: "Pre-orders can be cancelled for a full refund before the product release date. After release, standard refund policies apply."
-        },
-        {
-          subtitle: "Subscription Products",
-          text: "Subscription-based products follow the cancellation and refund terms of the specific subscription service. Please review those terms before purchasing."
-        },
-        {
-          subtitle: "Promotional Items",
-          text: "Products purchased with promotional codes or at discounted prices may have modified refund eligibility. Any promotional value may be deducted from the refund amount."
-        }
-      ]
-    },
-    {
-      title: "8. Contact Us",
-      content: [
-        {
-          text: "For refund requests or questions about this policy, please contact our support team:"
-        },
-        {
-          text: "Email: support@mystore.com\nResponse Time: Within 24 hours"
-        }
-      ]
-    }
+  const nonEligibleItems = [
+    "Products used, altered, or with removed tags",
+    "Intimate wear, swimwear, and personal care items",
+    "Customized or personalized products",
+    "Products returned after the 7-day window",
+    "Digital products and gift cards",
+  ];
+
+  const steps = [
+    { step: "1", title: "Initiate Return", desc: "Go to My Orders, select the order, and click 'Return/Exchange' within 7 days of delivery." },
+    { step: "2", title: "Pack & Ship", desc: "Pack the product in its original packaging. Our pickup partner will collect it from your address." },
+    { step: "3", title: "Quality Check", desc: "Once we receive the product, our team will inspect it within 2 business days." },
+    { step: "4", title: "Refund Processed", desc: "Refund is initiated to your original payment method within 5-7 business days after approval." },
   ];
 
   return (
-    <motion.div
-      className={styles.policyPage}
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      transition={{ duration: 0.3 }}
-    >
-      <Container maxWidth="lg">
-        <Breadcrumb items={[{ label: "Refund Policy" }]} />
+    <div className={`${styles.container} ${isDarkMode ? styles.dark : ""}`}>
+      <div className={styles.breadcrumb}><Link to="/">Home</Link> <span>/</span> <span>Refund Policy</span></div>
+      <motion.div initial={{ y: -20, opacity: 0 }} animate={{ y: 0, opacity: 1 }}>
+        <h1 className={styles.title}>Return & Refund Policy</h1>
+        <p className={styles.subtitle}>Last updated: March 2026</p>
+        <div className={styles.highlight}>
+          We offer a <strong>7-day hassle-free return policy</strong> on most products. Your satisfaction is our priority.
+        </div>
+      </motion.div>
 
-        <Card className={styles.policyCard}>
-          <CardContent className={styles.policyContent}>
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5 }}
-            >
-              <Typography variant="h3" className={styles.pageTitle}>
-                Refund Policy
-              </Typography>
-              <Typography variant="body2" className={styles.lastUpdated}>
-                Last Updated: {lastUpdated}
-              </Typography>
+      <motion.div className={styles.section} initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: 0.1 }}>
+        <h2>How Returns Work</h2>
+        <div className={styles.stepsGrid}>
+          {steps.map((s, i) => (
+            <div key={i} className={styles.stepCard}>
+              <div className={styles.stepNumber}>{s.step}</div>
+              <h3>{s.title}</h3>
+              <p>{s.desc}</p>
+            </div>
+          ))}
+        </div>
+      </motion.div>
 
-              {/* Important Notice */}
-              <Alert severity="info" className={styles.importantNotice} icon={<Info />}>
-                <Typography variant="body2">
-                  <strong>Important:</strong> Digital products are non-refundable once delivered and activated. Please ensure all information is correct before completing your purchase.
-                </Typography>
-              </Alert>
+      <div className={styles.twoCol}>
+        <motion.div className={`${styles.section} ${styles.eligible}`} initial={{ x: -20, opacity: 0 }} animate={{ x: 0, opacity: 1 }} transition={{ delay: 0.15 }}>
+          <h2>Eligible for Return</h2>
+          <ul>{eligibleItems.map((item, i) => <li key={i}><span className={styles.checkIcon}>&#10003;</span> {item}</li>)}</ul>
+        </motion.div>
+        <motion.div className={`${styles.section} ${styles.notEligible}`} initial={{ x: 20, opacity: 0 }} animate={{ x: 0, opacity: 1 }} transition={{ delay: 0.2 }}>
+          <h2>Not Eligible</h2>
+          <ul>{nonEligibleItems.map((item, i) => <li key={i}><span className={styles.crossIcon}>&#10007;</span> {item}</li>)}</ul>
+        </motion.div>
+      </div>
 
-              {/* Quick Reference Cards */}
-              <Box className={styles.quickReference}>
-                <Box className={styles.refCard}>
-                  <CheckCircle className={styles.refCardIconGreen} />
-                  <Typography variant="subtitle2">Eligible</Typography>
-                  <Typography variant="caption">Non-delivery, wrong item, duplicate charges</Typography>
-                </Box>
-                <Box className={styles.refCard}>
-                  <Cancel className={styles.refCardIconRed} />
-                  <Typography variant="subtitle2">Not Eligible</Typography>
-                  <Typography variant="caption">Change of mind, wrong info, account issues</Typography>
-                </Box>
-                <Box className={styles.refCard}>
-                  <Warning className={styles.refCardIconYellow} />
-                  <Typography variant="subtitle2">Time Limit</Typography>
-                  <Typography variant="caption">7 days from purchase date</Typography>
-                </Box>
-              </Box>
+      <motion.div className={styles.section} initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: 0.25 }}>
+        <h2>Refund Timeline</h2>
+        <div className={styles.refundTable}>
+          <div className={styles.refundRow}><span>Credit/Debit Card</span><span>5-7 business days</span></div>
+          <div className={styles.refundRow}><span>UPI</span><span>3-5 business days</span></div>
+          <div className={styles.refundRow}><span>Net Banking</span><span>5-7 business days</span></div>
+          <div className={styles.refundRow}><span>Wallet</span><span>1-2 business days</span></div>
+          <div className={styles.refundRow}><span>COD</span><span>7-10 business days (bank transfer)</span></div>
+        </div>
+      </motion.div>
 
-              <Box className={styles.introduction}>
-                <Typography variant="body1">
-                  We understand that sometimes things don't go as planned. This policy outlines our approach to refunds and how we handle different situations.
-                </Typography>
-              </Box>
-
-              {sections.map((section, index) => (
-                <motion.div
-                  key={index}
-                  className={styles.section}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.3, delay: index * 0.05 }}
-                >
-                  <Typography variant="h5" className={styles.sectionTitle}>
-                    {section.title}
-                  </Typography>
-                  {section.content.map((item, itemIndex) => (
-                    <Box key={itemIndex} className={styles.contentBlock}>
-                      {item.subtitle && (
-                        <Typography variant="h6" className={styles.subtitle}>
-                          {item.subtitle}
-                        </Typography>
-                      )}
-                      {item.text && (
-                        <Typography variant="body1" className={styles.text}>
-                          {item.text}
-                        </Typography>
-                      )}
-                      {item.list && (
-                        <ul className={styles.list}>
-                          {item.list.map((listItem, listIndex) => (
-                            <li key={listIndex}>{listItem}</li>
-                          ))}
-                        </ul>
-                      )}
-                    </Box>
-                  ))}
-                </motion.div>
-              ))}
-
-              {/* Contact Support CTA */}
-              <Box className={styles.supportCta}>
-                <Typography variant="h6">Need to request a refund?</Typography>
-                <Typography variant="body2">
-                  Our support team is here to help you resolve any issues.
-                </Typography>
-                <Button
-                  variant="contained"
-                  size="large"
-                  className={styles.supportButton}
-                  onClick={handleContactSupport}
-                >
-                  Contact Support
-                </Button>
-              </Box>
-            </motion.div>
-          </CardContent>
-        </Card>
-      </Container>
-    </motion.div>
+      <div className={styles.contact}>
+        <p>Need help with a return? <Link to="/support">Contact Support</Link> or email <a href={`mailto:${SUPPORT_EMAIL}`}>{SUPPORT_EMAIL}</a></p>
+      </div>
+    </div>
   );
 };
 

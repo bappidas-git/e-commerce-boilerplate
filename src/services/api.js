@@ -273,6 +273,27 @@ const apiService = {
   },
 
   // ===========================================================================
+  // Banners
+  // ===========================================================================
+  banners: {
+    getAll: async () => {
+      try {
+        if (IS_MOCK_API) {
+          try {
+            const response = await api.get("/banners");
+            if (response.data && response.data.length > 0) return response.data;
+          } catch {
+            // banners endpoint may not exist in db.json – return empty to use defaults
+          }
+          return [];
+        }
+        const response = await api.get("/banners");
+        return extractData(response);
+      } catch (error) { console.error("Get banners error:", error); return []; }
+    },
+  },
+
+  // ===========================================================================
   // Cart
   // ===========================================================================
   cart: {
@@ -444,6 +465,22 @@ const apiService = {
         const response = await api.delete(`/wishlist/${id}`);
         return IS_MOCK_API ? response.data : extractData(response);
       } catch (error) { console.error("Remove from wishlist error:", error); throw error; }
+    },
+  },
+
+  // ===========================================================================
+  // Shipping Methods (Storefront)
+  // ===========================================================================
+  shipping: {
+    getMethods: async () => {
+      try {
+        if (IS_MOCK_API) {
+          const response = await api.get("/shipping_methods", { params: { isActive: true } });
+          return response.data;
+        }
+        const response = await api.get("/shipping/methods");
+        return extractData(response);
+      } catch (error) { console.error("Get shipping methods error:", error); throw error; }
     },
   },
 

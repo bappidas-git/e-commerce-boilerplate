@@ -1,109 +1,102 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { Paper, Box } from "@mui/material";
-import {
-  Home,
-  Info,
-  ShoppingBag,
-  Menu as MenuIcon,
-  LocalOffer,
-} from "@mui/icons-material";
-import { motion, AnimatePresence } from "framer-motion";
-import BottomDrawer from "../BottomDrawer/BottomDrawer";
+import { useAuth } from "../../hooks/useAuth";
+import { useWishlist } from "../../context/WishlistContext";
 import { useTheme } from "../../context/ThemeContext";
-import useSound from "../../hooks/useSound";
+import SearchModal from "../SearchModal/SearchModal";
 import styles from "./BottomNav.module.css";
+
+const NAV_ITEMS = [
+  { key: "home", label: "Home", icon: "\u2302", path: "/" },
+  { key: "categories", label: "Categories", icon: "\u2630", path: "/products" },
+  { key: "search", label: "Search", icon: "\u2315", path: null },
+  { key: "wishlist", label: "Wishlist", icon: "\u2661", path: "/wishlist" },
+  { key: "account", label: "Account", icon: "\u263A", path: "/profile" },
+];
 
 const BottomNav = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { isDarkMode } = useTheme();
-  const { play } = useSound();
-  const [drawerOpen, setDrawerOpen] = useState(false);
+  const { getWishlistCount } = useWishlist();
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [visible, setVisible] = useState(true);
+  const lastScrollY = useRef(0);
 
-  // Menu items matching Sidebar order: Home, About, Products, Offers, Menu
-  const navItems = [
-    { label: "Home", icon: <Home />, path: "/" },
-    { label: "About", icon: <Info />, path: "/about" },
-    { label: "Products", icon: <ShoppingBag />, path: "/products" },
-    { label: "Offers", icon: <LocalOffer />, path: "/special-offers" },
-    { label: "Menu", icon: <MenuIcon />, path: null },
-  ];
+  const wishlistCount = getWishlistCount();
 
-  const getActiveIndex = () => {
+  // Hide on scroll down, show on scroll up
+  useEffect(() => {
+    const handleScroll = () => {
+      const currentY = window.scrollY;
+      if (currentY > lastScrollY.current && currentY > 80) {
+        setVisible(false);
+      } else {
+        setVisible(true);
+      }
+      lastScrollY.current = currentY;
+    };
+
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
+  const getActiveKey = () => {
     const path = location.pathname;
-    if (path === "/") return 0;
-    if (path === "/about") return 1;
-    if (path.includes("/products")) return 2;
-    if (path.includes("/special-offers")) return 3;
-    return -1;
+    if (path === "/") return "home";
+    if (path === "/products" || path.startsWith("/products/") || path === "/categories") return "categories";
+    if (path === "/wishlist") return "wishlist";
+    if (path === "/profile" || path === "/account" || path === "/login") return "account";
+    return "";
   };
 
-  const activeIndex = getActiveIndex();
+  const activeKey = getActiveKey();
 
   const handleNavClick = (item) => {
-    play();
-
-    if (item.path === null) {
-      setDrawerOpen(true);
+    if (item.key === "search") {
+      setSearchOpen(true);
       return;
     }
-
-    navigate(item.path);
+    if (item.path) {
+      navigate(item.path);
+    }
   };
+
+  const themeClass = isDarkMode ? styles.dark : styles.light;
 
   return (
     <>
-      <Paper
-        className={`mobile-only ${styles.bottomNav} ${
-          isDarkMode ? styles.dark : styles.light
+      <nav
+        className={`${styles.bottomNav} ${themeClass} ${
+          visible ? styles.visible : styles.hidden
         }`}
-        elevation={0}
       >
-        <motion.div
-          initial={{ y: 100 }}
-          animate={{ y: 0 }}
-          transition={{ duration: 0.4, ease: "easeOut" }}
-          className={styles.navContainer}
-        >
-          {/* Navigation Items */}
-          <Box className={styles.navItems}>
-            {navItems.map((item, index) => (
-              <motion.button
-                key={item.label}
-                className={`${styles.navItem} ${
-                  activeIndex === index ? styles.active : ""
-                }`}
+        <div className={styles.navItems}>
+          {NAV_ITEMS.map((item) => {
+            const isActive = activeKey === item.key;
+            return (
+              <button
+                key={item.key}
+                className={`${styles.navItem} ${isActive ? styles.active : ""}`}
                 onClick={() => handleNavClick(item)}
-                whileTap={{ scale: 0.9 }}
+                aria-label={item.label}
               >
-                <motion.div
-                  className={styles.iconWrapper}
-                  animate={activeIndex === index ? { y: -2 } : { y: 0 }}
-                  transition={{ duration: 0.2 }}
-                >
-                  {item.icon}
-                </motion.div>
-                <AnimatePresence>
-                  {activeIndex === index && (
-                    <motion.span
-                      className={styles.label}
-                      initial={{ opacity: 0, y: 5 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: 5 }}
-                      transition={{ duration: 0.2 }}
-                    >
-                      {item.label}
-                    </motion.span>
+                <span className={styles.iconWrap}>
+                  <span className={styles.icon}>{item.icon}</span>
+                  {item.key === "wishlist" && wishlistCount > 0 && (
+                    <span className={styles.badge}>
+                      {wishlistCount > 99 ? "99+" : wishlistCount}
+                    </span>
                   )}
-                </AnimatePresence>
-              </motion.button>
-            ))}
-          </Box>
-        </motion.div>
-      </Paper>
+                </span>
+                <span className={styles.label}>{item.label}</span>
+              </button>
+            );
+          })}
+        </div>
+      </nav>
 
-      <BottomDrawer open={drawerOpen} onClose={() => setDrawerOpen(false)} />
+      <SearchModal open={searchOpen} onClose={() => setSearchOpen(false)} />
     </>
   );
 };
