@@ -1,0 +1,393 @@
+.profilePage {
+  min-height: 100vh;
+  padding: 2rem 0 4rem;
+  background: #f5f7fa;
+}
+
+:global(.dark) .profilePage {
+  background: #0a0e27;
+}
+
+/* Header */
+.header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+.headerContent {
+  flex: 1;
+}
+
+.pageTitle {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 700;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+:global(.dark) .pageTitle {
+  background: linear-gradient(135deg, #a855f7 0%, #ec4899 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.titleIcon {
+  font-size: 2rem;
+  color: #667eea;
+  -webkit-text-fill-color: initial;
+}
+
+:global(.dark) .titleIcon {
+  color: #a855f7;
+}
+
+.pageSubtitle {
+  color: #4a5568;
+  margin-top: 0.25rem;
+}
+
+:global(.dark) .pageSubtitle {
+  color: rgba(255, 255, 255, 0.7);
+}
+
+/* Login Prompt */
+.loginPromptCard {
+  background: #ffffff;
+  border-radius: 16px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  margin-top: 4rem;
+}
+
+:global(.dark) .loginPromptCard {
+  background: rgba(26, 31, 58, 0.8);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(168, 85, 247, 0.1);
+}
+
+.loginPromptContent {
+  text-align: center;
+  padding: 3rem;
+}
+
+.loginIcon {
+  font-size: 5rem;
+  color: #667eea;
+  margin-bottom: 1rem;
+}
+
+:global(.dark) .loginIcon {
+  color: #a855f7;
+}
+
+.loginTitle {
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+  color: #1a202c;
+}
+
+:global(.dark) .loginTitle {
+  color: #ffffff;
+}
+
+.loginButton {
+  margin-top: 1.5rem;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  padding: 0.75rem 2rem;
+}
+
+:global(.dark) .loginButton {
+  background: linear-gradient(135deg, #a855f7 0%, #ec4899 100%);
+}
+
+.loginButton:hover {
+  background: linear-gradient(135deg, #5a6fd6 0%, #6a4393 100%);
+}
+
+:global(.dark) .loginButton:hover {
+  background: linear-gradient(135deg, #9333ea 0%, #db2777 100%);
+}
+
+.homeLink {
+  display: block;
+  margin-top: 1rem;
+}
+
+/* Profile Card */
+.profileCard {
+  background: #ffffff;
+  border-radius: 16px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  margin-bottom: 1.5rem;
+}
+
+:global(.dark) .profileCard {
+  background: rgba(26, 31, 58, 0.8);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(168, 85, 247, 0.1);
+}
+
+/* Avatar Section */
+.avatarSection {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  padding: 1rem 0;
+}
+
+.avatar {
+  width: 80px;
+  height: 80px;
+  font-size: 2rem;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+:global(.dark) .avatar {
+  background: linear-gradient(135deg, #a855f7 0%, #ec4899 100%);
+}
+
+.userInfo {
+  flex: 1;
+}
+
+.userName {
+  font-weight: 700;
+  color: #1a202c;
+}
+
+:global(.dark) .userName {
+  color: #ffffff;
+}
+
+.userEmail {
+  color: #4a5568;
+  margin-top: 0.25rem;
+}
+
+:global(.dark) .userEmail {
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.editButton {
+  border-color: #667eea;
+  color: #667eea;
+}
+
+:global(.dark) .editButton {
+  border-color: #a855f7;
+  color: #a855f7;
+}
+
+.editButton:hover {
+  background: rgba(102, 126, 234, 0.1);
+  border-color: #5a6fd6;
+}
+
+:global(.dark) .editButton:hover {
+  background: rgba(168, 85, 247, 0.1);
+  border-color: #a855f7;
+}
+
+/* Divider */
+.divider {
+  margin: 1.5rem 0;
+}
+
+/* Form Section */
+.formSection {
+  padding: 0.5rem 0;
+}
+
+.sectionTitle {
+  font-weight: 600;
+  color: #1a202c;
+  margin-bottom: 1.5rem;
+}
+
+:global(.dark) .sectionTitle {
+  color: #ffffff;
+}
+
+.textField {
+  margin-bottom: 0.5rem;
+}
+
+.textField input {
+  color: #1a202c;
+}
+
+:global(.dark) .textField input {
+  color: #ffffff;
+}
+
+.textField label {
+  color: #4a5568;
+}
+
+:global(.dark) .textField label {
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.textField .MuiOutlinedInput-root {
+  background: #f5f7fa;
+}
+
+:global(.dark) .textField .MuiOutlinedInput-root {
+  background: rgba(10, 14, 39, 0.5);
+}
+
+.textField .MuiOutlinedInput-notchedOutline {
+  border-color: rgba(0, 0, 0, 0.1);
+}
+
+:global(.dark) .textField .MuiOutlinedInput-notchedOutline {
+  border-color: rgba(168, 85, 247, 0.2);
+}
+
+.inputIcon {
+  color: #4a5568;
+}
+
+:global(.dark) .inputIcon {
+  color: rgba(255, 255, 255, 0.5);
+}
+
+/* Action Buttons */
+.actionButtons {
+  display: flex;
+  justify-content: flex-end;
+  gap: 1rem;
+  margin-top: 2rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+:global(.dark) .actionButtons {
+  border-top: 1px solid rgba(168, 85, 247, 0.2);
+}
+
+.cancelButton {
+  border-color: #9ca3af;
+  color: #4a5568;
+}
+
+:global(.dark) .cancelButton {
+  border-color: rgba(255, 255, 255, 0.3);
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.saveButton {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+:global(.dark) .saveButton {
+  background: linear-gradient(135deg, #a855f7 0%, #ec4899 100%);
+}
+
+.saveButton:hover {
+  background: linear-gradient(135deg, #5a6fd6 0%, #6a4393 100%);
+}
+
+:global(.dark) .saveButton:hover {
+  background: linear-gradient(135deg, #9333ea 0%, #db2777 100%);
+}
+
+/* Quick Links Card */
+.quickLinksCard {
+  background: #ffffff;
+  border-radius: 16px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+}
+
+:global(.dark) .quickLinksCard {
+  background: rgba(26, 31, 58, 0.8);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(168, 85, 247, 0.1);
+}
+
+.quickLinks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.quickLinkButton {
+  border-color: rgba(0, 0, 0, 0.2);
+  color: #4a5568;
+}
+
+:global(.dark) .quickLinkButton {
+  border-color: rgba(168, 85, 247, 0.3);
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.quickLinkButton:hover {
+  background: rgba(102, 126, 234, 0.1);
+  border-color: #667eea;
+  color: #667eea;
+}
+
+:global(.dark) .quickLinkButton:hover {
+  background: rgba(168, 85, 247, 0.1);
+  border-color: #a855f7;
+  color: #a855f7;
+}
+
+/* Responsive */
+@media (max-width: 900px) {
+  .profilePage {
+    padding: 1rem 0 6rem;
+  }
+
+  .pageTitle {
+    font-size: 1.5rem;
+  }
+
+  .titleIcon {
+    font-size: 1.5rem;
+  }
+
+  .avatarSection {
+    flex-direction: column;
+    text-align: center;
+  }
+
+  .userInfo {
+    text-align: center;
+  }
+
+  .editButton {
+    width: 100%;
+  }
+
+  .loginPromptContent {
+    padding: 2rem 1rem;
+  }
+
+  .loginIcon {
+    font-size: 4rem;
+  }
+
+  .actionButtons {
+    flex-direction: column;
+  }
+
+  .cancelButton,
+  .saveButton {
+    width: 100%;
+  }
+
+  .quickLinks {
+    flex-direction: column;
+  }
+
+  .quickLinkButton {
+    width: 100%;
+  }
+}

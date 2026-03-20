@@ -1,0 +1,676 @@
+/* Main Footer Container */
+.footer {
+  position: relative;
+  margin-top: auto;
+  overflow: hidden;
+  transition: all 0.3s ease;
+}
+
+@media screen and (max-width: 768px) {
+  .footer {
+    margin-bottom: 70px;
+  }
+}
+
+/* Light Theme */
+.footer[data-theme="light"] {
+  background: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
+  color: #1e293b;
+}
+
+.footer[data-theme="light"]::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    #667eea,
+    #764ba2,
+    transparent
+  );
+}
+
+/* Dark Theme */
+.footer[data-theme="dark"] {
+  background: linear-gradient(180deg, #0a0e27 0%, #1a1f3a 100%);
+  color: #e0e7ff;
+}
+
+.footer[data-theme="dark"]::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    #a855f7,
+    #ec4899,
+    #3b82f6,
+    transparent
+  );
+  animation: shimmer 3s ease-in-out infinite;
+}
+
+@keyframes shimmer {
+  0%,
+  100% {
+    opacity: 0.5;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+/* Main Footer Content */
+.mainFooter {
+  padding: 60px 0 40px;
+  position: relative;
+}
+
+/* Logo Section */
+.logoSection {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.logoWrapper {
+  width: 50px;
+  height: 50px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.footer[data-theme="light"] .logoWrapper {
+  background: linear-gradient(
+    135deg,
+    rgba(102, 126, 234, 0.1),
+    rgba(118, 75, 162, 0.1)
+  );
+  border: 1px solid rgba(102, 126, 234, 0.2);
+}
+
+.footer[data-theme="dark"] .logoWrapper {
+  background: linear-gradient(
+    135deg,
+    rgba(168, 85, 247, 0.15),
+    rgba(236, 72, 153, 0.15)
+  );
+  border: 1px solid rgba(168, 85, 247, 0.3);
+}
+
+.footerLogo {
+  width: 75%;
+  height: auto;
+  object-fit: contain;
+  transition: transform 0.3s ease;
+}
+
+.logoSection:hover .footerLogo {
+  transform: scale(1.1);
+}
+
+.brandInfo {
+  display: flex;
+  flex-direction: column;
+}
+
+.brandName {
+  font-weight: 700 !important;
+  font-size: 1.1rem !important;
+  line-height: 1.2 !important;
+}
+
+.footer[data-theme="light"] .brandName {
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.footer[data-theme="dark"] .brandName {
+  background: linear-gradient(135deg, #a855f7, #ec4899);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.brandTagline {
+  font-size: 0.75rem !important;
+  opacity: 0.7;
+}
+
+.companyDescription {
+  font-size: 0.9rem !important;
+  line-height: 1.6 !important;
+  margin-bottom: 20px !important;
+}
+
+.footer[data-theme="light"] .companyDescription {
+  color: #64748b;
+}
+
+.footer[data-theme="dark"] .companyDescription {
+  color: #94a3b8;
+}
+
+/* Section Titles */
+.sectionTitle {
+  font-weight: 600 !important;
+  font-size: 1rem !important;
+  margin-bottom: 20px !important;
+  position: relative;
+  display: inline-block;
+}
+
+.footer[data-theme="light"] .sectionTitle {
+  color: #1e293b;
+}
+
+.footer[data-theme="dark"] .sectionTitle {
+  color: #f8fafc;
+}
+
+.sectionTitle::after {
+  content: "";
+  position: absolute;
+  bottom: -6px;
+  left: 0;
+  width: 30px;
+  height: 3px;
+  border-radius: 2px;
+}
+
+.footer[data-theme="light"] .sectionTitle::after {
+  background: linear-gradient(90deg, #667eea, #764ba2);
+}
+
+.footer[data-theme="dark"] .sectionTitle::after {
+  background: linear-gradient(90deg, #a855f7, #ec4899);
+}
+
+/* Footer Links */
+.footerLinks {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.footerLink {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  text-decoration: none;
+  font-size: 0.9rem;
+  transition: all 0.3s ease;
+  cursor: pointer;
+  background: none;
+  border: none;
+  text-align: left;
+  padding: 4px 0;
+  font-family: inherit;
+}
+
+.footer[data-theme="light"] .footerLink {
+  color: #64748b;
+}
+
+.footer[data-theme="dark"] .footerLink {
+  color: #94a3b8;
+}
+
+.linkIcon {
+  font-size: 16px;
+  opacity: 1;
+  transform: translateX(0);
+  transition: all 0.3s ease;
+}
+
+.footer[data-theme="light"] .linkIcon {
+  color: #64748b;
+}
+
+.footer[data-theme="dark"] .linkIcon {
+  color: #94a3b8;
+}
+
+.footer[data-theme="light"] .footerLink:hover .linkIcon {
+  color: #667eea;
+}
+
+.footer[data-theme="dark"] .footerLink:hover .linkIcon {
+  color: #a855f7;
+}
+
+.footer[data-theme="light"] .footerLink:hover {
+  color: #667eea;
+}
+
+.footer[data-theme="dark"] .footerLink:hover {
+  color: #a855f7;
+}
+
+/* Social Icons */
+.socialIcons {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.socialIcon {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px !important;
+  transition: all 0.3s ease !important;
+}
+
+.footer[data-theme="light"] .socialIcon {
+  background: rgba(102, 126, 234, 0.08) !important;
+  color: #64748b !important;
+}
+
+.footer[data-theme="light"] .socialIcon:hover {
+  background: var(--social-color) !important;
+  color: white !important;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
+}
+
+.footer[data-theme="dark"] .socialIcon {
+  background: rgba(168, 85, 247, 0.1) !important;
+  color: #94a3b8 !important;
+}
+
+.footer[data-theme="dark"] .socialIcon:hover {
+  background: var(--social-color) !important;
+  color: white !important;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+}
+
+/* Newsletter Section */
+.newsletterText {
+  font-size: 0.9rem !important;
+  margin-bottom: 16px !important;
+  line-height: 1.6 !important;
+}
+
+.footer[data-theme="light"] .newsletterText {
+  color: #64748b;
+}
+
+.footer[data-theme="dark"] .newsletterText {
+  color: #94a3b8;
+}
+
+.newsletterForm {
+  margin-bottom: 20px;
+}
+
+.inputWrapper {
+  display: flex;
+}
+
+.newsletterInput {
+  width: 100%;
+}
+
+.newsletterInput :global(.MuiOutlinedInput-root) {
+  border-radius: 12px;
+  padding-right: 4px;
+}
+
+.footer[data-theme="light"] .newsletterInput :global(.MuiOutlinedInput-root) {
+  background: #ffffff;
+}
+
+.footer[data-theme="light"]
+  .newsletterInput
+  :global(.MuiOutlinedInput-notchedOutline) {
+  border-color: #e2e8f0;
+}
+
+.footer[data-theme="light"]
+  .newsletterInput
+  :global(.MuiOutlinedInput-root:hover .MuiOutlinedInput-notchedOutline) {
+  border-color: #667eea;
+}
+
+.footer[data-theme="light"] .newsletterInput :global(.MuiInputBase-input) {
+  color: #1e293b;
+  font-size: 0.9rem;
+}
+
+.footer[data-theme="dark"] .newsletterInput :global(.MuiOutlinedInput-root) {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.footer[data-theme="dark"]
+  .newsletterInput
+  :global(.MuiOutlinedInput-notchedOutline) {
+  border-color: rgba(168, 85, 247, 0.2);
+}
+
+.footer[data-theme="dark"]
+  .newsletterInput
+  :global(.MuiOutlinedInput-root:hover .MuiOutlinedInput-notchedOutline) {
+  border-color: rgba(168, 85, 247, 0.4);
+}
+
+.footer[data-theme="dark"] .newsletterInput :global(.MuiInputBase-input) {
+  color: #e0e7ff;
+  font-size: 0.9rem;
+}
+
+.emailIcon {
+  font-size: 20px !important;
+}
+
+.footer[data-theme="light"] .emailIcon {
+  color: #667eea;
+}
+
+.footer[data-theme="dark"] .emailIcon {
+  color: #a855f7;
+}
+
+.subscribeButton {
+  border-radius: 8px !important;
+  transition: all 0.3s ease !important;
+}
+
+.footer[data-theme="light"] .subscribeButton {
+  background: linear-gradient(135deg, #667eea, #764ba2) !important;
+  color: white !important;
+}
+
+.footer[data-theme="dark"] .subscribeButton {
+  background: linear-gradient(135deg, #a855f7, #ec4899) !important;
+  color: white !important;
+}
+
+/* Trust Badges */
+.trustBadges {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.trustBadge {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.8rem;
+  padding: 6px 12px;
+  border-radius: 20px;
+}
+
+.footer[data-theme="light"] .trustBadge {
+  background: rgba(102, 126, 234, 0.08);
+  color: #667eea;
+}
+
+.footer[data-theme="dark"] .trustBadge {
+  background: rgba(168, 85, 247, 0.1);
+  color: #a855f7;
+}
+
+/* Bottom Footer */
+.bottomFooter {
+  background: #000000;
+  color: #ffffff;
+  padding: 16px 0;
+  border-top: 1px solid #1a1a1a;
+}
+
+.bottomContent {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.copyright {
+  color: rgba(255, 255, 255, 0.8) !important;
+  font-size: 0.85rem !important;
+}
+
+.paymentSection {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.paymentTitle {
+  color: rgba(255, 255, 255, 0.6) !important;
+  font-size: 0.8rem !important;
+  white-space: nowrap;
+}
+
+.paymentIcons {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.paymentIcon {
+  font-size: 24px;
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0.9;
+  transition: all 0.3s ease;
+}
+
+.paymentIcon svg {
+  width: 24px;
+  height: 24px;
+}
+
+.paymentIcon:hover {
+  opacity: 1;
+  transform: scale(1.1);
+}
+
+/* Scroll to Top Button */
+.scrollTopButton {
+  position: fixed;
+  bottom: 90px;
+  right: 20px;
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 1000;
+  font-size: 22px;
+  transition: all 0.3s ease;
+}
+
+.footer[data-theme="light"] .scrollTopButton {
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  color: white;
+  box-shadow: 0 4px 20px rgba(102, 126, 234, 0.4);
+}
+
+.footer[data-theme="dark"] .scrollTopButton {
+  background: linear-gradient(135deg, #a855f7, #ec4899);
+  color: white;
+  box-shadow: 0 4px 20px rgba(168, 85, 247, 0.4);
+}
+
+/* Responsive Design */
+@media (max-width: 960px) {
+  .mainFooter {
+    padding: 50px 0 30px;
+  }
+
+  .bottomContent {
+    justify-content: center;
+    text-align: center;
+  }
+
+  .copyright {
+    width: 100%;
+    text-align: center;
+  }
+
+  .paymentSection {
+    justify-content: center;
+  }
+}
+
+@media (max-width: 768px) {
+  .mainFooter {
+    padding: 40px 0 24px;
+  }
+
+  .logoSection {
+    justify-content: flex-start;
+  }
+
+  .sectionTitle {
+    font-size: 0.95rem !important;
+    margin-bottom: 16px !important;
+  }
+
+  .sectionTitle::after {
+    left: 0;
+  }
+
+  .footerLinks {
+    gap: 8px;
+  }
+
+  .footerLink {
+    font-size: 0.85rem;
+  }
+
+  .socialIcons {
+    justify-content: flex-start;
+  }
+
+  .newsletterText {
+    font-size: 0.85rem !important;
+  }
+
+  .trustBadges {
+    justify-content: flex-start;
+    gap: 10px;
+  }
+
+  .trustBadge {
+    font-size: 0.75rem;
+    padding: 4px 10px;
+  }
+
+  .bottomFooter {
+    padding: 14px 0;
+  }
+
+  .bottomContent {
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .copyright {
+    font-size: 0.8rem !important;
+  }
+
+  .paymentIcon {
+    font-size: 24px;
+  }
+
+  .scrollTopButton {
+    width: 44px;
+    height: 44px;
+    bottom: 85px;
+    right: 16px;
+    font-size: 20px;
+  }
+}
+
+@media (max-width: 480px) {
+  .mainFooter {
+    padding: 32px 0 20px;
+  }
+
+  .logoWrapper {
+    width: 44px;
+    height: 44px;
+  }
+
+  .footerLogo {
+    width: 75%;
+    height: auto;
+  }
+
+  .brandName {
+    font-size: 1rem !important;
+  }
+
+  .companyDescription {
+    font-size: 0.85rem !important;
+  }
+
+  .socialIcon {
+    width: 36px;
+    height: 36px;
+  }
+
+  .paymentTitle {
+    font-size: 0.75rem !important;
+  }
+
+  .paymentIcon {
+    font-size: 22px;
+  }
+
+  .scrollTopButton {
+    width: 40px;
+    height: 40px;
+    bottom: 80px;
+    right: 12px;
+    border-radius: 12px;
+  }
+}
+
+/* Accessibility */
+.footerLink:focus,
+.socialIcon:focus,
+.subscribeButton:focus,
+.scrollTopButton:focus {
+  outline: 2px solid;
+  outline-offset: 2px;
+}
+
+.footer[data-theme="light"] .footerLink:focus,
+.footer[data-theme="light"] .socialIcon:focus,
+.footer[data-theme="light"] .subscribeButton:focus,
+.footer[data-theme="light"] .scrollTopButton:focus {
+  outline-color: #667eea;
+}
+
+.footer[data-theme="dark"] .footerLink:focus,
+.footer[data-theme="dark"] .socialIcon:focus,
+.footer[data-theme="dark"] .subscribeButton:focus,
+.footer[data-theme="dark"] .scrollTopButton:focus {
+  outline-color: #a855f7;
+}

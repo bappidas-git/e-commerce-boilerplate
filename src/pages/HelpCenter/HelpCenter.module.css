@@ -1,0 +1,441 @@
+.helpCenterPage {
+  min-height: calc(100vh - 64px);
+  padding: 20px 0 80px;
+  background: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
+}
+
+:global(.dark) .helpCenterPage {
+  background: linear-gradient(180deg, #0a0e27 0%, #1a1f3a 100%);
+}
+
+/* Hero Section */
+.heroSection {
+  text-align: center;
+  padding: 40px 0;
+  margin-bottom: 40px;
+}
+
+.pageTitle {
+  font-weight: 800 !important;
+  font-size: 2.5rem !important;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin-bottom: 12px !important;
+}
+
+:global(.dark) .pageTitle {
+  background: linear-gradient(135deg, #a855f7 0%, #ec4899 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.pageSubtitle {
+  color: #64748b !important;
+  font-size: 1.1rem !important;
+  margin-bottom: 32px !important;
+}
+
+:global(.dark) .pageSubtitle {
+  color: rgba(255, 255, 255, 0.7) !important;
+}
+
+.searchInput {
+  max-width: 600px;
+  margin: 0 auto;
+  background: #ffffff;
+  border-radius: 16px;
+}
+
+:global(.dark) .searchInput {
+  background: rgba(26, 31, 58, 0.8);
+}
+
+:global(.dark) .searchInput input {
+  color: #ffffff;
+}
+
+:global(.dark) .searchInput fieldset {
+  border-color: rgba(168, 85, 247, 0.3);
+}
+
+.searchIcon {
+  color: #9ca3af;
+}
+
+:global(.dark) .searchIcon {
+  color: #a855f7;
+}
+
+/* Quick Links */
+.quickLinks {
+  margin-bottom: 48px;
+}
+
+.quickLinkCard {
+  cursor: pointer;
+  border-radius: 16px !important;
+  background: #ffffff !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06) !important;
+  transition: all 0.3s ease !important;
+  height: 100%;
+}
+
+:global(.dark) .quickLinkCard {
+  background: rgba(26, 31, 58, 0.8) !important;
+  border: 1px solid rgba(168, 85, 247, 0.1);
+}
+
+.quickLinkCard:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 24px rgba(102, 126, 234, 0.15) !important;
+}
+
+:global(.dark) .quickLinkCard:hover {
+  box-shadow: 0 12px 24px rgba(168, 85, 247, 0.2) !important;
+  border-color: rgba(168, 85, 247, 0.3);
+}
+
+.quickLinkContent {
+  text-align: center;
+  padding: 24px 16px !important;
+}
+
+.quickLinkIcon {
+  width: 56px;
+  height: 56px;
+  margin: 0 auto 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
+  border-radius: 16px;
+}
+
+:global(.dark) .quickLinkIcon {
+  background: linear-gradient(135deg, rgba(168, 85, 247, 0.2) 0%, rgba(236, 72, 153, 0.2) 100%);
+}
+
+.quickLinkIcon svg {
+  font-size: 28px;
+  color: #667eea;
+}
+
+:global(.dark) .quickLinkIcon svg {
+  color: #a855f7;
+}
+
+.quickLinkTitle {
+  font-weight: 600 !important;
+  color: #1a202c !important;
+}
+
+:global(.dark) .quickLinkTitle {
+  color: #ffffff !important;
+}
+
+/* FAQ Section */
+.faqSection {
+  margin-bottom: 48px;
+}
+
+.sectionTitle {
+  font-weight: 700 !important;
+  color: #1a202c !important;
+  margin-bottom: 32px !important;
+  text-align: center;
+}
+
+:global(.dark) .sectionTitle {
+  color: #ffffff !important;
+}
+
+.categorySection {
+  margin-bottom: 32px;
+}
+
+.categoryHeader {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 16px;
+  padding: 16px;
+  background: linear-gradient(135deg, rgba(102, 126, 234, 0.08) 0%, rgba(118, 75, 162, 0.08) 100%);
+  border-radius: 12px;
+}
+
+:global(.dark) .categoryHeader {
+  background: linear-gradient(135deg, rgba(168, 85, 247, 0.1) 0%, rgba(236, 72, 153, 0.1) 100%);
+}
+
+.categoryIcon {
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+:global(.dark) .categoryIcon {
+  background: rgba(26, 31, 58, 0.8);
+}
+
+.categoryIcon svg {
+  font-size: 24px;
+  color: #667eea;
+}
+
+:global(.dark) .categoryIcon svg {
+  color: #a855f7;
+}
+
+.categoryTitle {
+  font-weight: 600 !important;
+  color: #1a202c !important;
+}
+
+:global(.dark) .categoryTitle {
+  color: #ffffff !important;
+}
+
+.categoryDescription {
+  color: #64748b !important;
+  font-size: 0.875rem !important;
+}
+
+:global(.dark) .categoryDescription {
+  color: rgba(255, 255, 255, 0.6) !important;
+}
+
+.accordion {
+  background: #ffffff !important;
+  border-radius: 12px !important;
+  margin-bottom: 12px !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04) !important;
+  overflow: hidden;
+}
+
+:global(.dark) .accordion {
+  background: rgba(26, 31, 58, 0.6) !important;
+  border: 1px solid rgba(168, 85, 247, 0.1);
+}
+
+.accordion::before {
+  display: none;
+}
+
+.accordionSummary {
+  padding: 8px 20px !important;
+}
+
+.question {
+  font-weight: 600 !important;
+  color: #1a202c !important;
+}
+
+:global(.dark) .question {
+  color: #ffffff !important;
+}
+
+.accordionDetails {
+  padding: 0 20px 20px !important;
+}
+
+.answer {
+  color: #64748b !important;
+  line-height: 1.7 !important;
+}
+
+:global(.dark) .answer {
+  color: rgba(255, 255, 255, 0.8) !important;
+}
+
+.noResults {
+  text-align: center;
+  padding: 48px 20px;
+  background: #ffffff;
+  border-radius: 16px;
+}
+
+:global(.dark) .noResults {
+  background: rgba(26, 31, 58, 0.6);
+}
+
+.noResults h6 {
+  color: #1a202c;
+  margin-bottom: 8px;
+}
+
+:global(.dark) .noResults h6 {
+  color: #ffffff;
+}
+
+.noResults p {
+  color: #64748b;
+}
+
+:global(.dark) .noResults p {
+  color: rgba(255, 255, 255, 0.6);
+}
+
+/* Contact Section */
+.contactSection {
+  text-align: center;
+  padding: 48px;
+  background: linear-gradient(135deg, rgba(102, 126, 234, 0.08) 0%, rgba(118, 75, 162, 0.08) 100%);
+  border-radius: 24px;
+}
+
+:global(.dark) .contactSection {
+  background: linear-gradient(135deg, rgba(168, 85, 247, 0.1) 0%, rgba(236, 72, 153, 0.1) 100%);
+}
+
+.contactTitle {
+  font-weight: 700 !important;
+  color: #1a202c !important;
+  margin-bottom: 8px !important;
+}
+
+:global(.dark) .contactTitle {
+  color: #ffffff !important;
+}
+
+.contactSubtitle {
+  color: #64748b !important;
+  margin-bottom: 32px !important;
+}
+
+:global(.dark) .contactSubtitle {
+  color: rgba(255, 255, 255, 0.7) !important;
+}
+
+.contactCard {
+  cursor: pointer;
+  border-radius: 16px !important;
+  background: #ffffff !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06) !important;
+  transition: all 0.3s ease !important;
+}
+
+:global(.dark) .contactCard {
+  background: rgba(26, 31, 58, 0.8) !important;
+  border: 1px solid rgba(168, 85, 247, 0.1);
+}
+
+.contactCard:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 24px rgba(102, 126, 234, 0.15) !important;
+}
+
+:global(.dark) .contactCard:hover {
+  box-shadow: 0 12px 24px rgba(168, 85, 247, 0.2) !important;
+}
+
+.contactCardContent {
+  text-align: center;
+  padding: 24px !important;
+}
+
+.contactIcon {
+  font-size: 40px !important;
+  color: #667eea !important;
+  margin-bottom: 12px;
+}
+
+:global(.dark) .contactIcon {
+  color: #a855f7 !important;
+}
+
+.contactCardContent h6 {
+  font-weight: 600;
+  color: #1a202c;
+  margin-bottom: 4px;
+}
+
+:global(.dark) .contactCardContent h6 {
+  color: #ffffff;
+}
+
+.contactCardContent p {
+  color: #64748b;
+  margin-bottom: 4px;
+}
+
+:global(.dark) .contactCardContent p {
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.contactCardContent span {
+  color: #9ca3af;
+}
+
+:global(.dark) .contactCardContent span {
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.supportButton {
+  margin-top: 32px !important;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+  color: #ffffff !important;
+  text-transform: none !important;
+  padding: 14px 48px !important;
+  border-radius: 12px !important;
+  font-weight: 600 !important;
+  font-size: 1rem !important;
+}
+
+:global(.dark) .supportButton {
+  background: linear-gradient(135deg, #a855f7 0%, #ec4899 100%) !important;
+}
+
+.supportButton:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(102, 126, 234, 0.3) !important;
+}
+
+:global(.dark) .supportButton:hover {
+  box-shadow: 0 8px 24px rgba(168, 85, 247, 0.4) !important;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .helpCenterPage {
+    padding: 16px 0 100px;
+  }
+
+  .heroSection {
+    padding: 24px 0;
+  }
+
+  .pageTitle {
+    font-size: 2rem !important;
+  }
+
+  .contactSection {
+    padding: 32px 20px;
+  }
+}
+
+@media (max-width: 480px) {
+  .pageTitle {
+    font-size: 1.75rem !important;
+  }
+
+  .quickLinkContent {
+    padding: 16px !important;
+  }
+
+  .quickLinkIcon {
+    width: 44px;
+    height: 44px;
+  }
+
+  .quickLinkIcon svg {
+    font-size: 22px;
+  }
+}

@@ -1,0 +1,431 @@
+.modal {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  background: rgba(10, 14, 39, 0.8);
+}
+
+.modalContent {
+  width: 90%;
+  max-width: 480px;
+  margin: 20px;
+}
+
+.container {
+  background: linear-gradient(
+    135deg,
+    rgba(26, 31, 58, 0.98) 0%,
+    rgba(10, 14, 39, 0.98) 100%
+  );
+  border-radius: 20px;
+  border: 1px solid rgba(168, 85, 247, 0.3);
+  padding: 40px;
+  position: relative;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5), 0 0 100px rgba(168, 85, 247, 0.2);
+  overflow: hidden;
+}
+
+.container::before {
+  content: "";
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: radial-gradient(
+    circle,
+    rgba(168, 85, 247, 0.1) 0%,
+    transparent 70%
+  );
+  animation: rotate 20s linear infinite;
+}
+
+@keyframes rotate {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.closeButton {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  color: rgba(255, 255, 255, 0.7);
+  z-index: 1;
+  transition: all 0.3s ease;
+}
+
+.closeButton:hover {
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.1);
+  transform: rotate(90deg);
+}
+
+.header {
+  text-align: center;
+  margin-bottom: 32px;
+  position: relative;
+  z-index: 1;
+}
+
+.headerIcon {
+  font-size: 60px;
+  color: #a855f7;
+  margin-bottom: 16px;
+  filter: drop-shadow(0 0 20px rgba(168, 85, 247, 0.5));
+  animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.05);
+  }
+}
+
+.title {
+  font-weight: 700;
+  margin-bottom: 8px;
+  background: linear-gradient(135deg, #a855f7 0%, #ec4899 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  text-shadow: 0 0 40px rgba(168, 85, 247, 0.3);
+}
+
+.subtitle {
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 0.9rem;
+}
+
+.tabs {
+  margin-bottom: 24px;
+  position: relative;
+  z-index: 1;
+}
+
+.tabs :global(.MuiTabs-indicator) {
+  background: linear-gradient(90deg, #a855f7 0%, #ec4899 100%);
+  height: 3px;
+  border-radius: 2px;
+}
+
+.tab {
+  color: rgba(255, 255, 255, 0.6) !important;
+  font-weight: 500;
+  font-size: 1rem;
+  text-transform: none;
+  transition: all 0.3s ease;
+}
+
+.tab:global(.Mui-selected) {
+  color: #ffffff !important;
+}
+
+.tab:hover {
+  color: #a855f7 !important;
+}
+
+.errorBox {
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  border-radius: 8px;
+  padding: 12px;
+  margin-bottom: 16px;
+  position: relative;
+  z-index: 1;
+}
+
+.errorText {
+  color: #ef4444;
+  text-align: center;
+  font-size: 0.9rem;
+}
+
+.tabPanel {
+  position: relative;
+  z-index: 1;
+}
+
+.input {
+  margin-bottom: 20px !important;
+}
+
+.input :global(.MuiInputBase-root) {
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 12px;
+  color: #ffffff;
+  transition: all 0.3s ease;
+}
+
+.input :global(.MuiInputBase-root:hover) {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.input :global(.MuiInputBase-root.Mui-focused) {
+  background: rgba(255, 255, 255, 0.07);
+}
+
+.input :global(.MuiOutlinedInput-notchedOutline) {
+  border-color: rgba(168, 85, 247, 0.2);
+}
+
+.input :global(.MuiInputBase-root:hover .MuiOutlinedInput-notchedOutline) {
+  border-color: rgba(168, 85, 247, 0.4);
+}
+
+.input
+  :global(.MuiInputBase-root.Mui-focused .MuiOutlinedInput-notchedOutline) {
+  border-color: #a855f7;
+  border-width: 2px;
+}
+
+.input :global(.MuiInputLabel-root) {
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.input :global(.MuiInputLabel-root.Mui-focused) {
+  color: #a855f7;
+}
+
+.input :global(.MuiFormHelperText-root) {
+  color: #ef4444;
+}
+
+.inputIcon {
+  color: rgba(168, 85, 247, 0.6);
+}
+
+.visibilityButton {
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.visibilityButton:hover {
+  color: #a855f7;
+  background: rgba(168, 85, 247, 0.1);
+}
+
+.nameRow {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.submitButton {
+  background: linear-gradient(135deg, #a855f7 0%, #ec4899 100%) !important;
+  color: #ffffff !important;
+  font-weight: 600 !important;
+  padding: 14px 32px !important;
+  border-radius: 12px !important;
+  text-transform: none !important;
+  font-size: 1rem !important;
+  margin-top: 8px !important;
+  box-shadow: 0 4px 20px rgba(168, 85, 247, 0.3) !important;
+  transition: all 0.3s ease !important;
+  position: relative;
+  overflow: hidden;
+}
+
+.submitButton::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.2) 50%,
+    transparent 100%
+  );
+  transition: left 0.5s ease;
+}
+
+.submitButton:hover::before {
+  left: 100%;
+}
+
+.submitButton:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 30px rgba(168, 85, 247, 0.5) !important;
+}
+
+.submitButton:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.demoText {
+  text-align: center;
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 0.85rem;
+  margin-top: 16px;
+  padding: 8px;
+  background: rgba(168, 85, 247, 0.1);
+  border-radius: 8px;
+  border: 1px solid rgba(168, 85, 247, 0.2);
+}
+
+@media (max-width: 768px) {
+  .container {
+    padding: 30px 24px;
+  }
+
+  .headerIcon {
+    font-size: 48px;
+  }
+
+  .title {
+    font-size: 1.8rem;
+  }
+
+  .nameRow {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 480px) {
+  .modalContent {
+    width: 95%;
+    margin: 10px;
+  }
+
+  .container {
+    padding: 24px 20px;
+  }
+}
+
+/* Light Theme Styles */
+:global(.light) .modal {
+  background: rgba(245, 247, 250, 0.8);
+}
+
+:global(.light) .container {
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.98) 0%,
+    rgba(245, 247, 250, 0.98) 100%
+  );
+  border: 1px solid rgba(102, 126, 234, 0.3);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15), 0 0 100px rgba(102, 126, 234, 0.1);
+}
+
+:global(.light) .container::before {
+  background: radial-gradient(
+    circle,
+    rgba(102, 126, 234, 0.1) 0%,
+    transparent 70%
+  );
+}
+
+:global(.light) .closeButton {
+  color: rgba(0, 0, 0, 0.6);
+}
+
+:global(.light) .closeButton:hover {
+  color: #1a202c;
+  background: rgba(0, 0, 0, 0.05);
+}
+
+:global(.light) .headerIcon {
+  color: #667eea;
+  filter: drop-shadow(0 0 20px rgba(102, 126, 234, 0.5));
+}
+
+:global(.light) .title {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  text-shadow: 0 0 40px rgba(102, 126, 234, 0.3);
+}
+
+:global(.light) .subtitle {
+  color: rgba(0, 0, 0, 0.6);
+}
+
+:global(.light) .tabs :global(.MuiTabs-indicator) {
+  background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+}
+
+:global(.light) .tab {
+  color: rgba(0, 0, 0, 0.5) !important;
+}
+
+:global(.light) .tab:global(.Mui-selected) {
+  color: #1a202c !important;
+}
+
+:global(.light) .tab:hover {
+  color: #667eea !important;
+}
+
+:global(.light) .input :global(.MuiInputBase-root) {
+  background: rgba(0, 0, 0, 0.02);
+  color: #1a202c;
+}
+
+:global(.light) .input :global(.MuiInputBase-root:hover) {
+  background: rgba(0, 0, 0, 0.04);
+}
+
+:global(.light) .input :global(.MuiInputBase-root.Mui-focused) {
+  background: rgba(0, 0, 0, 0.05);
+}
+
+:global(.light) .input :global(.MuiOutlinedInput-notchedOutline) {
+  border-color: rgba(102, 126, 234, 0.3);
+}
+
+:global(.light) .input :global(.MuiInputBase-root:hover .MuiOutlinedInput-notchedOutline) {
+  border-color: rgba(102, 126, 234, 0.5);
+}
+
+:global(.light) .input :global(.MuiInputBase-root.Mui-focused .MuiOutlinedInput-notchedOutline) {
+  border-color: #667eea;
+}
+
+:global(.light) .input :global(.MuiInputLabel-root) {
+  color: rgba(0, 0, 0, 0.5);
+}
+
+:global(.light) .input :global(.MuiInputLabel-root.Mui-focused) {
+  color: #667eea;
+}
+
+:global(.light) .inputIcon {
+  color: rgba(102, 126, 234, 0.6);
+}
+
+:global(.light) .visibilityButton {
+  color: rgba(0, 0, 0, 0.5);
+}
+
+:global(.light) .visibilityButton:hover {
+  color: #667eea;
+  background: rgba(102, 126, 234, 0.1);
+}
+
+:global(.light) .submitButton {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+  box-shadow: 0 4px 20px rgba(102, 126, 234, 0.3) !important;
+}
+
+:global(.light) .submitButton:hover {
+  box-shadow: 0 8px 30px rgba(102, 126, 234, 0.5) !important;
+}
+
+:global(.light) .demoText {
+  color: rgba(0, 0, 0, 0.5);
+  background: rgba(102, 126, 234, 0.1);
+  border: 1px solid rgba(102, 126, 234, 0.2);
+}

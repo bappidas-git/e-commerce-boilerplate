@@ -1,0 +1,366 @@
+.supportPage {
+  min-height: calc(100vh - 64px);
+  padding: 20px 0 80px;
+  background: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
+}
+
+:global(.dark) .supportPage {
+  background: linear-gradient(180deg, #0a0e27 0%, #1a1f3a 100%);
+}
+
+/* Hero Section */
+.heroSection {
+  text-align: center;
+  padding: 40px 0;
+  margin-bottom: 24px;
+}
+
+.pageTitle {
+  font-weight: 800 !important;
+  font-size: 2.5rem !important;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin-bottom: 12px !important;
+}
+
+:global(.dark) .pageTitle {
+  background: linear-gradient(135deg, #a855f7 0%, #ec4899 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.pageSubtitle {
+  color: #64748b !important;
+  font-size: 1.1rem !important;
+  max-width: 600px;
+  margin: 0 auto !important;
+}
+
+:global(.dark) .pageSubtitle {
+  color: rgba(255, 255, 255, 0.7) !important;
+}
+
+/* Help Banner */
+.helpBanner {
+  margin-bottom: 32px !important;
+  border-radius: 12px !important;
+  background: rgba(59, 130, 246, 0.08) !important;
+}
+
+:global(.dark) .helpBanner {
+  background: rgba(59, 130, 246, 0.15) !important;
+}
+
+/* Contact Methods */
+.contactMethods {
+  margin-bottom: 40px;
+}
+
+.contactCard {
+  border-radius: 16px !important;
+  background: #ffffff !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06) !important;
+  transition: all 0.3s ease !important;
+  height: 100%;
+}
+
+:global(.dark) .contactCard {
+  background: rgba(26, 31, 58, 0.8) !important;
+  border: 1px solid rgba(168, 85, 247, 0.1);
+}
+
+.contactCard:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 24px rgba(102, 126, 234, 0.15) !important;
+}
+
+:global(.dark) .contactCard:hover {
+  box-shadow: 0 12px 24px rgba(168, 85, 247, 0.2) !important;
+  border-color: rgba(168, 85, 247, 0.3);
+}
+
+.contactCardContent {
+  text-align: center;
+  padding: 24px 16px !important;
+}
+
+.contactIcon {
+  width: 56px;
+  height: 56px;
+  margin: 0 auto 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
+  border-radius: 16px;
+}
+
+:global(.dark) .contactIcon {
+  background: linear-gradient(135deg, rgba(168, 85, 247, 0.2) 0%, rgba(236, 72, 153, 0.2) 100%);
+}
+
+.contactIcon svg {
+  font-size: 28px;
+  color: #667eea;
+}
+
+:global(.dark) .contactIcon svg {
+  color: #a855f7;
+}
+
+.contactTitle {
+  font-weight: 600 !important;
+  color: #1a202c !important;
+  margin-bottom: 4px !important;
+}
+
+:global(.dark) .contactTitle {
+  color: #ffffff !important;
+}
+
+.contactDescription {
+  color: #64748b !important;
+  margin-bottom: 4px !important;
+}
+
+:global(.dark) .contactDescription {
+  color: rgba(255, 255, 255, 0.7) !important;
+}
+
+.contactDetail {
+  color: #9ca3af !important;
+}
+
+:global(.dark) .contactDetail {
+  color: rgba(255, 255, 255, 0.5) !important;
+}
+
+/* Form Card */
+.formCard {
+  border-radius: 24px !important;
+  background: #ffffff !important;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08) !important;
+  margin-bottom: 40px;
+}
+
+:global(.dark) .formCard {
+  background: rgba(26, 31, 58, 0.9) !important;
+  border: 1px solid rgba(168, 85, 247, 0.1);
+}
+
+.formContent {
+  padding: 40px !important;
+}
+
+.formTitle {
+  font-weight: 700 !important;
+  color: #1a202c !important;
+  margin-bottom: 8px !important;
+}
+
+:global(.dark) .formTitle {
+  color: #ffffff !important;
+}
+
+.formSubtitle {
+  color: #64748b !important;
+  margin-bottom: 32px !important;
+}
+
+:global(.dark) .formSubtitle {
+  color: rgba(255, 255, 255, 0.6) !important;
+}
+
+.form {
+  margin-top: 24px;
+}
+
+.textField {
+  background: #ffffff;
+  border-radius: 8px;
+}
+
+:global(.dark) .textField {
+  background: rgba(26, 31, 58, 0.6);
+}
+
+:global(.dark) .textField input,
+:global(.dark) .textField textarea {
+  color: #ffffff;
+}
+
+:global(.dark) .textField label {
+  color: rgba(255, 255, 255, 0.7);
+}
+
+:global(.dark) .textField fieldset {
+  border-color: rgba(168, 85, 247, 0.3);
+}
+
+:global(.dark) .textField:hover fieldset {
+  border-color: rgba(168, 85, 247, 0.5) !important;
+}
+
+.categoryOption {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.categoryOption svg {
+  font-size: 20px;
+  color: #667eea;
+}
+
+:global(.dark) .categoryOption svg {
+  color: #a855f7;
+}
+
+.submitButton {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+  color: #ffffff !important;
+  text-transform: none !important;
+  padding: 14px 48px !important;
+  border-radius: 12px !important;
+  font-weight: 600 !important;
+  font-size: 1rem !important;
+}
+
+:global(.dark) .submitButton {
+  background: linear-gradient(135deg, #a855f7 0%, #ec4899 100%) !important;
+}
+
+.submitButton:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(102, 126, 234, 0.3) !important;
+}
+
+:global(.dark) .submitButton:hover {
+  box-shadow: 0 8px 24px rgba(168, 85, 247, 0.4) !important;
+}
+
+.submitButton:disabled {
+  opacity: 0.7;
+}
+
+/* Additional Info */
+.additionalInfo {
+  margin-top: 24px;
+}
+
+.infoCard {
+  border-radius: 16px !important;
+  background: #ffffff !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06) !important;
+  height: 100%;
+}
+
+:global(.dark) .infoCard {
+  background: rgba(26, 31, 58, 0.8) !important;
+  border: 1px solid rgba(168, 85, 247, 0.1);
+}
+
+.infoTitle {
+  font-weight: 600 !important;
+  color: #1a202c !important;
+  margin-bottom: 16px !important;
+}
+
+:global(.dark) .infoTitle {
+  color: #ffffff !important;
+}
+
+.infoList {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.infoItem {
+  display: flex;
+  justify-content: space-between;
+  padding: 12px;
+  background: rgba(102, 126, 234, 0.05);
+  border-radius: 8px;
+}
+
+:global(.dark) .infoItem {
+  background: rgba(168, 85, 247, 0.1);
+}
+
+.infoItem p:first-child {
+  color: #64748b;
+}
+
+:global(.dark) .infoItem p:first-child {
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.infoValue {
+  font-weight: 600 !important;
+  color: #667eea !important;
+}
+
+:global(.dark) .infoValue {
+  color: #a855f7 !important;
+}
+
+.tipsList {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.tipsList p {
+  color: #64748b;
+  line-height: 1.7;
+}
+
+:global(.dark) .tipsList p {
+  color: rgba(255, 255, 255, 0.7);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .supportPage {
+    padding: 16px 0 100px;
+  }
+
+  .heroSection {
+    padding: 24px 0;
+  }
+
+  .pageTitle {
+    font-size: 2rem !important;
+  }
+
+  .formContent {
+    padding: 24px !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .pageTitle {
+    font-size: 1.75rem !important;
+  }
+
+  .contactCardContent {
+    padding: 16px !important;
+  }
+
+  .contactIcon {
+    width: 44px;
+    height: 44px;
+  }
+
+  .contactIcon svg {
+    font-size: 22px;
+  }
+
+  .formContent {
+    padding: 16px !important;
+  }
+}

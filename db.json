@@ -1,0 +1,1123 @@
+{
+  "users": [
+    {
+      "id": 1,
+      "email": "user@example.com",
+      "password": "password123",
+      "firstName": "John",
+      "lastName": "Doe",
+      "phone": "+91 9876543210",
+      "avatar": null,
+      "addresses": [
+        {
+          "id": 1,
+          "label": "Home",
+          "firstName": "John",
+          "lastName": "Doe",
+          "phone": "+91 9876543210",
+          "addressLine1": "123 Main Street",
+          "addressLine2": "Apt 4B",
+          "city": "Mumbai",
+          "state": "Maharashtra",
+          "postalCode": "400001",
+          "country": "India",
+          "isDefault": true
+        }
+      ],
+      "isActive": true,
+      "createdAt": "2025-01-15T10:00:00.000Z",
+      "updatedAt": "2025-01-15T10:00:00.000Z"
+    },
+    {
+      "id": 2,
+      "email": "jane@example.com",
+      "password": "password123",
+      "firstName": "Jane",
+      "lastName": "Smith",
+      "phone": "+91 9123456789",
+      "avatar": null,
+      "addresses": [],
+      "isActive": true,
+      "createdAt": "2025-02-01T09:00:00.000Z",
+      "updatedAt": "2025-02-01T09:00:00.000Z"
+    },
+    {
+      "firstName": "Bappi",
+      "lastName": "Das",
+      "email": "mail4bappidas@gmail.com",
+      "password": "Bappi@12345",
+      "confirmPassword": "Bappi@12345",
+      "id": 3
+    }
+  ],
+  "admins": [
+    {
+      "id": 1,
+      "email": "admin@store.com",
+      "password": "admin123",
+      "firstName": "Admin",
+      "lastName": "User",
+      "role": "super_admin",
+      "isActive": true,
+      "createdAt": "2025-01-01T00:00:00.000Z"
+    }
+  ],
+  "categories": [
+    {
+      "id": 1,
+      "name": "Electronics",
+      "slug": "electronics",
+      "description": "Gadgets, devices and electronic accessories",
+      "image": "https://placehold.co/400x300/667eea/FFFFFF?text=Electronics",
+      "parentId": null,
+      "isActive": true,
+      "sortOrder": 1,
+      "createdAt": "2025-01-01T00:00:00.000Z",
+      "updatedAt": "2025-01-01T00:00:00.000Z"
+    },
+    {
+      "id": 2,
+      "name": "Clothing",
+      "slug": "clothing",
+      "description": "Men, women and kids apparel",
+      "image": "https://placehold.co/400x300/764ba2/FFFFFF?text=Clothing",
+      "parentId": null,
+      "isActive": true,
+      "sortOrder": 2,
+      "createdAt": "2025-01-01T00:00:00.000Z",
+      "updatedAt": "2025-01-01T00:00:00.000Z"
+    },
+    {
+      "id": 3,
+      "name": "Home & Garden",
+      "slug": "home-garden",
+      "description": "Furniture, decor and garden essentials",
+      "image": "https://placehold.co/400x300/4caf50/FFFFFF?text=Home+%26+Garden",
+      "parentId": null,
+      "isActive": true,
+      "sortOrder": 3,
+      "createdAt": "2025-01-01T00:00:00.000Z",
+      "updatedAt": "2025-01-01T00:00:00.000Z"
+    },
+    {
+      "id": 4,
+      "name": "Sports & Fitness",
+      "slug": "sports-fitness",
+      "description": "Equipment and gear for sports and fitness",
+      "image": "https://placehold.co/400x300/ff9800/FFFFFF?text=Sports",
+      "parentId": null,
+      "isActive": true,
+      "sortOrder": 4,
+      "createdAt": "2025-01-01T00:00:00.000Z",
+      "updatedAt": "2025-01-01T00:00:00.000Z"
+    },
+    {
+      "id": 5,
+      "name": "Books",
+      "slug": "books",
+      "description": "Bestsellers, textbooks and more",
+      "image": "https://placehold.co/400x300/e91e63/FFFFFF?text=Books",
+      "parentId": null,
+      "isActive": true,
+      "sortOrder": 5,
+      "createdAt": "2025-01-01T00:00:00.000Z",
+      "updatedAt": "2025-01-01T00:00:00.000Z"
+    },
+    {
+      "id": 6,
+      "name": "Laptops",
+      "slug": "laptops",
+      "description": "Laptops and accessories",
+      "image": "https://placehold.co/400x300/2196f3/FFFFFF?text=Laptops",
+      "parentId": 1,
+      "isActive": true,
+      "sortOrder": 1,
+      "createdAt": "2025-01-01T00:00:00.000Z",
+      "updatedAt": "2025-01-01T00:00:00.000Z"
+    },
+    {
+      "id": 7,
+      "name": "Audio",
+      "slug": "audio",
+      "description": "Headphones, speakers and audio gear",
+      "image": "https://placehold.co/400x300/9c27b0/FFFFFF?text=Audio",
+      "parentId": 1,
+      "isActive": true,
+      "sortOrder": 2,
+      "createdAt": "2025-01-01T00:00:00.000Z",
+      "updatedAt": "2025-01-01T00:00:00.000Z"
+    }
+  ],
+  "products": [
+    {
+      "id": 1,
+      "name": "ProBook Ultra Laptop 15\"",
+      "slug": "probook-ultra-laptop-15",
+      "sku": "LAP-PBU-15-001",
+      "shortDescription": "Powerful 15-inch laptop with Intel Core i7 processor and 16GB RAM",
+      "description": "The ProBook Ultra Laptop 15\" is engineered for professionals who demand performance. Equipped with the latest Intel Core i7 processor, 16GB DDR5 RAM, and a 512GB NVMe SSD, this laptop handles everything from intensive multitasking to creative workloads with ease. The stunning 15.6-inch FHD IPS display delivers vivid colors and sharp details for an immersive visual experience.",
+      "categoryId": 6,
+      "brand": "ProBook",
+      "images": [
+        "https://placehold.co/600x400/1a1a2e/FFFFFF?text=ProBook+Laptop",
+        "https://placehold.co/600x400/16213e/FFFFFF?text=ProBook+Side",
+        "https://placehold.co/600x400/0f3460/FFFFFF?text=ProBook+Open"
+      ],
+      "price": 74999,
+      "comparePrice": 89999,
+      "costPrice": 55000,
+      "stock": 45,
+      "lowStockThreshold": 10,
+      "weight": 1.8,
+      "dimensions": {
+        "length": 35.7,
+        "width": 23.5,
+        "height": 1.9
+      },
+      "variants": [
+        {
+          "id": "v1",
+          "name": "8GB RAM / 256GB SSD",
+          "price": 64999,
+          "stock": 20,
+          "sku": "LAP-PBU-15-8-256"
+        },
+        {
+          "id": "v2",
+          "name": "16GB RAM / 512GB SSD",
+          "price": 74999,
+          "stock": 15,
+          "sku": "LAP-PBU-15-16-512"
+        },
+        {
+          "id": "v3",
+          "name": "32GB RAM / 1TB SSD",
+          "price": 94999,
+          "stock": 10,
+          "sku": "LAP-PBU-15-32-1TB"
+        }
+      ],
+      "tags": [
+        "laptop",
+        "intel",
+        "i7",
+        "ultrabook",
+        "work",
+        "productivity"
+      ],
+      "featured": true,
+      "trending": true,
+      "hot": false,
+      "isActive": true,
+      "rating": 4.6,
+      "totalReviews": 128,
+      "metaTitle": "ProBook Ultra Laptop 15\" - Intel Core i7 | Best Price",
+      "metaDescription": "Buy ProBook Ultra Laptop 15\" with Intel Core i7, 16GB RAM, 512GB SSD. Free shipping available.",
+      "createdAt": "2025-01-10T00:00:00.000Z",
+      "updatedAt": "2025-03-01T00:00:00.000Z"
+    },
+    {
+      "id": 2,
+      "name": "SoundWave Pro Wireless Earbuds",
+      "slug": "soundwave-pro-wireless-earbuds",
+      "sku": "AUD-SWP-TWS-001",
+      "shortDescription": "Premium true wireless earbuds with active noise cancellation",
+      "description": "Experience audio like never before with SoundWave Pro Wireless Earbuds. Featuring advanced Active Noise Cancellation (ANC) technology, 30-hour total battery life, and premium sound quality. The ergonomic design ensures a secure, comfortable fit for all-day wear. IPX5 water resistance makes them perfect for workouts and outdoor activities.",
+      "categoryId": 7,
+      "brand": "SoundWave",
+      "images": [
+        "https://placehold.co/600x400/1a1a2e/FFFFFF?text=SoundWave+Earbuds",
+        "https://placehold.co/600x400/16213e/FFFFFF?text=SoundWave+Case"
+      ],
+      "price": 8999,
+      "comparePrice": 12999,
+      "costPrice": 5500,
+      "stock": 120,
+      "lowStockThreshold": 20,
+      "weight": 0.065,
+      "dimensions": {
+        "length": 6.5,
+        "width": 4.2,
+        "height": 2.8
+      },
+      "variants": [
+        {
+          "id": "v1",
+          "name": "Midnight Black",
+          "price": 8999,
+          "stock": 50,
+          "sku": "AUD-SWP-TWS-BLK"
+        },
+        {
+          "id": "v2",
+          "name": "Pearl White",
+          "price": 8999,
+          "stock": 40,
+          "sku": "AUD-SWP-TWS-WHT"
+        },
+        {
+          "id": "v3",
+          "name": "Navy Blue",
+          "price": 8999,
+          "stock": 30,
+          "sku": "AUD-SWP-TWS-NVY"
+        }
+      ],
+      "tags": [
+        "earbuds",
+        "wireless",
+        "anc",
+        "bluetooth",
+        "audio",
+        "tws"
+      ],
+      "featured": true,
+      "trending": true,
+      "hot": true,
+      "isActive": true,
+      "rating": 4.8,
+      "totalReviews": 342,
+      "metaTitle": "SoundWave Pro Wireless Earbuds - ANC | True Wireless",
+      "metaDescription": "Shop SoundWave Pro Wireless Earbuds with Active Noise Cancellation, 30hr battery, IPX5 rating.",
+      "createdAt": "2025-01-15T00:00:00.000Z",
+      "updatedAt": "2025-02-20T00:00:00.000Z"
+    },
+    {
+      "id": 3,
+      "name": "FitPulse Smartwatch Series 5",
+      "slug": "fitpulse-smartwatch-series-5",
+      "sku": "ELC-FPS-SW5-001",
+      "shortDescription": "Advanced health tracking smartwatch with GPS and AMOLED display",
+      "description": "The FitPulse Smartwatch Series 5 is your ultimate health and fitness companion. Track your heart rate, SpO2, sleep quality, and stress levels with clinical-grade accuracy. Built-in GPS for precise route tracking, 7-day battery life, and 100+ workout modes. The always-on AMOLED display looks stunning in any lighting condition.",
+      "categoryId": 1,
+      "brand": "FitPulse",
+      "images": [
+        "https://placehold.co/600x400/0f3460/FFFFFF?text=FitPulse+Watch",
+        "https://placehold.co/600x400/533483/FFFFFF?text=FitPulse+Side"
+      ],
+      "price": 14999,
+      "comparePrice": 19999,
+      "costPrice": 9000,
+      "stock": 75,
+      "lowStockThreshold": 15,
+      "weight": 0.045,
+      "dimensions": {
+        "length": 4.5,
+        "width": 3.8,
+        "height": 1
+      },
+      "variants": [
+        {
+          "id": "v1",
+          "name": "Black / Rubber Band",
+          "price": 14999,
+          "stock": 30,
+          "sku": "ELC-FPS-SW5-BLK-R"
+        },
+        {
+          "id": "v2",
+          "name": "Silver / Metal Band",
+          "price": 16999,
+          "stock": 25,
+          "sku": "ELC-FPS-SW5-SLV-M"
+        },
+        {
+          "id": "v3",
+          "name": "Gold / Leather Band",
+          "price": 18999,
+          "stock": 20,
+          "sku": "ELC-FPS-SW5-GLD-L"
+        }
+      ],
+      "tags": [
+        "smartwatch",
+        "fitness",
+        "gps",
+        "health",
+        "amoled",
+        "wearable"
+      ],
+      "featured": true,
+      "trending": false,
+      "hot": true,
+      "isActive": true,
+      "rating": 4.5,
+      "totalReviews": 215,
+      "metaTitle": "FitPulse Smartwatch Series 5 - Health & Fitness Tracker",
+      "metaDescription": "Buy FitPulse Smartwatch Series 5 with GPS, heart rate monitor, SpO2 tracking and 7-day battery.",
+      "createdAt": "2025-01-20T00:00:00.000Z",
+      "updatedAt": "2025-02-15T00:00:00.000Z"
+    },
+    {
+      "id": 4,
+      "name": "MechKey RGB Gaming Keyboard",
+      "slug": "mechkey-rgb-gaming-keyboard",
+      "sku": "ELC-MKB-RGB-001",
+      "shortDescription": "Mechanical gaming keyboard with per-key RGB backlight and tactile switches",
+      "description": "Dominate your game with the MechKey RGB Gaming Keyboard. Features genuine mechanical switches rated for 100 million keystrokes, full per-key RGB customization with 16 million colors, and a durable aircraft-grade aluminum frame. Anti-ghosting with N-key rollover ensures every keystroke is registered, even in the most intense gaming sessions.",
+      "categoryId": 1,
+      "brand": "MechKey",
+      "images": [
+        "https://placehold.co/600x400/1a1a2e/FFFFFF?text=MechKey+Keyboard",
+        "https://placehold.co/600x400/16213e/FFFFFF?text=MechKey+RGB"
+      ],
+      "price": 6499,
+      "comparePrice": 8999,
+      "costPrice": 3800,
+      "stock": 60,
+      "lowStockThreshold": 12,
+      "weight": 1.2,
+      "dimensions": {
+        "length": 44,
+        "width": 13.5,
+        "height": 3.8
+      },
+      "variants": [
+        {
+          "id": "v1",
+          "name": "Blue Switches (Clicky)",
+          "price": 6499,
+          "stock": 25,
+          "sku": "ELC-MKB-RGB-BLU"
+        },
+        {
+          "id": "v2",
+          "name": "Red Switches (Linear)",
+          "price": 6499,
+          "stock": 20,
+          "sku": "ELC-MKB-RGB-RED"
+        },
+        {
+          "id": "v3",
+          "name": "Brown Switches (Tactile)",
+          "price": 6499,
+          "stock": 15,
+          "sku": "ELC-MKB-RGB-BRN"
+        }
+      ],
+      "tags": [
+        "keyboard",
+        "mechanical",
+        "gaming",
+        "rgb",
+        "tactile"
+      ],
+      "featured": false,
+      "trending": true,
+      "hot": true,
+      "isActive": true,
+      "rating": 4.7,
+      "totalReviews": 189,
+      "metaTitle": "MechKey RGB Gaming Keyboard - Mechanical Switches",
+      "metaDescription": "Buy MechKey RGB Mechanical Gaming Keyboard with per-key RGB, aluminum frame, N-key rollover.",
+      "createdAt": "2025-02-01T00:00:00.000Z",
+      "updatedAt": "2025-02-28T00:00:00.000Z"
+    },
+    {
+      "id": 5,
+      "name": "Urban Classic Cotton T-Shirt",
+      "slug": "urban-classic-cotton-t-shirt",
+      "sku": "CLT-UCT-CRW-001",
+      "shortDescription": "Premium 100% organic cotton crew neck t-shirt",
+      "description": "Made from 100% GOTS-certified organic cotton, the Urban Classic T-Shirt is the foundation of any wardrobe. The relaxed, slightly oversized fit offers comfort without compromising style. Pre-shrunk fabric ensures it maintains its shape wash after wash. Available in a range of versatile colors.",
+      "categoryId": 2,
+      "brand": "Urban Threads",
+      "images": [
+        "https://placehold.co/600x400/764ba2/FFFFFF?text=Urban+T-Shirt",
+        "https://placehold.co/600x400/533483/FFFFFF?text=Urban+Back"
+      ],
+      "price": 899,
+      "comparePrice": 1299,
+      "costPrice": 400,
+      "stock": 250,
+      "lowStockThreshold": 30,
+      "weight": 0.18,
+      "dimensions": {
+        "length": 30,
+        "width": 25,
+        "height": 0.5
+      },
+      "variants": [
+        {
+          "id": "v1",
+          "name": "S / White",
+          "price": 899,
+          "stock": 50,
+          "sku": "CLT-UCT-CRW-S-WHT"
+        },
+        {
+          "id": "v2",
+          "name": "M / White",
+          "price": 899,
+          "stock": 60,
+          "sku": "CLT-UCT-CRW-M-WHT"
+        },
+        {
+          "id": "v3",
+          "name": "L / White",
+          "price": 899,
+          "stock": 55,
+          "sku": "CLT-UCT-CRW-L-WHT"
+        },
+        {
+          "id": "v4",
+          "name": "XL / White",
+          "price": 899,
+          "stock": 40,
+          "sku": "CLT-UCT-CRW-XL-WHT"
+        },
+        {
+          "id": "v5",
+          "name": "S / Black",
+          "price": 899,
+          "stock": 45,
+          "sku": "CLT-UCT-CRW-S-BLK"
+        }
+      ],
+      "tags": [
+        "tshirt",
+        "cotton",
+        "organic",
+        "casual",
+        "unisex",
+        "basics"
+      ],
+      "featured": false,
+      "trending": false,
+      "hot": false,
+      "isActive": true,
+      "rating": 4.3,
+      "totalReviews": 567,
+      "metaTitle": "Urban Classic Cotton T-Shirt - Organic | Sustainable Fashion",
+      "metaDescription": "Shop Urban Classic 100% organic cotton t-shirts. Comfortable, sustainable and stylish.",
+      "createdAt": "2025-02-10T00:00:00.000Z",
+      "updatedAt": "2025-03-05T00:00:00.000Z"
+    },
+    {
+      "id": 6,
+      "name": "ZenPro USB-C 7-in-1 Hub",
+      "slug": "zenpro-usb-c-7-in-1-hub",
+      "sku": "ELC-ZPH-7C1-001",
+      "shortDescription": "Compact 7-in-1 USB-C hub with 4K HDMI, 100W PD charging and SD card reader",
+      "description": "The ZenPro USB-C 7-in-1 Hub transforms your single USB-C port into a productivity powerhouse. Connects up to 7 devices simultaneously: 4K@60Hz HDMI, 100W Power Delivery pass-through, 2x USB-A 3.0, USB-C data, SD and microSD card readers. The slim, pocket-friendly design makes it perfect for on-the-go professionals.",
+      "categoryId": 1,
+      "brand": "ZenPro",
+      "images": [
+        "https://placehold.co/600x400/2196f3/FFFFFF?text=ZenPro+Hub",
+        "https://placehold.co/600x400/1976d2/FFFFFF?text=ZenPro+Ports"
+      ],
+      "price": 3499,
+      "comparePrice": 4999,
+      "costPrice": 1800,
+      "stock": 90,
+      "lowStockThreshold": 15,
+      "weight": 0.095,
+      "dimensions": {
+        "length": 11.5,
+        "width": 3.5,
+        "height": 1.4
+      },
+      "variants": [
+        {
+          "id": "v1",
+          "name": "Space Gray",
+          "price": 3499,
+          "stock": 50,
+          "sku": "ELC-ZPH-7C1-GRY"
+        },
+        {
+          "id": "v2",
+          "name": "Silver",
+          "price": 3499,
+          "stock": 40,
+          "sku": "ELC-ZPH-7C1-SLV"
+        }
+      ],
+      "tags": [
+        "usb-c",
+        "hub",
+        "docking",
+        "4k",
+        "hdmi",
+        "productivity"
+      ],
+      "featured": false,
+      "trending": true,
+      "hot": false,
+      "isActive": true,
+      "rating": 4.5,
+      "totalReviews": 98,
+      "metaTitle": "ZenPro USB-C 7-in-1 Hub - 4K HDMI, 100W PD | Best Dock",
+      "metaDescription": "Buy ZenPro 7-in-1 USB-C Hub with 4K HDMI, 100W Power Delivery, USB 3.0 and SD card readers.",
+      "createdAt": "2025-02-20T00:00:00.000Z",
+      "updatedAt": "2025-03-10T00:00:00.000Z"
+    }
+  ],
+  "cart": [],
+  "orders": [
+    {
+      "id": 1,
+      "orderNumber": "ORD-20250310-0001",
+      "userId": 1,
+      "items": [
+        {
+          "productId": 2,
+          "variantId": "v1",
+          "name": "SoundWave Pro Wireless Earbuds - Midnight Black",
+          "image": "https://placehold.co/600x400/1a1a2e/FFFFFF?text=SoundWave+Earbuds",
+          "sku": "AUD-SWP-TWS-BLK",
+          "price": 8999,
+          "quantity": 1,
+          "subtotal": 8999
+        }
+      ],
+      "billingAddress": {
+        "firstName": "John",
+        "lastName": "Doe",
+        "phone": "+91 9876543210",
+        "addressLine1": "123 Main Street",
+        "addressLine2": "Apt 4B",
+        "city": "Mumbai",
+        "state": "Maharashtra",
+        "postalCode": "400001",
+        "country": "India"
+      },
+      "shippingAddress": {
+        "firstName": "John",
+        "lastName": "Doe",
+        "phone": "+91 9876543210",
+        "addressLine1": "123 Main Street",
+        "addressLine2": "Apt 4B",
+        "city": "Mumbai",
+        "state": "Maharashtra",
+        "postalCode": "400001",
+        "country": "India"
+      },
+      "subtotal": 8999,
+      "discountAmount": 0,
+      "couponCode": null,
+      "shippingAmount": 0,
+      "taxAmount": 1440,
+      "total": 10439,
+      "paymentStatus": "paid",
+      "paymentMethod": "upi",
+      "fulfillmentStatus": "fulfilled",
+      "shippingStatus": "delivered",
+      "trackingNumber": "SHIP123456789IN",
+      "shiprocketOrderId": null,
+      "notes": "",
+      "createdAt": "2026-01-15T10:30:00.000Z",
+      "updatedAt": "2026-01-18T14:00:00.000Z"
+    },
+    {
+      "id": 2,
+      "orderNumber": "ORD-20250318-0002",
+      "userId": 1,
+      "items": [
+        {
+          "productId": 1,
+          "variantId": "v2",
+          "name": "ProBook Ultra Laptop 15\" - 16GB RAM / 512GB SSD",
+          "image": "https://placehold.co/600x400/1a1a2e/FFFFFF?text=ProBook+Laptop",
+          "sku": "LAP-PBU-15-16-512",
+          "price": 74999,
+          "quantity": 1,
+          "subtotal": 74999
+        },
+        {
+          "productId": 6,
+          "variantId": "v1",
+          "name": "ZenPro USB-C 7-in-1 Hub - Space Gray",
+          "image": "https://placehold.co/600x400/2196f3/FFFFFF?text=ZenPro+Hub",
+          "sku": "ELC-ZPH-7C1-GRY",
+          "price": 3499,
+          "quantity": 1,
+          "subtotal": 3499
+        }
+      ],
+      "billingAddress": {
+        "firstName": "John",
+        "lastName": "Doe",
+        "phone": "+91 9876543210",
+        "addressLine1": "123 Main Street",
+        "addressLine2": "Apt 4B",
+        "city": "Mumbai",
+        "state": "Maharashtra",
+        "postalCode": "400001",
+        "country": "India"
+      },
+      "shippingAddress": {
+        "firstName": "John",
+        "lastName": "Doe",
+        "phone": "+91 9876543210",
+        "addressLine1": "123 Main Street",
+        "addressLine2": "Apt 4B",
+        "city": "Mumbai",
+        "state": "Maharashtra",
+        "postalCode": "400001",
+        "country": "India"
+      },
+      "subtotal": 78498,
+      "discountAmount": 5000,
+      "couponCode": "WELCOME500",
+      "shippingAmount": 0,
+      "taxAmount": 11759,
+      "total": 85257,
+      "paymentStatus": "paid",
+      "paymentMethod": "card",
+      "fulfillmentStatus": "fulfilled",
+      "shippingStatus": "shipped",
+      "trackingNumber": "SHIP987654321IN",
+      "shiprocketOrderId": "SR-78923",
+      "notes": "Please leave at reception",
+      "createdAt": "2026-02-01T14:20:00.000Z",
+      "updatedAt": "2026-02-03T09:00:00.000Z"
+    },
+    {
+      "id": 3,
+      "orderNumber": "ORD-20260310-0003",
+      "userId": 2,
+      "items": [
+        {
+          "productId": 3,
+          "variantId": "v2",
+          "name": "FitPulse Smartwatch Series 5 - Silver / Metal Band",
+          "image": "https://placehold.co/600x400/0f3460/FFFFFF?text=FitPulse+Watch",
+          "sku": "ELC-FPS-SW5-SLV-M",
+          "price": 16999,
+          "quantity": 1,
+          "subtotal": 16999
+        }
+      ],
+      "billingAddress": {
+        "firstName": "Jane",
+        "lastName": "Smith",
+        "phone": "+91 9123456789",
+        "addressLine1": "456 Park Avenue",
+        "city": "Delhi",
+        "state": "Delhi",
+        "postalCode": "110001",
+        "country": "India"
+      },
+      "shippingAddress": {
+        "firstName": "Jane",
+        "lastName": "Smith",
+        "phone": "+91 9123456789",
+        "addressLine1": "456 Park Avenue",
+        "city": "Delhi",
+        "state": "Delhi",
+        "postalCode": "110001",
+        "country": "India"
+      },
+      "subtotal": 16999,
+      "discountAmount": 0,
+      "couponCode": null,
+      "shippingAmount": 99,
+      "taxAmount": 2720,
+      "total": 19818,
+      "paymentStatus": "paid",
+      "paymentMethod": "card",
+      "fulfillmentStatus": "unfulfilled",
+      "shippingStatus": "processing",
+      "trackingNumber": null,
+      "shiprocketOrderId": null,
+      "notes": "",
+      "createdAt": "2026-03-10T08:45:00.000Z",
+      "updatedAt": "2026-03-10T08:45:00.000Z"
+    },
+    {
+      "id": 4,
+      "orderNumber": "ORD-20260315-0004",
+      "userId": 1,
+      "items": [
+        {
+          "productId": 5,
+          "variantId": "v2",
+          "name": "Urban Classic Cotton T-Shirt - M / White",
+          "image": "https://placehold.co/600x400/764ba2/FFFFFF?text=Urban+T-Shirt",
+          "sku": "CLT-UCT-CRW-M-WHT",
+          "price": 899,
+          "quantity": 3,
+          "subtotal": 2697
+        }
+      ],
+      "billingAddress": {
+        "firstName": "John",
+        "lastName": "Doe",
+        "phone": "+91 9876543210",
+        "addressLine1": "123 Main Street",
+        "city": "Mumbai",
+        "state": "Maharashtra",
+        "postalCode": "400001",
+        "country": "India"
+      },
+      "shippingAddress": {
+        "firstName": "John",
+        "lastName": "Doe",
+        "phone": "+91 9876543210",
+        "addressLine1": "123 Main Street",
+        "city": "Mumbai",
+        "state": "Maharashtra",
+        "postalCode": "400001",
+        "country": "India"
+      },
+      "subtotal": 2697,
+      "discountAmount": 270,
+      "couponCode": "FLAT10",
+      "shippingAmount": 49,
+      "taxAmount": 398,
+      "total": 2874,
+      "paymentStatus": "pending",
+      "paymentMethod": "cod",
+      "fulfillmentStatus": "unfulfilled",
+      "shippingStatus": "pending",
+      "trackingNumber": null,
+      "shiprocketOrderId": null,
+      "notes": "",
+      "createdAt": "2026-03-15T16:00:00.000Z",
+      "updatedAt": "2026-03-15T16:00:00.000Z"
+    }
+  ],
+  "returns": [
+    {
+      "id": 1,
+      "returnNumber": "RET-20260120-0001",
+      "orderId": 1,
+      "orderNumber": "ORD-20250310-0001",
+      "userId": 1,
+      "items": [
+        {
+          "productId": 2,
+          "variantId": "v1",
+          "name": "SoundWave Pro Wireless Earbuds - Midnight Black",
+          "sku": "AUD-SWP-TWS-BLK",
+          "price": 8999,
+          "quantity": 1,
+          "subtotal": 8999
+        }
+      ],
+      "reason": "defective",
+      "reasonDetails": "Left earbud has no sound",
+      "status": "approved",
+      "refundAmount": 8999,
+      "refundStatus": "processed",
+      "refundMethod": "original_payment",
+      "images": [],
+      "notes": "Refund processed to original UPI account",
+      "createdAt": "2026-01-20T10:00:00.000Z",
+      "updatedAt": "2026-01-22T14:30:00.000Z"
+    }
+  ],
+  "payments": [
+    {
+      "id": 1,
+      "orderId": 1,
+      "orderNumber": "ORD-20250310-0001",
+      "userId": 1,
+      "amount": 10439,
+      "currency": "INR",
+      "paymentMethod": "upi",
+      "gateway": "razorpay",
+      "transactionId": "pay_RZP123456789",
+      "gatewayOrderId": "order_RZP987654321",
+      "status": "captured",
+      "gatewayResponse": {
+        "code": "SUCCESS",
+        "bank": null,
+        "wallet": "PhonePe"
+      },
+      "createdAt": "2026-01-15T10:31:00.000Z",
+      "updatedAt": "2026-01-15T10:31:30.000Z"
+    },
+    {
+      "id": 2,
+      "orderId": 2,
+      "orderNumber": "ORD-20250318-0002",
+      "userId": 1,
+      "amount": 85257,
+      "currency": "INR",
+      "paymentMethod": "card",
+      "gateway": "razorpay",
+      "transactionId": "pay_RZP234567890",
+      "gatewayOrderId": "order_RZP876543210",
+      "status": "captured",
+      "gatewayResponse": {
+        "code": "SUCCESS",
+        "bank": "HDFC",
+        "last4": "4242"
+      },
+      "createdAt": "2026-02-01T14:21:00.000Z",
+      "updatedAt": "2026-02-01T14:21:45.000Z"
+    },
+    {
+      "id": 3,
+      "orderId": 3,
+      "orderNumber": "ORD-20260310-0003",
+      "userId": 2,
+      "amount": 19818,
+      "currency": "INR",
+      "paymentMethod": "card",
+      "gateway": "razorpay",
+      "transactionId": "pay_RZP345678901",
+      "gatewayOrderId": "order_RZP765432109",
+      "status": "captured",
+      "gatewayResponse": {
+        "code": "SUCCESS",
+        "bank": "ICICI",
+        "last4": "1234"
+      },
+      "createdAt": "2026-03-10T08:46:00.000Z",
+      "updatedAt": "2026-03-10T08:46:30.000Z"
+    }
+  ],
+  "shipping_methods": [
+    {
+      "id": 1,
+      "name": "Standard Delivery",
+      "carrier": "Shiprocket",
+      "description": "Delivered in 5-7 business days",
+      "rateType": "flat",
+      "flatRate": 99,
+      "freeAbove": 999,
+      "estimatedDays": "5-7",
+      "isActive": true,
+      "createdAt": "2025-01-01T00:00:00.000Z"
+    },
+    {
+      "id": 2,
+      "name": "Express Delivery",
+      "carrier": "Shiprocket",
+      "description": "Delivered in 2-3 business days",
+      "rateType": "flat",
+      "flatRate": 199,
+      "freeAbove": 4999,
+      "estimatedDays": "2-3",
+      "isActive": true,
+      "createdAt": "2025-01-01T00:00:00.000Z"
+    },
+    {
+      "id": 3,
+      "name": "Same Day Delivery",
+      "carrier": "Dunzo",
+      "description": "Delivered today (select cities)",
+      "rateType": "flat",
+      "flatRate": 499,
+      "freeAbove": null,
+      "estimatedDays": "0",
+      "isActive": true,
+      "createdAt": "2025-01-01T00:00:00.000Z"
+    },
+    {
+      "id": 4,
+      "name": "Free Shipping",
+      "carrier": "Shiprocket",
+      "description": "Free standard shipping on all orders",
+      "rateType": "free",
+      "flatRate": 0,
+      "freeAbove": 0,
+      "estimatedDays": "5-7",
+      "isActive": false,
+      "createdAt": "2025-01-01T00:00:00.000Z"
+    }
+  ],
+  "coupons": [
+    {
+      "id": 1,
+      "code": "WELCOME500",
+      "description": "Welcome discount for new customers",
+      "type": "fixed",
+      "value": 500,
+      "minOrderAmount": 2000,
+      "maxDiscount": 500,
+      "usageLimit": 1000,
+      "usedCount": 47,
+      "perUserLimit": 1,
+      "isActive": true,
+      "expiresAt": "2026-12-31T23:59:59.000Z",
+      "createdAt": "2025-01-01T00:00:00.000Z",
+      "updatedAt": "2026-03-10T00:00:00.000Z"
+    },
+    {
+      "id": 2,
+      "code": "FLAT10",
+      "description": "Flat 10% off on all orders",
+      "type": "percentage",
+      "value": 10,
+      "minOrderAmount": 500,
+      "maxDiscount": 1000,
+      "usageLimit": null,
+      "usedCount": 213,
+      "perUserLimit": null,
+      "isActive": true,
+      "expiresAt": "2026-06-30T23:59:59.000Z",
+      "createdAt": "2025-02-01T00:00:00.000Z",
+      "updatedAt": "2026-03-15T00:00:00.000Z"
+    },
+    {
+      "id": 3,
+      "code": "SUMMER25",
+      "description": "Summer sale - 25% off",
+      "type": "percentage",
+      "value": 25,
+      "minOrderAmount": 1500,
+      "maxDiscount": 2500,
+      "usageLimit": 500,
+      "usedCount": 500,
+      "perUserLimit": 2,
+      "isActive": false,
+      "expiresAt": "2025-08-31T23:59:59.000Z",
+      "createdAt": "2025-06-01T00:00:00.000Z",
+      "updatedAt": "2025-09-01T00:00:00.000Z"
+    }
+  ],
+  "reviews": [
+    {
+      "id": 1,
+      "productId": 2,
+      "userId": 1,
+      "userName": "John D.",
+      "rating": 5,
+      "title": "Absolutely love these earbuds!",
+      "body": "The sound quality is incredible for the price. ANC works great in noisy environments like cafes and trains. Battery easily lasts 2 days with my usage. The fit is secure and comfortable. Highly recommended!",
+      "status": "approved",
+      "isVerifiedPurchase": true,
+      "helpfulCount": 24,
+      "createdAt": "2026-01-25T09:00:00.000Z",
+      "updatedAt": "2026-01-26T10:00:00.000Z"
+    },
+    {
+      "id": 2,
+      "productId": 1,
+      "userId": 1,
+      "userName": "John D.",
+      "rating": 4,
+      "title": "Great laptop, minor nitpicks",
+      "body": "Build quality is excellent - feels premium and solid. Performance is snappy for work tasks, programming, and light video editing. Battery lasts about 8 hours on mixed use. Only wish the webcam was better for video calls. Overall very satisfied with the purchase.",
+      "status": "approved",
+      "isVerifiedPurchase": true,
+      "helpfulCount": 18,
+      "createdAt": "2026-02-15T11:00:00.000Z",
+      "updatedAt": "2026-02-16T08:00:00.000Z"
+    },
+    {
+      "id": 3,
+      "productId": 4,
+      "userId": 2,
+      "userName": "Jane S.",
+      "rating": 5,
+      "title": "Best mechanical keyboard under 7k",
+      "body": "Typing feel is satisfying and the RGB is gorgeous. Build feels very solid with the aluminum frame. No lag or missed keystrokes even during intense gaming. Highly recommend the brown switches for a balance between gaming and typing.",
+      "status": "pending",
+      "isVerifiedPurchase": false,
+      "helpfulCount": 0,
+      "createdAt": "2026-03-12T15:00:00.000Z",
+      "updatedAt": "2026-03-12T15:00:00.000Z"
+    }
+  ],
+  "wishlist": [],
+  "leads": [
+    {
+      "id": 1,
+      "type": "contact",
+      "name": "John Doe",
+      "email": "john@example.com",
+      "phone": "+91 9876543210",
+      "orderNumber": "ORD-20250310-0001",
+      "category": "shipping",
+      "subject": "Order delivery update",
+      "message": "Hi, I wanted to check on the delivery status of my order. The tracking shows it's been shipped but I haven't received an estimated delivery date.",
+      "status": "resolved",
+      "createdAt": "2026-01-16T11:00:00.000Z",
+      "updatedAt": "2026-01-16T14:30:00.000Z",
+      "notes": "Provided tracking details to customer"
+    },
+    {
+      "id": 2,
+      "type": "newsletter",
+      "name": null,
+      "email": "subscriber@example.com",
+      "phone": null,
+      "orderNumber": null,
+      "category": null,
+      "subject": null,
+      "message": null,
+      "status": "subscribed",
+      "createdAt": "2026-02-10T09:00:00.000Z",
+      "updatedAt": "2026-02-10T09:00:00.000Z",
+      "notes": ""
+    },
+    {
+      "id": 3,
+      "type": "contact",
+      "name": "Jane Smith",
+      "email": "jane@example.com",
+      "phone": "+91 9123456789",
+      "orderNumber": null,
+      "category": "product",
+      "subject": "Product availability inquiry",
+      "message": "Do you have the FitPulse Smartwatch in size 44mm? The website shows it's available but I wanted to confirm before ordering.",
+      "status": "new",
+      "createdAt": "2026-03-18T10:30:00.000Z",
+      "updatedAt": "2026-03-18T10:30:00.000Z",
+      "notes": ""
+    }
+  ],
+  "settings": {
+    "store": {
+      "name": "My E-Commerce Store",
+      "tagline": "Quality products, great prices",
+      "email": "hello@mystore.com",
+      "phone": "+91 9999999999",
+      "address": "123 Business Park, Mumbai, Maharashtra 400001",
+      "currency": "INR",
+      "currencySymbol": "₹",
+      "timezone": "Asia/Kolkata",
+      "logo": null,
+      "favicon": null,
+      "taxRate": 18,
+      "taxIncluded": false
+    },
+    "shipping": {
+      "shiprocketEnabled": false,
+      "shiprocketEmail": "",
+      "shiprocketPassword": "",
+      "defaultWeight": 0.5,
+      "defaultDimensions": {
+        "length": 15,
+        "width": 12,
+        "height": 8
+      }
+    },
+    "payment": {
+      "razorpayEnabled": false,
+      "razorpayKeyId": "",
+      "stripeEnabled": false,
+      "stripePublishableKey": "",
+      "codEnabled": true,
+      "codFee": 0,
+      "codMinOrder": 0,
+      "codMaxOrder": 50000
+    },
+    "notifications": {
+      "orderConfirmationEmail": true,
+      "shippingUpdateEmail": true,
+      "adminNewOrderEmail": true,
+      "adminEmail": "admin@mystore.com",
+      "lowStockAlert": true,
+      "lowStockEmail": "admin@mystore.com"
+    },
+    "seo": {
+      "metaTitle": "My E-Commerce Store - Quality Products Online",
+      "metaDescription": "Shop the best products online with fast delivery, secure payments and easy returns.",
+      "googleAnalyticsId": "",
+      "facebookPixelId": ""
+    },
+    "social": {
+      "facebook": "",
+      "instagram": "",
+      "twitter": "",
+      "youtube": "",
+      "whatsapp": ""
+    }
+  }
+}

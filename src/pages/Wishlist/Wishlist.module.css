@@ -1,0 +1,432 @@
+.wishlistPage {
+  min-height: calc(100vh - 64px);
+  padding: 20px 0 80px;
+  background: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
+}
+
+:global(.dark) .wishlistPage {
+  background: linear-gradient(180deg, #0a0e27 0%, #1a1f3a 100%);
+}
+
+/* Page Header */
+.pageHeader {
+  margin-bottom: 32px;
+}
+
+.headerContent {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.pageTitle {
+  font-weight: 800 !important;
+  font-size: 2.5rem !important;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin-bottom: 8px !important;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+:global(.dark) .pageTitle {
+  background: linear-gradient(135deg, #a855f7 0%, #ec4899 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.titleIcon {
+  font-size: 2.5rem !important;
+  color: #ec4899;
+}
+
+:global(.dark) .titleIcon {
+  color: #ec4899;
+}
+
+.pageSubtitle {
+  color: #64748b !important;
+  font-size: 1.1rem !important;
+}
+
+:global(.dark) .pageSubtitle {
+  color: rgba(255, 255, 255, 0.7) !important;
+}
+
+.clearButton {
+  border-color: #ef4444 !important;
+  color: #ef4444 !important;
+  text-transform: none !important;
+}
+
+.clearButton:hover {
+  background: rgba(239, 68, 68, 0.1) !important;
+}
+
+/* Product Card */
+.productCard {
+  cursor: pointer;
+  border-radius: 16px !important;
+  overflow: hidden;
+  background: #ffffff !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06) !important;
+  transition: all 0.3s ease !important;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+
+:global(.dark) .productCard {
+  background: rgba(26, 31, 58, 0.9) !important;
+  border: 1px solid rgba(168, 85, 247, 0.1);
+}
+
+.productCard:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 20px 40px rgba(102, 126, 234, 0.15) !important;
+}
+
+:global(.dark) .productCard:hover {
+  box-shadow: 0 20px 40px rgba(168, 85, 247, 0.2) !important;
+  border-color: rgba(168, 85, 247, 0.3);
+}
+
+/* Remove Button */
+.removeButton {
+  position: absolute !important;
+  top: 8px;
+  right: 8px;
+  z-index: 3;
+  background: rgba(255, 255, 255, 0.95) !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.removeButton:hover {
+  background: #ffffff !important;
+  transform: scale(1.1);
+}
+
+.heartIcon {
+  color: #ec4899 !important;
+  font-size: 1.25rem !important;
+}
+
+/* Badges */
+.badges {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  right: 48px;
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  z-index: 2;
+}
+
+.hotBadge {
+  background: linear-gradient(135deg, #ef4444 0%, #f97316 100%) !important;
+  color: #ffffff !important;
+  font-weight: 600 !important;
+  font-size: 0.7rem !important;
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+}
+
+.trendingBadge {
+  background: linear-gradient(135deg, #3b82f6 0%, #06b6d4 100%) !important;
+  color: #ffffff !important;
+  font-weight: 600 !important;
+  font-size: 0.7rem !important;
+}
+
+.instantBadge {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%) !important;
+  color: #ffffff !important;
+  font-weight: 600 !important;
+  font-size: 0.7rem !important;
+}
+
+.discountBadge {
+  background: linear-gradient(135deg, #ec4899 0%, #f472b6 100%) !important;
+  color: #ffffff !important;
+  font-weight: 700 !important;
+  font-size: 0.7rem !important;
+}
+
+/* Product Image */
+.productImage {
+  width: 100%;
+  height: 180px;
+  object-fit: cover;
+  transition: transform 0.3s ease;
+}
+
+.productCard:hover .productImage {
+  transform: scale(1.05);
+}
+
+/* Overlay */
+.overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 180px;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.productCard:hover .overlay {
+  opacity: 1;
+}
+
+.quickViewButton {
+  background: rgba(255, 255, 255, 0.95) !important;
+  color: #667eea !important;
+  font-weight: 600 !important;
+  text-transform: none !important;
+  border-radius: 20px !important;
+}
+
+:global(.dark) .quickViewButton {
+  background: rgba(168, 85, 247, 0.9) !important;
+  color: #ffffff !important;
+}
+
+/* Product Content */
+.productContent {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: 16px !important;
+}
+
+.productName {
+  font-weight: 700 !important;
+  font-size: 1rem !important;
+  color: #1a202c !important;
+  margin-bottom: 4px !important;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+:global(.dark) .productName {
+  color: #ffffff !important;
+}
+
+.productDescription {
+  color: #64748b !important;
+  font-size: 0.8rem !important;
+  margin-bottom: 12px !important;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+:global(.dark) .productDescription {
+  color: rgba(255, 255, 255, 0.6) !important;
+}
+
+.productMeta {
+  margin-bottom: 12px;
+}
+
+.ratingContainer {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-bottom: 8px;
+}
+
+.reviewCount {
+  color: #9ca3af !important;
+  font-size: 0.75rem !important;
+}
+
+.chipContainer {
+  display: flex;
+  gap: 6px;
+}
+
+.platformChip {
+  background: rgba(102, 126, 234, 0.1) !important;
+  color: #667eea !important;
+  font-weight: 500 !important;
+  font-size: 0.7rem !important;
+  height: 24px !important;
+}
+
+:global(.dark) .platformChip {
+  background: rgba(168, 85, 247, 0.2) !important;
+  color: #a855f7 !important;
+}
+
+.regionChip {
+  border-color: #e2e8f0 !important;
+  color: #64748b !important;
+  font-size: 0.7rem !important;
+  height: 24px !important;
+}
+
+:global(.dark) .regionChip {
+  border-color: rgba(168, 85, 247, 0.3) !important;
+  color: rgba(255, 255, 255, 0.7) !important;
+}
+
+/* Price Section */
+.priceSection {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: auto;
+  padding-top: 12px;
+  border-top: 1px solid #f1f5f9;
+}
+
+:global(.dark) .priceSection {
+  border-top-color: rgba(168, 85, 247, 0.1);
+}
+
+.price {
+  font-weight: 700 !important;
+  font-size: 1rem !important;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+:global(.dark) .price {
+  background: linear-gradient(135deg, #a855f7 0%, #ec4899 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.cartIcon {
+  color: #667eea !important;
+  background: rgba(102, 126, 234, 0.1) !important;
+}
+
+:global(.dark) .cartIcon {
+  color: #a855f7 !important;
+  background: rgba(168, 85, 247, 0.15) !important;
+}
+
+/* Empty State */
+.emptyState {
+  text-align: center;
+  padding: 80px 20px;
+}
+
+.emptyIcon {
+  font-size: 80px !important;
+  color: #e2e8f0 !important;
+  margin-bottom: 24px;
+}
+
+:global(.dark) .emptyIcon {
+  color: rgba(168, 85, 247, 0.3) !important;
+}
+
+.emptyTitle {
+  font-weight: 700 !important;
+  color: #1a202c !important;
+  margin-bottom: 8px !important;
+}
+
+:global(.dark) .emptyTitle {
+  color: #ffffff !important;
+}
+
+.emptyText {
+  color: #64748b !important;
+  margin-bottom: 24px !important;
+}
+
+:global(.dark) .emptyText {
+  color: rgba(255, 255, 255, 0.6) !important;
+}
+
+.browseButton {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+  color: #ffffff !important;
+  text-transform: none !important;
+  padding: 12px 32px !important;
+  border-radius: 12px !important;
+  font-weight: 600 !important;
+}
+
+:global(.dark) .browseButton {
+  background: linear-gradient(135deg, #a855f7 0%, #ec4899 100%) !important;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .wishlistPage {
+    padding: 16px 0 100px;
+  }
+
+  .pageTitle {
+    font-size: 2rem !important;
+  }
+
+  .titleIcon {
+    font-size: 2rem !important;
+  }
+
+  .pageSubtitle {
+    font-size: 0.95rem !important;
+  }
+
+  .headerContent {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}
+
+@media (max-width: 480px) {
+  .pageTitle {
+    font-size: 1.75rem !important;
+  }
+
+  .titleIcon {
+    font-size: 1.75rem !important;
+  }
+
+  .productImage {
+    height: 150px;
+  }
+
+  .overlay {
+    height: 150px;
+  }
+
+  .badges {
+    gap: 4px;
+    right: 44px;
+  }
+
+  .hotBadge,
+  .trendingBadge,
+  .instantBadge,
+  .discountBadge {
+    font-size: 0.65rem !important;
+  }
+}

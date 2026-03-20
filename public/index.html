@@ -1,0 +1,509 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <link rel="icon" href="%PUBLIC_URL%/favicon.ico" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#667eea" />
+    <meta
+      name="description"
+      content="Your ultimate destination for online shopping. Fast, secure, and reliable delivery for all your favourite products at the best prices."
+    />
+    <meta
+      name="keywords"
+      content="online shopping, e-commerce, products, deals, electronics, fashion, home, beauty, sports, accessories"
+    />
+    <meta name="author" content="My Store" />
+
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://mystore.com/" />
+    <meta
+      property="og:title"
+      content="My Store - Shop the Best Products Online"
+    />
+    <meta
+      property="og:description"
+      content="Fast, secure, and reliable delivery for all your favourite products. Shop now and enjoy exclusive deals."
+    />
+    <meta property="og:image" content="%PUBLIC_URL%/og-image.png" />
+
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary_large_image" />
+    <meta property="twitter:url" content="https://mystore.com/" />
+    <meta
+      property="twitter:title"
+      content="My Store - Shop the Best Products Online"
+    />
+    <meta
+      property="twitter:description"
+      content="Fast, secure, and reliable delivery for all your favourite products. Shop now and enjoy exclusive deals."
+    />
+    <meta property="twitter:image" content="%PUBLIC_URL%/twitter-image.png" />
+
+    <link rel="apple-touch-icon" href="%PUBLIC_URL%/logo192.png" />
+    <!--
+      manifest.json provides metadata used when your web app is installed on a
+      user's mobile device or desktop. See https://developers.google.com/web/fundamentals/web-app-manifest/
+    -->
+    <link rel="manifest" href="%PUBLIC_URL%/manifest.json" />
+
+    <!-- Google Fonts - Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap"
+      rel="stylesheet"
+    />
+
+    <!-- Material Icons -->
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/icon?family=Material+Icons"
+    />
+
+    <!--
+      Notice the use of %PUBLIC_URL% in the tags above.
+      It will be replaced with the URL of the `public` folder during the build.
+      Only files inside the `public` folder can be referenced from the HTML.
+
+      Unlike "/favicon.ico" or "favicon.ico", "%PUBLIC_URL%/favicon.ico" will
+      work correctly both with client-side routing and a non-root public URL.
+      Learn how to configure a non-root public URL by running `npm run build`.
+    -->
+    <title>My Store - Shop the Best Products Online</title>
+
+    <!-- Custom styles for loading screen -->
+    <style>
+      body {
+        margin: 0;
+        padding: 0;
+        font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI",
+          "Roboto", "Oxygen", "Ubuntu", "Cantarell", "Fira Sans", "Droid Sans",
+          "Helvetica Neue", sans-serif;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        min-height: 100vh;
+      }
+
+      /* Loading Screen Styles */
+      #loading-screen {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(160deg, #0a0e1a 0%, #0d1224 50%, #0f0f23 100%);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        z-index: 9999;
+        transition: opacity 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+        overflow: hidden;
+      }
+
+      #loading-screen::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background:
+          radial-gradient(ellipse at 20% 20%, rgba(139, 92, 246, 0.08) 0%, transparent 50%),
+          radial-gradient(ellipse at 80% 80%, rgba(236, 72, 153, 0.06) 0%, transparent 50%),
+          radial-gradient(ellipse at 50% 50%, rgba(59, 130, 246, 0.04) 0%, transparent 70%);
+        pointer-events: none;
+      }
+
+      #loading-screen.fade-out {
+        opacity: 0;
+        pointer-events: none;
+      }
+
+      .loader-container {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        position: relative;
+        z-index: 1;
+      }
+
+      /* Brand Section */
+      .loader-brand {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        margin-bottom: 48px;
+      }
+
+      .loader-logo-wrapper {
+        position: relative;
+        width: 80px;
+        height: 80px;
+        margin-bottom: 24px;
+      }
+
+      .loader-logo-icon {
+        width: 80px;
+        height: 80px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: linear-gradient(135deg, rgba(139, 92, 246, 0.15) 0%, rgba(236, 72, 153, 0.1) 100%);
+        border-radius: 20px;
+        border: 1px solid rgba(139, 92, 246, 0.2);
+        box-shadow:
+          0 0 40px rgba(139, 92, 246, 0.15),
+          inset 0 1px 0 rgba(255, 255, 255, 0.05);
+        animation: logoFloat 3s ease-in-out infinite;
+      }
+
+      .loader-logo-icon svg {
+        width: 44px;
+        height: 44px;
+      }
+
+      .loader-brand-name {
+        font-size: 28px;
+        font-weight: 700;
+        letter-spacing: 3px;
+        background: linear-gradient(135deg, #ffffff 0%, #a78bfa 50%, #ec4899 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        margin-bottom: 8px;
+      }
+
+      .loader-tagline {
+        font-size: 12px;
+        font-weight: 500;
+        letter-spacing: 2px;
+        color: rgba(255, 255, 255, 0.5);
+        text-transform: uppercase;
+      }
+
+      /* Spinner Section */
+      .loader-spinner-container {
+        position: relative;
+        width: 56px;
+        height: 56px;
+        margin-bottom: 32px;
+      }
+
+      .loader-spinner-track {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        border: 2px solid rgba(139, 92, 246, 0.1);
+        border-radius: 50%;
+      }
+
+      .loader-spinner {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        border: 2px solid transparent;
+        border-top-color: #a78bfa;
+        border-right-color: #a78bfa;
+        border-radius: 50%;
+        animation: spinnerRotate 1s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+      }
+
+      .loader-spinner-inner {
+        position: absolute;
+        top: 6px;
+        left: 6px;
+        right: 6px;
+        bottom: 6px;
+        border: 2px solid transparent;
+        border-bottom-color: rgba(236, 72, 153, 0.6);
+        border-left-color: rgba(236, 72, 153, 0.6);
+        border-radius: 50%;
+        animation: spinnerRotateReverse 1.5s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+      }
+
+      .loader-spinner-dot {
+        position: absolute;
+        top: -3px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 6px;
+        height: 6px;
+        background: #a78bfa;
+        border-radius: 50%;
+        box-shadow: 0 0 12px rgba(167, 139, 250, 0.8);
+      }
+
+      /* Loading Text */
+      .loader-text-container {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 12px;
+      }
+
+      .loader-text {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 2px;
+        font-size: 13px;
+        font-weight: 600;
+        letter-spacing: 4px;
+        text-transform: uppercase;
+        color: rgba(255, 255, 255, 0.9);
+      }
+
+      .loader-text span {
+        display: inline-block;
+        animation: textWave 1.5s ease-in-out infinite;
+      }
+
+      .loader-text span:nth-child(1) { animation-delay: 0s; }
+      .loader-text span:nth-child(2) { animation-delay: 0.05s; }
+      .loader-text span:nth-child(3) { animation-delay: 0.1s; }
+      .loader-text span:nth-child(4) { animation-delay: 0.15s; }
+      .loader-text span:nth-child(5) { animation-delay: 0.2s; }
+      .loader-text span:nth-child(6) { animation-delay: 0.25s; }
+      .loader-text span:nth-child(7) { animation-delay: 0.3s; }
+
+      .loader-progress {
+        width: 120px;
+        height: 2px;
+        background: rgba(139, 92, 246, 0.1);
+        border-radius: 2px;
+        overflow: hidden;
+      }
+
+      .loader-progress-bar {
+        height: 100%;
+        width: 30%;
+        background: linear-gradient(90deg, #a78bfa 0%, #ec4899 100%);
+        border-radius: 2px;
+        animation: progressSlide 1.5s ease-in-out infinite;
+      }
+
+      /* Animations */
+      @keyframes logoFloat {
+        0%, 100% {
+          transform: translateY(0);
+        }
+        50% {
+          transform: translateY(-6px);
+        }
+      }
+
+      @keyframes spinnerRotate {
+        0% {
+          transform: rotate(0deg);
+        }
+        100% {
+          transform: rotate(360deg);
+        }
+      }
+
+      @keyframes spinnerRotateReverse {
+        0% {
+          transform: rotate(0deg);
+        }
+        100% {
+          transform: rotate(-360deg);
+        }
+      }
+
+      @keyframes textWave {
+        0%, 100% {
+          transform: translateY(0);
+          opacity: 0.7;
+        }
+        50% {
+          transform: translateY(-2px);
+          opacity: 1;
+        }
+      }
+
+      @keyframes progressSlide {
+        0% {
+          transform: translateX(-100%);
+        }
+        50% {
+          transform: translateX(200%);
+        }
+        100% {
+          transform: translateX(400%);
+        }
+      }
+
+      /* Hide loading screen when React app loads */
+      body.react-loaded #loading-screen {
+        display: none;
+      }
+
+      /* Gradient background animation */
+      @keyframes gradientShift {
+        0% {
+          background-position: 0% 50%;
+        }
+        50% {
+          background-position: 100% 50%;
+        }
+        100% {
+          background-position: 0% 50%;
+        }
+      }
+
+      body {
+        background-size: 200% 200%;
+        animation: gradientShift 10s ease infinite;
+      }
+
+      /* Responsive adjustments */
+      @media (max-width: 480px) {
+        .loader-logo-wrapper {
+          width: 64px;
+          height: 64px;
+        }
+
+        .loader-logo-icon {
+          width: 64px;
+          height: 64px;
+          border-radius: 16px;
+        }
+
+        .loader-logo-icon svg {
+          width: 36px;
+          height: 36px;
+        }
+
+        .loader-brand-name {
+          font-size: 22px;
+          letter-spacing: 2px;
+        }
+
+        .loader-tagline {
+          font-size: 10px;
+        }
+
+        .loader-spinner-container {
+          width: 48px;
+          height: 48px;
+        }
+
+        .loader-text {
+          font-size: 11px;
+          letter-spacing: 3px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <noscript>You need to enable JavaScript to run this app.</noscript>
+
+    <!-- Loading Screen -->
+    <div id="loading-screen">
+      <div class="loader-container">
+        <!-- Brand Section -->
+        <div class="loader-brand">
+          <div class="loader-logo-wrapper">
+            <div class="loader-logo-icon">
+              <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M12 2L2 7L12 12L22 7L12 2Z" stroke="url(#gradient1)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M2 17L12 22L22 17" stroke="url(#gradient2)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M2 12L12 17L22 12" stroke="url(#gradient3)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                <defs>
+                  <linearGradient id="gradient1" x1="2" y1="7" x2="22" y2="7" gradientUnits="userSpaceOnUse">
+                    <stop stop-color="#a78bfa"/>
+                    <stop offset="1" stop-color="#ec4899"/>
+                  </linearGradient>
+                  <linearGradient id="gradient2" x1="2" y1="19.5" x2="22" y2="19.5" gradientUnits="userSpaceOnUse">
+                    <stop stop-color="#a78bfa"/>
+                    <stop offset="1" stop-color="#ec4899"/>
+                  </linearGradient>
+                  <linearGradient id="gradient3" x1="2" y1="14.5" x2="22" y2="14.5" gradientUnits="userSpaceOnUse">
+                    <stop stop-color="#a78bfa"/>
+                    <stop offset="1" stop-color="#ec4899"/>
+                  </linearGradient>
+                </defs>
+              </svg>
+            </div>
+          </div>
+          <div class="loader-brand-name">MY STORE</div>
+          <div class="loader-tagline">Your Online Shopping Destination</div>
+        </div>
+
+        <!-- Spinner -->
+        <div class="loader-spinner-container">
+          <div class="loader-spinner-track"></div>
+          <div class="loader-spinner">
+            <div class="loader-spinner-dot"></div>
+          </div>
+          <div class="loader-spinner-inner"></div>
+        </div>
+
+        <!-- Loading Text -->
+        <div class="loader-text-container">
+          <div class="loader-text">
+            <span>L</span><span>O</span><span>A</span><span>D</span><span>I</span><span>N</span><span>G</span>
+          </div>
+          <div class="loader-progress">
+            <div class="loader-progress-bar"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="root"></div>
+    <!--
+      This HTML file is a template.
+      If you open it directly in the browser, you will see an empty page.
+
+      You can add webfonts, meta tags, or analytics to this file.
+      The build step will place the bundled scripts into the <body> tag.
+
+      To begin the development, run `npm start` or `yarn start`.
+      To create a production bundle, use `npm run build` or `yarn build`.
+    -->
+
+    <script>
+      // Hide loading screen when React app is ready
+      window.addEventListener("load", function () {
+        setTimeout(function () {
+          document.body.classList.add("react-loaded");
+          const loadingScreen = document.getElementById("loading-screen");
+          if (loadingScreen) {
+            loadingScreen.classList.add("fade-out");
+            setTimeout(function () {
+              loadingScreen.style.display = "none";
+            }, 500);
+          }
+        }, 1000);
+      });
+
+      // Theme detection and initial setup
+      (function () {
+        const savedTheme = localStorage.getItem("theme");
+        const prefersDark = window.matchMedia(
+          "(prefers-color-scheme: dark)"
+        ).matches;
+        const isDark = savedTheme === "dark" || (!savedTheme && prefersDark);
+
+        if (isDark) {
+          document.documentElement.classList.add("dark");
+          document.body.style.background =
+            "linear-gradient(135deg, #0a0e27 0%, #1a1f3a 100%)";
+        } else {
+          document.body.style.background =
+            "linear-gradient(135deg, #f5f7fa 0%, #ffffff 100%)";
+        }
+      })();
+    </script>
+  </body>
+</html>

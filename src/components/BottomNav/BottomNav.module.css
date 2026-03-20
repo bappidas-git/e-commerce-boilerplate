@@ -1,0 +1,258 @@
+/* Bottom Navigation Container */
+.bottomNav {
+  position: fixed !important;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 1200;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  padding-bottom: env(safe-area-inset-bottom);
+  transition: all 0.3s ease;
+  border-top-left-radius: 20px !important;
+  border-top-right-radius: 20px !important;
+  border-bottom-left-radius: 0 !important;
+  border-bottom-right-radius: 0 !important;
+}
+
+/* Light Mode */
+.bottomNav.light {
+  background: rgba(255, 255, 255, 0.95) !important;
+  border-top: 1px solid rgba(102, 126, 234, 0.15);
+  box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.08);
+}
+
+/* Dark Mode */
+.bottomNav.dark {
+  background: linear-gradient(
+    180deg,
+    rgba(26, 31, 58, 0.95) 0%,
+    rgba(10, 14, 39, 0.98) 100%
+  ) !important;
+  border-top: 1px solid rgba(168, 85, 247, 0.2);
+  box-shadow: 0 -4px 24px rgba(168, 85, 247, 0.08);
+}
+
+/* Navigation Container */
+.navContainer {
+  position: relative;
+  padding: 8px 12px;
+  padding-bottom: calc(8px + env(safe-area-inset-bottom));
+}
+
+/* Navigation Items */
+.navItems {
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  gap: 4px;
+}
+
+/* Navigation Item */
+.navItem {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  padding: 8px 16px;
+  min-width: 60px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  border-radius: 14px;
+  transition: all 0.3s ease;
+  position: relative;
+}
+
+.light .navItem {
+  color: #94a3b8;
+}
+
+.dark .navItem {
+  color: rgba(255, 255, 255, 0.5);
+}
+
+/* Active State */
+.navItem.active {
+  padding: 10px 20px;
+}
+
+.light .navItem.active {
+  color: #667eea;
+  background: rgba(102, 126, 234, 0.1);
+}
+
+.dark .navItem.active {
+  color: #a855f7;
+  background: rgba(168, 85, 247, 0.15);
+}
+
+/* Icon Wrapper */
+.iconWrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+}
+
+.iconWrapper svg {
+  font-size: 24px;
+  transition: all 0.3s ease;
+}
+
+.navItem.active .iconWrapper svg {
+  font-size: 26px;
+}
+
+.light .navItem.active .iconWrapper svg {
+  filter: drop-shadow(0 0 8px rgba(102, 126, 234, 0.5));
+}
+
+.dark .navItem.active .iconWrapper svg {
+  filter: drop-shadow(0 0 8px rgba(168, 85, 247, 0.5));
+}
+
+/* Label */
+.label {
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  white-space: nowrap;
+}
+
+/* Animation for icon bounce on tap */
+.navItem:active .iconWrapper {
+  animation: iconBounce 0.2s ease;
+}
+
+@keyframes iconBounce {
+  0%, 100% { transform: translateY(0) scale(1); }
+  50% { transform: translateY(-3px) scale(1.1); }
+}
+
+/* Ripple effect */
+.navItem::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  transition: width 0.3s ease, height 0.3s ease;
+  pointer-events: none;
+}
+
+.light .navItem::after {
+  background: radial-gradient(circle, rgba(102, 126, 234, 0.2) 0%, transparent 70%);
+}
+
+.dark .navItem::after {
+  background: radial-gradient(circle, rgba(168, 85, 247, 0.2) 0%, transparent 70%);
+}
+
+.navItem:active::after {
+  width: 80px;
+  height: 80px;
+}
+
+/* iOS Safari specific fixes */
+@supports (padding-bottom: env(safe-area-inset-bottom)) {
+  .bottomNav {
+    padding-bottom: 0;
+  }
+}
+
+/* Small phone adjustments */
+@media (max-width: 360px) {
+  .navContainer {
+    padding: 6px 8px;
+  }
+
+  .navItem {
+    padding: 6px 10px;
+    min-width: 50px;
+    border-radius: 10px;
+  }
+
+  .navItem.active {
+    padding: 8px 14px;
+  }
+
+  .iconWrapper svg {
+    font-size: 22px;
+  }
+
+  .navItem.active .iconWrapper svg {
+    font-size: 24px;
+  }
+
+  .label {
+    font-size: 0.65rem;
+  }
+}
+
+/* Regular phone adjustments */
+@media (min-width: 361px) and (max-width: 480px) {
+  .navContainer {
+    padding: 8px 10px;
+  }
+
+  .navItem {
+    padding: 8px 12px;
+    min-width: 55px;
+  }
+
+  .navItem.active {
+    padding: 10px 16px;
+  }
+}
+
+/* Large phone / Small tablet adjustments */
+@media (min-width: 481px) and (max-width: 768px) {
+  .navContainer {
+    padding: 10px 16px;
+  }
+
+  .navItem {
+    padding: 10px 18px;
+    min-width: 70px;
+    border-radius: 16px;
+  }
+
+  .navItem.active {
+    padding: 12px 22px;
+  }
+
+  .iconWrapper svg {
+    font-size: 26px;
+  }
+
+  .navItem.active .iconWrapper svg {
+    font-size: 28px;
+  }
+
+  .label {
+    font-size: 0.75rem;
+  }
+}
+
+/* Accessibility */
+.navItem:focus {
+  outline: none;
+}
+
+.navItem:focus-visible {
+  outline: 2px solid;
+  outline-offset: 2px;
+}
+
+.light .navItem:focus-visible {
+  outline-color: #667eea;
+}
+
+.dark .navItem:focus-visible {
+  outline-color: #a855f7;
+}

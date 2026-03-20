@@ -1,0 +1,510 @@
+.drawer {
+  z-index: 1300;
+}
+
+.drawerPaper {
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  overflow: hidden;
+}
+
+.drawerPaper.dark {
+  background: rgba(26, 31, 58, 0.98) !important;
+  border-left: 1px solid rgba(168, 85, 247, 0.2);
+}
+
+.drawerPaper.light {
+  background: rgba(255, 255, 255, 0.98) !important;
+  border-left: 1px solid rgba(102, 126, 234, 0.2);
+}
+
+.cartContainer {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 24px;
+  background: linear-gradient(
+    135deg,
+    rgba(168, 85, 247, 0.1) 0%,
+    rgba(236, 72, 153, 0.1) 100%
+  );
+  border-bottom: 1px solid rgba(168, 85, 247, 0.2);
+}
+
+.headerLeft {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.headerIcon {
+  color: #a855f7;
+  font-size: 28px;
+}
+
+.title {
+  font-weight: 600;
+  background: linear-gradient(135deg, #a855f7 0%, #ec4899 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.closeButton {
+  color: rgba(255, 255, 255, 0.7);
+  transition: all 0.3s ease;
+}
+
+.closeButton:hover {
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.1);
+  transform: rotate(90deg);
+}
+
+.divider {
+  background: rgba(168, 85, 247, 0.2);
+}
+
+.dividerLight {
+  background: rgba(168, 85, 247, 0.1);
+  margin: 12px 0;
+}
+
+.itemsContainer {
+  flex: 1;
+  overflow-y: auto;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.itemsContainer::-webkit-scrollbar {
+  width: 6px;
+}
+
+.itemsContainer::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.1);
+}
+
+.itemsContainer::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #a855f7 0%, #ec4899 100%);
+  border-radius: 3px;
+}
+
+.emptyCart {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  text-align: center;
+  padding: 40px;
+}
+
+.emptyIcon {
+  font-size: 120px;
+  color: rgba(168, 85, 247, 0.3);
+  margin-bottom: 24px;
+}
+
+.emptyTitle {
+  color: #ffffff;
+  margin-bottom: 8px;
+  font-weight: 500;
+}
+
+.emptyText {
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.cartItem {
+  display: flex;
+  gap: 16px;
+  padding: 16px;
+  background: rgba(255, 255, 255, 0.03) !important;
+  border: 1px solid rgba(168, 85, 247, 0.15);
+  border-radius: 12px !important;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.cartItem::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(168, 85, 247, 0.1) 50%,
+    transparent 100%
+  );
+  transition: left 0.5s ease;
+}
+
+.cartItem:hover::before {
+  left: 100%;
+}
+
+.cartItem:hover {
+  background: rgba(255, 255, 255, 0.05) !important;
+  border-color: rgba(168, 85, 247, 0.3);
+  transform: translateX(-4px);
+}
+
+.itemImage {
+  width: 80px;
+  height: 80px;
+  object-fit: cover;
+  border-radius: 8px;
+  border: 1px solid rgba(168, 85, 247, 0.2);
+}
+
+.itemDetails {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.itemName {
+  font-weight: 500;
+  color: #ffffff;
+  font-size: 0.95rem;
+  line-height: 1.3;
+}
+
+.itemPlatform {
+  font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.itemRequiredInfo {
+  font-size: 0.7rem;
+  color: rgba(168, 85, 247, 0.8);
+  background: rgba(168, 85, 247, 0.1);
+  padding: 4px 8px;
+  border-radius: 4px;
+  margin-top: 4px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.itemRequiredInfo span {
+  display: inline-block;
+}
+
+.itemPrice {
+  font-weight: 600;
+  color: #a855f7;
+  font-size: 1.1rem;
+  margin-top: auto;
+}
+
+.itemActions {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.quantityControl {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(168, 85, 247, 0.1);
+  border-radius: 8px;
+  padding: 4px;
+}
+
+.quantityButton {
+  color: #a855f7;
+  padding: 4px;
+  transition: all 0.2s ease;
+}
+
+.quantityButton:hover {
+  background: rgba(168, 85, 247, 0.2);
+  transform: scale(1.1);
+}
+
+.quantity {
+  min-width: 24px;
+  text-align: center;
+  color: #ffffff;
+  font-weight: 500;
+  font-size: 0.9rem;
+}
+
+.deleteButton {
+  color: rgba(239, 68, 68, 0.7);
+  padding: 4px;
+  transition: all 0.2s ease;
+}
+
+.deleteButton:hover {
+  color: #ef4444;
+  background: rgba(239, 68, 68, 0.1);
+  transform: scale(1.1);
+}
+
+.footer {
+  padding: 20px 24px 24px;
+  background: linear-gradient(
+    180deg,
+    transparent 0%,
+    rgba(168, 85, 247, 0.05) 100%
+  );
+  border-top: 1px solid rgba(168, 85, 247, 0.2);
+}
+
+.summary {
+  margin: 20px 0;
+}
+
+.summaryRow {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.summaryLabel {
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 0.9rem;
+}
+
+.summaryValue {
+  color: #ffffff;
+  font-weight: 500;
+}
+
+.totalLabel {
+  color: #ffffff;
+  font-weight: 600;
+  font-size: 1.1rem;
+}
+
+.totalValue {
+  font-weight: 700;
+  font-size: 1.3rem;
+  background: linear-gradient(135deg, #a855f7 0%, #ec4899 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.checkoutButton {
+  background: linear-gradient(135deg, #a855f7 0%, #ec4899 100%) !important;
+  color: #ffffff !important;
+  font-weight: 600 !important;
+  padding: 14px 32px !important;
+  border-radius: 12px !important;
+  text-transform: none !important;
+  font-size: 1rem !important;
+  box-shadow: 0 4px 20px rgba(168, 85, 247, 0.3) !important;
+  transition: all 0.3s ease !important;
+}
+
+.checkoutButton:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 30px rgba(168, 85, 247, 0.5) !important;
+}
+
+.checkoutButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+@media (max-width: 768px) {
+  .drawerPaper.dark {
+    border-radius: 20px 20px 0 0 !important;
+    border-left: none;
+    border-top: 2px solid rgba(168, 85, 247, 0.3);
+  }
+
+  .drawerPaper.light {
+    border-radius: 20px 20px 0 0 !important;
+    border-left: none;
+    border-top: 2px solid rgba(102, 126, 234, 0.3);
+  }
+
+  .header {
+    padding: 16px 20px;
+  }
+
+  .itemsContainer {
+    padding: 16px;
+  }
+
+  .cartItem {
+    padding: 12px;
+  }
+
+  .itemImage {
+    width: 70px;
+    height: 70px;
+  }
+
+  .footer {
+    padding: 16px 20px 20px;
+  }
+}
+
+/* Light Theme Styles */
+:global(.light) .header {
+  background: linear-gradient(
+    135deg,
+    rgba(102, 126, 234, 0.1) 0%,
+    rgba(118, 75, 162, 0.1) 100%
+  );
+  border-bottom: 1px solid rgba(102, 126, 234, 0.2);
+}
+
+:global(.light) .headerIcon {
+  color: #667eea;
+}
+
+:global(.light) .title {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+:global(.light) .closeButton {
+  color: rgba(0, 0, 0, 0.6);
+}
+
+:global(.light) .closeButton:hover {
+  color: #1a202c;
+  background: rgba(0, 0, 0, 0.05);
+}
+
+:global(.light) .divider {
+  background: rgba(102, 126, 234, 0.2);
+}
+
+:global(.light) .dividerLight {
+  background: rgba(102, 126, 234, 0.1);
+}
+
+:global(.light) .emptyIcon {
+  color: rgba(102, 126, 234, 0.3);
+}
+
+:global(.light) .emptyTitle {
+  color: #1a202c;
+}
+
+:global(.light) .emptyText {
+  color: rgba(0, 0, 0, 0.5);
+}
+
+:global(.light) .cartItem {
+  background: rgba(0, 0, 0, 0.02) !important;
+  border: 1px solid rgba(102, 126, 234, 0.15);
+}
+
+:global(.light) .cartItem::before {
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(102, 126, 234, 0.1) 50%,
+    transparent 100%
+  );
+}
+
+:global(.light) .cartItem:hover {
+  background: rgba(0, 0, 0, 0.04) !important;
+  border-color: rgba(102, 126, 234, 0.3);
+}
+
+:global(.light) .itemImage {
+  border: 1px solid rgba(102, 126, 234, 0.2);
+}
+
+:global(.light) .itemName {
+  color: #1a202c;
+}
+
+:global(.light) .itemPlatform {
+  color: rgba(0, 0, 0, 0.5);
+}
+
+:global(.light) .itemRequiredInfo {
+  color: rgba(102, 126, 234, 0.9);
+  background: rgba(102, 126, 234, 0.1);
+}
+
+:global(.light) .itemPrice {
+  color: #667eea;
+}
+
+:global(.light) .quantityControl {
+  background: rgba(102, 126, 234, 0.1);
+}
+
+:global(.light) .quantityButton {
+  color: #667eea;
+}
+
+:global(.light) .quantityButton:hover {
+  background: rgba(102, 126, 234, 0.2);
+}
+
+:global(.light) .quantity {
+  color: #1a202c;
+}
+
+:global(.light) .footer {
+  background: linear-gradient(
+    180deg,
+    transparent 0%,
+    rgba(102, 126, 234, 0.05) 100%
+  );
+  border-top: 1px solid rgba(102, 126, 234, 0.2);
+}
+
+:global(.light) .summaryLabel {
+  color: rgba(0, 0, 0, 0.6);
+}
+
+:global(.light) .summaryValue {
+  color: #1a202c;
+}
+
+:global(.light) .totalLabel {
+  color: #1a202c;
+}
+
+:global(.light) .totalValue {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+:global(.light) .checkoutButton {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+  box-shadow: 0 4px 20px rgba(102, 126, 234, 0.3) !important;
+}
+
+:global(.light) .checkoutButton:hover {
+  box-shadow: 0 8px 30px rgba(102, 126, 234, 0.5) !important;
+}
+
+:global(.light) .itemsContainer::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #667eea 0%, #764ba2 100%);
+}

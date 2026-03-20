@@ -1,0 +1,152 @@
+.breadcrumbContainer {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 0;
+  margin-bottom: 16px;
+}
+
+.backButton {
+  background: rgba(102, 126, 234, 0.1) !important;
+  color: #667eea !important;
+  width: 40px !important;
+  height: 40px !important;
+  border-radius: 10px !important;
+  transition: all 0.3s ease !important;
+}
+
+:global(.dark) .backButton {
+  background: rgba(168, 85, 247, 0.15) !important;
+  color: #a855f7 !important;
+}
+
+.backButton:hover {
+  background: rgba(102, 126, 234, 0.2) !important;
+  transform: translateX(-2px);
+}
+
+:global(.dark) .backButton:hover {
+  background: rgba(168, 85, 247, 0.25) !important;
+}
+
+.breadcrumb {
+  flex: 1;
+}
+
+.breadcrumbList {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.breadcrumbItem {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.breadcrumbLink {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: none;
+  border: none;
+  padding: 6px 10px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #667eea;
+  cursor: pointer;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+  font-family: inherit;
+}
+
+:global(.dark) .breadcrumbLink {
+  color: #a855f7;
+}
+
+.breadcrumbLink:hover {
+  background: rgba(102, 126, 234, 0.1);
+  color: #5a6fd6;
+}
+
+:global(.dark) .breadcrumbLink:hover {
+  background: rgba(168, 85, 247, 0.15);
+  color: #c084fc;
+}
+
+.homeIcon {
+  font-size: 18px !important;
+}
+
+.separator {
+  font-size: 18px !important;
+  color: #9ca3af;
+}
+
+:global(.dark) .separator {
+  color: #6b7280;
+}
+
+.breadcrumbCurrent {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #1a202c;
+  padding: 6px 10px;
+  background: rgba(102, 126, 234, 0.08);
+  border-radius: 6px;
+}
+
+:global(.dark) .breadcrumbCurrent {
+  color: #ffffff;
+  background: rgba(168, 85, 247, 0.12);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .breadcrumbContainer {
+    padding: 12px 0;
+    gap: 8px;
+  }
+
+  .backButton {
+    width: 36px !important;
+    height: 36px !important;
+  }
+
+  .breadcrumbLink,
+  .breadcrumbCurrent {
+    font-size: 0.8rem;
+    padding: 4px 8px;
+  }
+
+  .homeIcon,
+  .separator {
+    font-size: 16px !important;
+  }
+
+  .breadcrumbLink span {
+    display: none;
+  }
+
+  .breadcrumbLink .homeIcon {
+    margin-right: 0;
+  }
+}
+
+@media (max-width: 480px) {
+  .breadcrumbList {
+    gap: 2px;
+  }
+
+  .breadcrumbCurrent {
+    max-width: 150px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}
