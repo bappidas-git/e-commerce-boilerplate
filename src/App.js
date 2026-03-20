@@ -74,21 +74,22 @@ function App() {
                   <CssBaseline />
                   <Routes>
                     {/* Admin Routes */}
-                    <Route path="/admin" element={<AdminLogin />} />
-                    <Route path="/admin/*" element={<AdminLayout />}>
-                      <Route path="dashboard" element={<AdminDashboard />} />
-                      <Route path="products" element={<AdminProducts />} />
-                      <Route path="categories" element={<AdminCategories />} />
-                      <Route path="orders" element={<AdminOrders />} />
-                      <Route path="returns" element={<AdminReturns />} />
-                      <Route path="payments" element={<AdminPayments />} />
-                      <Route path="users" element={<AdminUsers />} />
-                      <Route path="shipping" element={<AdminShipping />} />
-                      <Route path="coupons" element={<AdminCoupons />} />
-                      <Route path="reviews" element={<AdminReviews />} />
-                      <Route path="leads" element={<AdminLeads />} />
-                      <Route path="settings" element={<AdminSettings />} />
-                      <Route index element={<Navigate to="dashboard" replace />} />
+                    <Route path="/admin">
+                      <Route index element={<AdminLogin />} />
+                      <Route element={<AdminLayout />}>
+                        <Route path="dashboard" element={<AdminDashboard />} />
+                        <Route path="products" element={<AdminProducts />} />
+                        <Route path="categories" element={<AdminCategories />} />
+                        <Route path="orders" element={<AdminOrders />} />
+                        <Route path="returns" element={<AdminReturns />} />
+                        <Route path="payments" element={<AdminPayments />} />
+                        <Route path="users" element={<AdminUsers />} />
+                        <Route path="shipping" element={<AdminShipping />} />
+                        <Route path="coupons" element={<AdminCoupons />} />
+                        <Route path="reviews" element={<AdminReviews />} />
+                        <Route path="leads" element={<AdminLeads />} />
+                        <Route path="settings" element={<AdminSettings />} />
+                      </Route>
                     </Route>
 
                     {/* Storefront Routes */}
