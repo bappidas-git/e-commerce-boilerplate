@@ -1,532 +1,496 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
-import {
-  Box,
-  Typography,
-  TextField,
-  InputAdornment,
-  IconButton,
-  Chip,
-  CircularProgress,
-} from "@mui/material";
-import { Search, Close, TrendingUp } from "@mui/icons-material";
-import { Icon } from "@iconify/react";
-import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate } from "react-router-dom";
-import useSound from "../../hooks/useSound";
+import { motion, AnimatePresence } from "framer-motion";
 import { useTheme } from "../../context/ThemeContext";
 import apiService from "../../services/api";
+import { formatCurrency, getProductMinPrice, debounce } from "../../utils/helpers";
 import styles from "./SearchModal.module.css";
 
-const SearchModal = ({ isOpen, onClose, initialQuery = "" }) => {
+const TRENDING_SEARCHES = [
+  "Laptop",
+  "Headphones",
+  "Sneakers",
+  "Smartphone",
+  "Watch",
+  "Backpack",
+  "T-Shirt",
+  "Sunglasses",
+];
+
+const CATEGORY_FILTERS = [
+  "All",
+  "Electronics",
+  "Fashion",
+  "Footwear",
+  "Accessories",
+  "Home",
+];
+
+const RECENT_SEARCHES_KEY = "recentSearches";
+const MAX_RECENT_SEARCHES = 8;
+
+const getRecentSearches = () => {
+  try {
+    const stored = localStorage.getItem(RECENT_SEARCHES_KEY);
+    return stored ? JSON.parse(stored) : [];
+  } catch {
+    return [];
+  }
+};
+
+const saveRecentSearch = (query) => {
+  try {
+    const recent = getRecentSearches();
+    const filtered = recent.filter((s) => s.toLowerCase() !== query.toLowerCase());
+    const updated = [query, ...filtered].slice(0, MAX_RECENT_SEARCHES);
+    localStorage.setItem(RECENT_SEARCHES_KEY, JSON.stringify(updated));
+  } catch {
+    // ignore storage errors
+  }
+};
+
+const clearRecentSearches = () => {
+  try {
+    localStorage.removeItem(RECENT_SEARCHES_KEY);
+  } catch {
+    // ignore
+  }
+};
+
+const SearchModal = ({ open, onClose }) => {
   const navigate = useNavigate();
-  const { play } = useSound();
   const { isDarkMode } = useTheme();
-  const [searchQuery, setSearchQuery] = useState(initialQuery);
-  const [suggestions, setSuggestions] = useState([]);
-  const [searchResults, setSearchResults] = useState([]);
-  const [allProducts, setAllProducts] = useState([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [showResults, setShowResults] = useState(false);
   const inputRef = useRef(null);
-  const debounceRef = useRef(null);
+  const debounceTimerRef = useRef(null);
 
-  const popularSearches = [
-    "Laptop",
-    "Headphones",
-    "T-Shirt",
-    "Sneakers",
-    "Watch",
-    "Backpack",
-    "Sunglasses",
-    "Smartphone",
-  ];
+  const [query, setQuery] = useState("");
+  const [allProducts, setAllProducts] = useState([]);
+  const [results, setResults] = useState([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const [hasSearched, setHasSearched] = useState(false);
+  const [activeCategory, setActiveCategory] = useState("All");
+  const [recentSearches, setRecentSearches] = useState([]);
 
-  // Fetch all products on mount
+  // Fetch products once
   useEffect(() => {
     const fetchProducts = async () => {
       try {
         const products = await apiService.products.getAll();
         setAllProducts(products);
-      } catch (error) {
-        console.error("Error fetching products:", error);
+      } catch (err) {
+        console.error("Failed to fetch products:", err);
       }
     };
     fetchProducts();
   }, []);
 
-  // Focus input when modal opens
+  // Focus input and load recent searches when opened
   useEffect(() => {
-    if (isOpen && inputRef.current) {
-      setTimeout(() => inputRef.current?.focus(), 100);
+    if (open) {
+      setRecentSearches(getRecentSearches());
+      setTimeout(() => inputRef.current?.focus(), 150);
+    } else {
+      // Reset when closed
+      setQuery("");
+      setResults([]);
+      setHasSearched(false);
+      setActiveCategory("All");
     }
-  }, [isOpen]);
+  }, [open]);
 
-  // Reset state when modal closes
+  // Keyboard: Escape to close
   useEffect(() => {
-    if (!isOpen) {
-      setShowResults(false);
-      setSuggestions([]);
-    }
-  }, [isOpen]);
-
-  // Update initial query
-  useEffect(() => {
-    setSearchQuery(initialQuery);
-  }, [initialQuery]);
-
-  // Calculate relevance score for a product based on search query
-  const calculateRelevance = useCallback((product, lowerQuery) => {
-    let score = 0;
-    const nameLower = product.name.toLowerCase();
-
-    // Exact match in name gets highest score
-    if (nameLower === lowerQuery) {
-      score += 100;
-    }
-    // Name starts with query gets high score
-    else if (nameLower.startsWith(lowerQuery)) {
-      score += 80;
-    }
-    // Word in name starts with query
-    else if (nameLower.split(/\s+/).some(word => word.startsWith(lowerQuery))) {
-      score += 60;
-    }
-    // Name contains query
-    else if (nameLower.includes(lowerQuery)) {
-      score += 40;
-    }
-
-    // Tag exact match
-    if (product.tags?.some(tag => tag.toLowerCase() === lowerQuery)) {
-      score += 30;
-    }
-    // Tag starts with query
-    else if (product.tags?.some(tag => tag.toLowerCase().startsWith(lowerQuery))) {
-      score += 20;
-    }
-    // Tag contains query
-    else if (product.tags?.some(tag => tag.toLowerCase().includes(lowerQuery))) {
-      score += 10;
-    }
-
-    // Category match
-    if (product.category?.toLowerCase().includes(lowerQuery)) {
-      score += 15;
-    }
-
-    // Description match
-    if (product.shortDescription?.toLowerCase().includes(lowerQuery)) {
-      score += 5;
-    }
-
-    // Boost popular/trending products
-    if (product.trending) score += 3;
-    if (product.hot) score += 2;
-
-    return score;
-  }, []);
-
-  // Generate suggestions based on query with relevance scoring
-  const generateSuggestions = useCallback(
-    (query) => {
-      if (!query.trim() || allProducts.length === 0) {
-        setSuggestions([]);
-        return;
-      }
-
-      const lowerQuery = query.toLowerCase().trim();
-
-      // Score and filter products
-      const scoredProducts = allProducts
-        .map(product => ({
-          ...product,
-          relevanceScore: calculateRelevance(product, lowerQuery)
-        }))
-        .filter(product => product.relevanceScore > 0)
-        .sort((a, b) => b.relevanceScore - a.relevanceScore)
-        .slice(0, 8);
-
-      setSuggestions(scoredProducts);
-    },
-    [allProducts, calculateRelevance]
-  );
-
-  // Debounced search for auto-suggestions
-  useEffect(() => {
-    if (debounceRef.current) {
-      clearTimeout(debounceRef.current);
-    }
-
-    debounceRef.current = setTimeout(() => {
-      generateSuggestions(searchQuery);
-    }, 200);
-
-    return () => {
-      if (debounceRef.current) {
-        clearTimeout(debounceRef.current);
+    if (!open) return;
+    const handleKeyDown = (e) => {
+      if (e.key === "Escape") {
+        onClose();
       }
     };
-  }, [searchQuery, generateSuggestions]);
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [open, onClose]);
 
-  // Perform full search with relevance scoring
-  const performSearch = useCallback(
-    (query) => {
-      if (!query.trim()) {
-        setSearchResults([]);
-        setShowResults(false);
+  // Search logic with relevance scoring
+  const searchProducts = useCallback(
+    (searchQuery, category) => {
+      if (!searchQuery.trim()) {
+        setResults([]);
+        setHasSearched(false);
+        setIsSearching(false);
         return;
       }
 
-      setIsLoading(true);
-      const lowerQuery = query.toLowerCase().trim();
+      setIsSearching(true);
+      const lowerQuery = searchQuery.toLowerCase().trim();
 
-      // Score and filter products, including region in search
-      const results = allProducts
-        .map(product => {
-          let score = calculateRelevance(product, lowerQuery);
-              // Additional check for brand
-          if (product.brand?.toLowerCase().includes(lowerQuery)) {
-            score += 10;
-          }
-          return { ...product, relevanceScore: score };
+      const scored = allProducts
+        .map((product) => {
+          let score = 0;
+          const name = (product.name || "").toLowerCase();
+          const cat = (product.category || "").toLowerCase();
+          const desc = (product.shortDescription || "").toLowerCase();
+          const brand = (product.brand || "").toLowerCase();
+          const tags = (product.tags || []).map((t) => t.toLowerCase());
+
+          // Name scoring
+          if (name === lowerQuery) score += 100;
+          else if (name.startsWith(lowerQuery)) score += 80;
+          else if (name.split(/\s+/).some((w) => w.startsWith(lowerQuery))) score += 60;
+          else if (name.includes(lowerQuery)) score += 40;
+
+          // Tags
+          if (tags.some((t) => t === lowerQuery)) score += 30;
+          else if (tags.some((t) => t.startsWith(lowerQuery))) score += 20;
+          else if (tags.some((t) => t.includes(lowerQuery))) score += 10;
+
+          // Category
+          if (cat.includes(lowerQuery)) score += 15;
+
+          // Brand
+          if (brand.includes(lowerQuery)) score += 15;
+
+          // Description
+          if (desc.includes(lowerQuery)) score += 5;
+
+          // Boosts
+          if (product.trending) score += 3;
+          if (product.hot) score += 2;
+
+          return { ...product, _score: score };
         })
-        .filter(product => product.relevanceScore > 0)
-        .sort((a, b) => b.relevanceScore - a.relevanceScore);
+        .filter((p) => {
+          if (p._score <= 0) return false;
+          // Category filter
+          if (category && category !== "All") {
+            const productCat = (p.category || "").toLowerCase().replace(/-/g, " ");
+            if (!productCat.includes(category.toLowerCase())) return false;
+          }
+          return true;
+        })
+        .sort((a, b) => b._score - a._score);
 
-      setSearchResults(results);
-      setShowResults(true);
-      setIsLoading(false);
+      setResults(scored);
+      setHasSearched(true);
+      setIsSearching(false);
     },
-    [allProducts, calculateRelevance]
+    [allProducts]
   );
 
-  const handleSearch = () => {
-    if (searchQuery.trim()) {
-      play();
-      performSearch(searchQuery);
+  // Debounced search as user types
+  useEffect(() => {
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current);
     }
+
+    if (!query.trim()) {
+      setResults([]);
+      setHasSearched(false);
+      return;
+    }
+
+    debounceTimerRef.current = setTimeout(() => {
+      searchProducts(query, activeCategory);
+    }, 300);
+
+    return () => {
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
+      }
+    };
+  }, [query, activeCategory, searchProducts]);
+
+  const handleInputChange = (e) => {
+    setQuery(e.target.value);
   };
 
-  const handleKeyPress = (e) => {
-    if (e.key === "Enter") {
-      handleSearch();
-    }
-    if (e.key === "Escape") {
+  const handleClear = () => {
+    setQuery("");
+    setResults([]);
+    setHasSearched(false);
+    inputRef.current?.focus();
+  };
+
+  const handleSubmit = (e) => {
+    if (e) e.preventDefault();
+    if (query.trim()) {
+      saveRecentSearch(query.trim());
       onClose();
+      navigate(`/products?search=${encodeURIComponent(query.trim())}`);
     }
   };
 
-  const handleSuggestionClick = (product) => {
-    play();
+  const handleKeyDown = (e) => {
+    if (e.key === "Enter") {
+      handleSubmit();
+    }
+  };
+
+  const handleProductClick = (product) => {
+    if (query.trim()) saveRecentSearch(query.trim());
     onClose();
     navigate(`/products/${product.id}`);
   };
 
-  const handleQuickSearch = (query) => {
-    play();
-    setSearchQuery(query);
-    performSearch(query);
+  const handleTrendingClick = (term) => {
+    setQuery(term);
+    searchProducts(term, activeCategory);
   };
 
-  const handleViewProduct = (product) => {
-    play();
-    onClose();
-    navigate(`/products/${product.id}`);
+  const handleRecentClick = (term) => {
+    setQuery(term);
+    searchProducts(term, activeCategory);
   };
 
-  const handleViewAllResults = () => {
-    play();
-    onClose();
-    navigate(`/products?search=${encodeURIComponent(searchQuery)}`);
+  const handleClearRecent = () => {
+    clearRecentSearches();
+    setRecentSearches([]);
   };
 
-  const handleClose = () => {
-    play();
-    onClose();
-  };
-
-  const formatPrice = (price) => {
-    return new Intl.NumberFormat("en-IN", {
-      style: "currency",
-      currency: "INR",
-      maximumFractionDigits: 0,
-    }).format(price);
-  };
-
-  const getProductPrice = (product) => {
-    if (!product) return null;
-    if (product.variants && product.variants.length > 0) {
-      return Math.min(...product.variants.map((v) => v.price || product.price));
+  const handleCategoryClick = (cat) => {
+    setActiveCategory(cat);
+    if (query.trim()) {
+      searchProducts(query, cat);
     }
-    return product.price || null;
   };
 
-  if (!isOpen) return null;
+  const handleViewAll = () => {
+    if (query.trim()) {
+      saveRecentSearch(query.trim());
+      onClose();
+      navigate(`/products?search=${encodeURIComponent(query.trim())}`);
+    }
+  };
+
+  const getPrice = (product) => {
+    const priceInfo = getProductMinPrice(product);
+    return priceInfo.sellingPrice || priceInfo.originalPrice || product.price || 0;
+  };
+
+  const renderStars = (rating) => {
+    const stars = [];
+    const r = Math.round((rating || 0) * 2) / 2;
+    for (let i = 1; i <= 5; i++) {
+      if (i <= Math.floor(r)) stars.push("\u2605");
+      else if (i - 0.5 === r) stars.push("\u2606");
+      else stars.push("\u2606");
+    }
+    return stars.join("");
+  };
+
+  const themeAttr = isDarkMode ? "dark" : "light";
 
   return (
     <AnimatePresence>
-      <motion.div
-        className={styles.modalOverlay}
-        data-theme={isDarkMode ? "dark" : "light"}
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
-        onClick={handleClose}
-      >
+      {open && (
         <motion.div
-          className={styles.modalContainer}
-          initial={{ opacity: 0, y: -20, scale: 0.98 }}
-          animate={{ opacity: 1, y: 0, scale: 1 }}
-          exit={{ opacity: 0, y: -20, scale: 0.98 }}
-          transition={{ duration: 0.3, ease: "easeOut" }}
-          onClick={(e) => e.stopPropagation()}
+          className={styles.overlay}
+          data-theme={themeAttr}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.2 }}
+          onClick={onClose}
         >
-          {/* Header */}
-          <Box className={styles.modalHeader}>
-            <Box className={styles.searchInputWrapper}>
-              <TextField
-                fullWidth
-                placeholder="Search for products, brands..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                onKeyDown={handleKeyPress}
-                inputRef={inputRef}
-                className={styles.searchInput}
-                InputProps={{
-                  startAdornment: (
-                    <InputAdornment position="start">
-                      <Search className={styles.searchIcon} />
-                    </InputAdornment>
-                  ),
-                  endAdornment: searchQuery && (
-                    <InputAdornment position="end">
-                      <IconButton
-                        size="small"
-                        onClick={() => {
-                          setSearchQuery("");
-                          setSuggestions([]);
-                          setShowResults(false);
-                        }}
-                        className={styles.clearButton}
-                      >
-                        <Close fontSize="small" />
-                      </IconButton>
-                    </InputAdornment>
-                  ),
-                }}
-              />
-              <IconButton
-                onClick={handleSearch}
-                className={styles.searchButton}
-                disabled={!searchQuery.trim()}
+          <motion.div
+            className={styles.modal}
+            initial={{ opacity: 0, y: -30 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -30 }}
+            transition={{ duration: 0.25, ease: "easeOut" }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Search Header */}
+            <div className={styles.header}>
+              <div className={styles.searchBar}>
+                <span className={styles.searchIcon}>&#128269;</span>
+                <input
+                  ref={inputRef}
+                  type="text"
+                  className={styles.searchInput}
+                  placeholder="Search for products, brands, categories..."
+                  value={query}
+                  onChange={handleInputChange}
+                  onKeyDown={handleKeyDown}
+                  autoComplete="off"
+                />
+                {query && (
+                  <button
+                    className={styles.clearBtn}
+                    onClick={handleClear}
+                    aria-label="Clear search"
+                  >
+                    &#10005;
+                  </button>
+                )}
+              </div>
+              <button
+                className={styles.closeBtn}
+                onClick={onClose}
+                aria-label="Close search"
               >
-                <Search />
-              </IconButton>
-            </Box>
-            <IconButton onClick={handleClose} className={styles.closeButton}>
-              <Close />
-            </IconButton>
-          </Box>
+                &#10005;
+              </button>
+            </div>
 
-          {/* Content */}
-          <Box className={styles.modalContent}>
-            {/* Auto-suggestions */}
-            {!showResults && suggestions.length > 0 && (
-              <motion.div
-                className={styles.suggestionsSection}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.2 }}
-              >
-                <Typography className={styles.sectionTitle}>
-                  <Search className={styles.sectionIcon} />
-                  Suggestions
-                </Typography>
-                <Box className={styles.suggestionsList}>
-                  {suggestions.map((product, index) => (
-                    <motion.div
-                      key={product.id}
-                      initial={{ opacity: 0, x: -10 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: index * 0.05 }}
-                      className={styles.suggestionItem}
-                      onClick={() => handleSuggestionClick(product)}
-                    >
-                      <img
-                        src={product.images?.[0] || product.image || "https://placehold.co/60x60?text=?"}
-                        alt={product.name}
-                        className={styles.suggestionImage}
-                      />
-                      <Box className={styles.suggestionInfo}>
-                        <Typography className={styles.suggestionName}>
-                          {product.name}
-                        </Typography>
-                        <Typography className={styles.suggestionCategory}>
-                          {product.category?.replace("-", " ")}{product.brand ? ` • ${product.brand}` : ""}
-                        </Typography>
-                      </Box>
-                      <Icon
-                        icon="mdi:chevron-right"
-                        className={styles.suggestionArrow}
-                      />
-                    </motion.div>
-                  ))}
-                </Box>
-              </motion.div>
-            )}
+            {/* Category Filter Chips */}
+            <div className={styles.categoryFilters}>
+              {CATEGORY_FILTERS.map((cat) => (
+                <button
+                  key={cat}
+                  className={`${styles.categoryChip} ${
+                    activeCategory === cat ? styles.categoryChipActive : ""
+                  }`}
+                  onClick={() => handleCategoryClick(cat)}
+                >
+                  {cat}
+                </button>
+              ))}
+            </div>
 
-            {/* Popular Searches */}
-            {!showResults && suggestions.length === 0 && (
-              <motion.div
-                className={styles.popularSection}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.2 }}
-              >
-                <Typography className={styles.sectionTitle}>
-                  <TrendingUp className={styles.sectionIcon} />
-                  Popular Searches
-                </Typography>
-                <Box className={styles.popularChips}>
-                  {popularSearches.map((search, index) => (
-                    <motion.div
-                      key={search}
-                      initial={{ opacity: 0, scale: 0.9 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      transition={{ delay: index * 0.05 }}
-                    >
-                      <Chip
-                        label={search}
-                        onClick={() => handleQuickSearch(search)}
-                        className={styles.popularChip}
-                        icon={
-                          <Icon icon="mdi:fire" className={styles.chipIcon} />
-                        }
-                        clickable
-                      />
-                    </motion.div>
-                  ))}
-                </Box>
-              </motion.div>
-            )}
+            {/* Content Area */}
+            <div className={styles.content}>
+              {/* Loading State */}
+              {isSearching && (
+                <div className={styles.loadingState}>
+                  <div className={styles.spinner} />
+                  <span>Searching...</span>
+                </div>
+              )}
 
-            {/* Loading */}
-            {isLoading && (
-              <Box className={styles.loadingContainer}>
-                <CircularProgress size={40} className={styles.loader} />
-                <Typography className={styles.loadingText}>
-                  Searching...
-                </Typography>
-              </Box>
-            )}
-
-            {/* Search Results */}
-            {showResults && !isLoading && (
-              <motion.div
-                className={styles.resultsSection}
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ duration: 0.3 }}
-              >
-                <Box className={styles.resultsHeader}>
-                  <Typography className={styles.sectionTitle}>
-                    <Search className={styles.sectionIcon} />
-                    Search Results
-                    <span className={styles.resultCount}>
-                      ({searchResults.length} found)
+              {/* Results */}
+              {!isSearching && hasSearched && (
+                <div className={styles.resultsSection}>
+                  <div className={styles.resultsHeader}>
+                    <span className={styles.resultsCount}>
+                      {results.length} result{results.length !== 1 ? "s" : ""} for "{query}"
                     </span>
-                  </Typography>
-                  {searchResults.length > 0 && (
-                    <Typography
-                      className={styles.viewAllLink}
-                      onClick={handleViewAllResults}
-                    >
-                      View All
-                      <Icon icon="mdi:arrow-right" />
-                    </Typography>
+                    {results.length > 0 && (
+                      <button className={styles.viewAllBtn} onClick={handleViewAll}>
+                        View all results &#8594;
+                      </button>
+                    )}
+                  </div>
+
+                  {results.length === 0 ? (
+                    <div className={styles.emptyState}>
+                      <span className={styles.emptyIcon}>&#128270;</span>
+                      <p className={styles.emptyTitle}>
+                        No products found for "{query}"
+                      </p>
+                      <p className={styles.emptyHint}>
+                        Try a different search term or browse trending searches below.
+                      </p>
+                    </div>
+                  ) : (
+                    <div className={styles.resultsGrid}>
+                      {results.slice(0, 12).map((product, idx) => (
+                        <motion.div
+                          key={product.id}
+                          className={styles.productCard}
+                          initial={{ opacity: 0, y: 15 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ delay: idx * 0.04 }}
+                          onClick={() => handleProductClick(product)}
+                        >
+                          <div className={styles.productImageWrap}>
+                            <img
+                              src={
+                                product.images?.[0] ||
+                                product.image ||
+                                "https://placehold.co/200x200?text=No+Image"
+                              }
+                              alt={product.name}
+                              className={styles.productImage}
+                            />
+                          </div>
+                          <div className={styles.productInfo}>
+                            <h4 className={styles.productName}>{product.name}</h4>
+                            <span className={styles.productCategory}>
+                              {(product.category || "").replace(/-/g, " ")}
+                            </span>
+                            <span className={styles.productPrice}>
+                              {formatCurrency(getPrice(product))}
+                            </span>
+                            <div className={styles.productMeta}>
+                              <span className={styles.productRating}>
+                                <span className={styles.stars}>
+                                  {renderStars(product.rating)}
+                                </span>
+                                <span className={styles.ratingNum}>
+                                  {product.rating || "N/A"}
+                                </span>
+                              </span>
+                            </div>
+                          </div>
+                        </motion.div>
+                      ))}
+                    </div>
                   )}
-                </Box>
 
-                {searchResults.length === 0 ? (
-                  <Box className={styles.noResults}>
-                    <Icon icon="mdi:magnify-close" className={styles.noResultsIcon} />
-                    <Typography className={styles.noResultsText}>
-                      No results found for "{searchQuery}"
-                    </Typography>
-                    <Typography className={styles.noResultsHint}>
-                      Try different keywords or browse our popular games
-                    </Typography>
-                  </Box>
-                ) : (
-                  <Box className={styles.resultsGrid}>
-                    {searchResults.slice(0, 12).map((product, index) => (
-                      <motion.div
-                        key={product.id}
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: index * 0.05 }}
-                        className={styles.resultCard}
-                        onClick={() => handleViewProduct(product)}
-                      >
-                        <Box className={styles.resultImageWrapper}>
-                          <img
-                            src={product.images?.[0] || product.image || "https://placehold.co/60x60?text=?"}
-                            alt={product.name}
-                            className={styles.resultImage}
-                          />
-                          {product.hot && (
-                            <span className={styles.hotBadge}>
-                              <Icon icon="mdi:fire" />
-                              Hot
-                            </span>
-                          )}
-                          {product.trending && !product.hot && (
-                            <span className={styles.trendingBadge}>
-                              <TrendingUp fontSize="small" />
-                              Trending
-                            </span>
-                          )}
-                        </Box>
-                        <Box className={styles.resultInfo}>
-                          <Typography className={styles.resultName}>
-                            {product.name}
-                          </Typography>
-                          <Typography className={styles.resultCategory}>
-                            {product.category?.replace("-", " ")}{product.brand ? ` • ${product.brand}` : ""}
-                          </Typography>
-                          {getProductPrice(product) && (
-                            <Typography className={styles.resultPrice}>
-                              {formatPrice(getProductPrice(product))}
-                            </Typography>
-                          )}
-                          <Box className={styles.resultMeta}>
-                            <span className={styles.ratingBadge}>
-                              <Icon icon="mdi:star" />
-                              {product.rating}
-                            </span>
-                          </Box>
-                        </Box>
-                      </motion.div>
-                    ))}
-                  </Box>
-                )}
+                  {results.length > 12 && (
+                    <div className={styles.moreResults}>
+                      <button className={styles.viewAllBtn} onClick={handleViewAll}>
+                        +{results.length - 12} more results. View all &#8594;
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )}
 
-                {searchResults.length > 12 && (
-                  <Box className={styles.moreResultsInfo}>
-                    <Typography
-                      className={styles.moreResultsLink}
-                      onClick={handleViewAllResults}
-                    >
-                      +{searchResults.length - 12} more results. Click here to
-                      view all
-                    </Typography>
-                  </Box>
-                )}
-              </motion.div>
-            )}
-          </Box>
+              {/* Default State: Recent + Trending */}
+              {!isSearching && !hasSearched && (
+                <div className={styles.defaultContent}>
+                  {/* Recent Searches */}
+                  {recentSearches.length > 0 && (
+                    <div className={styles.section}>
+                      <div className={styles.sectionHeader}>
+                        <h3 className={styles.sectionTitle}>
+                          &#128338; Recent Searches
+                        </h3>
+                        <button
+                          className={styles.clearRecentBtn}
+                          onClick={handleClearRecent}
+                        >
+                          Clear all
+                        </button>
+                      </div>
+                      <div className={styles.chipGroup}>
+                        {recentSearches.map((term) => (
+                          <button
+                            key={term}
+                            className={styles.searchChip}
+                            onClick={() => handleRecentClick(term)}
+                          >
+                            &#128338; {term}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Trending Searches */}
+                  <div className={styles.section}>
+                    <h3 className={styles.sectionTitle}>
+                      &#128293; Trending Searches
+                    </h3>
+                    <div className={styles.chipGroup}>
+                      {TRENDING_SEARCHES.map((term) => (
+                        <button
+                          key={term}
+                          className={styles.searchChip}
+                          onClick={() => handleTrendingClick(term)}
+                        >
+                          &#128200; {term}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          </motion.div>
         </motion.div>
-      </motion.div>
+      )}
     </AnimatePresence>
   );
 };

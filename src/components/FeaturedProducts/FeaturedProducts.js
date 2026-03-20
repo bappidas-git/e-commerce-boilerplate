@@ -1,274 +1,94 @@
 import React from "react";
-import {
-  Box,
-  Typography,
-  Card,
-  CardMedia,
-  CardContent,
-  Button,
-  Chip,
-  Skeleton,
-  Grid,
-  Rating,
-} from "@mui/material";
-import {
-  ShoppingCart,
-  FlashOn,
-  TrendingUp,
-  Star,
-} from "@mui/icons-material";
-import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
-import { useCart } from "../../context/CartContext";
-import { formatCurrency, getProductMinPrice, getProductMaxDiscount } from "../../utils/helpers";
-import useSound from "../../hooks/useSound";
+import { motion } from "framer-motion";
+import { useTheme } from "../../context/ThemeContext";
+import { useCart } from "../../hooks/useCart";
+import { useWishlist } from "../../context/WishlistContext";
+import { formatCurrency, getProductMinPrice, truncateText } from "../../utils/helpers";
 import styles from "./FeaturedProducts.module.css";
 
-const FeaturedProducts = ({ products = [], isLoading = false }) => {
-  const navigate = useNavigate();
-  const { addToCart } = useCart();
-  const { play } = useSound();
-
-  const handleAddToCart = (product) => {
-    play();
-    addToCart(product);
-  };
-
-  const handleViewProduct = (productId) => {
-    play();
-    navigate(`/products/${productId}`);
-  };
-
-  const getDiscountColor = (discount) => {
-    if (discount >= 20) return styles.discountHigh;
-    if (discount >= 10) return styles.discountMedium;
-    return styles.discountLow;
-  };
-
-  if (isLoading) {
-    return (
-      <Box className={styles.section}>
-        <Typography variant="h3" className={styles.sectionTitle}>
-          Featured & <span className={styles.titleGradient}>Trending</span>
-        </Typography>
-        <Typography className={styles.sectionSubtitle}>
-          Hand-picked deals you'll love
-        </Typography>
-        <Grid container spacing={3} className={styles.productsGrid}>
-          {[...Array(8)].map((_, index) => (
-            <Grid item xs={12} sm={6} md={4} lg={3} key={index}>
-              <Card className={styles.productCard}>
-                <Skeleton variant="rectangular" height={200} />
-                <CardContent>
-                  <Skeleton variant="text" />
-                  <Skeleton variant="text" width="60%" />
-                </CardContent>
-              </Card>
-            </Grid>
-          ))}
-        </Grid>
-      </Box>
-    );
-  }
-
-  // Display only products passed from API - no static fallback
-  const displayProducts = products;
+const ProductCard = ({ product, onAddToCart, onToggleWishlist, isWishlisted, onClick }) => {
+  const { sellingPrice, originalPrice, discount } = getProductMinPrice(product);
 
   return (
-    <Box className={styles.section}>
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-      >
-        <Typography variant="h3" className={styles.sectionTitle}>
-          Featured & <span className={styles.titleGradient}>Trending</span>
-        </Typography>
-        <Typography className={styles.sectionSubtitle}>
-          Hand-picked deals you'll love
-        </Typography>
-      </motion.div>
-
-      {displayProducts.length === 0 ? (
-        <Box
-          sx={{
-            textAlign: "center",
-            py: 8,
-            px: 2,
+    <motion.div
+      className={styles.card}
+      whileHover={{ y: -6 }}
+      transition={{ duration: 0.2 }}
+      onClick={onClick}
+    >
+      <div className={styles.imageWrapper}>
+        <img src={product.images?.[0] || `https://placehold.co/300x300/e2e8f0/475569?text=${encodeURIComponent(product.name)}`} alt={product.name} />
+        {discount > 0 && <span className={styles.discountBadge}>{discount}% OFF</span>}
+        <button
+          className={`${styles.wishlistBtn} ${isWishlisted ? styles.wishlisted : ""}`}
+          onClick={(e) => { e.stopPropagation(); onToggleWishlist(product); }}
+          aria-label="Toggle wishlist"
+        >
+          {isWishlisted ? "\u2665" : "\u2661"}
+        </button>
+      </div>
+      <div className={styles.info}>
+        <p className={styles.brand}>{product.brand}</p>
+        <h3 className={styles.name}>{truncateText(product.name, 45)}</h3>
+        <div className={styles.rating}>
+          <span className={styles.stars}>{"★".repeat(Math.floor(product.rating || 0))}{"☆".repeat(5 - Math.floor(product.rating || 0))}</span>
+          <span className={styles.reviewCount}>({product.totalReviews || 0})</span>
+        </div>
+        <div className={styles.price}>
+          <span className={styles.salePrice}>{formatCurrency(sellingPrice)}</span>
+          {discount > 0 && <span className={styles.originalPrice}>{formatCurrency(originalPrice)}</span>}
+        </div>
+        <button
+          className={styles.addToCartBtn}
+          onClick={(e) => {
+            e.stopPropagation();
+            onAddToCart({
+              id: `${product.id}-${product.variants?.[0]?.id || "default"}`,
+              productId: product.id,
+              name: product.name,
+              image: product.images?.[0] || "",
+              price: sellingPrice,
+              comparePrice: originalPrice,
+              variantId: product.variants?.[0]?.id || null,
+              variantName: product.variants?.[0]?.name || null,
+            });
           }}
         >
-          <Box
-            sx={{
-              width: 80,
-              height: 80,
-              borderRadius: "50%",
-              background: "linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%)",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              margin: "0 auto 16px",
-            }}
-          >
-            <Star sx={{ fontSize: 40, color: "#667eea" }} />
-          </Box>
-          <Typography variant="h6" gutterBottom sx={{ color: "text.primary" }}>
-            No Featured Products Yet
-          </Typography>
-          <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-            Products added in the admin panel will appear here.
-          </Typography>
-          <Button
-            variant="outlined"
-            onClick={() => navigate("/products")}
-            sx={{
-              borderColor: "#667eea",
-              color: "#667eea",
-              "&:hover": {
-                borderColor: "#764ba2",
-                backgroundColor: "rgba(102, 126, 234, 0.1)",
-              },
-            }}
-          >
-            Browse All Products
-          </Button>
-        </Box>
-      ) : (
-        <Grid container spacing={3} className={styles.productsGrid}>
-          {displayProducts.map((product, index) => {
-          const priceInfo = getProductMinPrice(product);
-          const maxDiscount = getProductMaxDiscount(product);
+          Add to Cart
+        </button>
+      </div>
+    </motion.div>
+  );
+};
 
-          return (
-            <Grid item xs={12} sm={6} md={4} lg={3} key={product.id}>
-              <motion.div
-                initial={{ opacity: 0, y: 30 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: index * 0.1 }}
-                whileHover={{ y: -10 }}
-                className={styles.productWrapper}
-              >
-                <Card className={styles.productCard}>
-                  {/* Badges */}
-                  <Box className={styles.badges}>
-                    {product.hot && (
-                      <Chip
-                        label="HOT"
-                        size="small"
-                        icon={<FlashOn />}
-                        className={styles.hotBadge}
-                      />
-                    )}
-                    {product.trending && (
-                      <Chip
-                        label="Trending"
-                        size="small"
-                        icon={<TrendingUp />}
-                        className={styles.trendingBadge}
-                      />
-                    )}
-                    {maxDiscount > 0 && (
-                      <Chip
-                        label={`-${maxDiscount}%`}
-                        size="small"
-                        className={`${styles.discountBadge} ${getDiscountColor(
-                          maxDiscount
-                        )}`}
-                      />
-                    )}
-                  </Box>
+const FeaturedProducts = ({ products = [], title = "Featured Products", viewAllLink = "/products" }) => {
+  const { isDarkMode } = useTheme();
+  const navigate = useNavigate();
+  const { addToCart } = useCart();
+  const { toggleWishlist, isInWishlist } = useWishlist();
 
-                  {/* Image */}
-                  <Box className={styles.imageContainer}>
-                    <CardMedia
-                      component="img"
-                      image={product.images?.[0] || product.image || "https://placehold.co/400x300?text=No+Image"}
-                      alt={product.name}
-                      className={styles.productImage}
-                    />
-                    <Box className={styles.imageOverlay}>
-                      <Button
-                        variant="contained"
-                        className={styles.quickViewButton}
-                        onClick={() => handleViewProduct(product.id)}
-                      >
-                        Quick View
-                      </Button>
-                    </Box>
-                  </Box>
+  if (products.length === 0) return null;
 
-                  {/* Content */}
-                  <CardContent className={styles.cardContent}>
-                    {product.brand && (
-                      <Box className={styles.chipContainer}>
-                        <Chip
-                          label={product.brand}
-                          size="small"
-                          className={styles.platformChip}
-                        />
-                      </Box>
-                    )}
-
-                    <Typography className={styles.productName}>
-                      {product.name}
-                    </Typography>
-
-                    {/* Rating */}
-                    {product.rating && (
-                      <Box className={styles.ratingContainer}>
-                        <Rating
-                          value={product.rating}
-                          precision={0.1}
-                          size="small"
-                          readOnly
-                        />
-                        <Typography className={styles.reviewCount}>
-                          ({product.totalReviews?.toLocaleString() || 0})
-                        </Typography>
-                      </Box>
-                    )}
-
-                    <Box className={styles.priceContainer}>
-                      <Typography className={styles.price}>
-                        {formatCurrency(priceInfo.sellingPrice)}
-                      </Typography>
-                      {priceInfo.originalPrice > priceInfo.sellingPrice && (
-                        <Typography className={styles.originalPrice}>
-                          {formatCurrency(priceInfo.originalPrice)}
-                        </Typography>
-                      )}
-                    </Box>
-
-                    <Button
-                      variant="contained"
-                      fullWidth
-                      className={styles.addToCartButton}
-                      onClick={() => handleViewProduct(product.id)}
-                    >
-                      View Options
-                    </Button>
-                  </CardContent>
-                </Card>
-              </motion.div>
-            </Grid>
-          );
-        })}
-        </Grid>
-      )}
-
-      <Box className={styles.viewAllContainer}>
-        <Button
-          variant="outlined"
-          size="large"
-          className={styles.viewAllButton}
-          onClick={() => {
-            play();
-            navigate("/products");
-          }}
-        >
-          View All Products
-        </Button>
-      </Box>
-    </Box>
+  return (
+    <section className={`${styles.section} ${isDarkMode ? styles.dark : ""}`}>
+      <div className={styles.sectionHeader}>
+        <h2>{title}</h2>
+        <button className={styles.viewAllBtn} onClick={() => navigate(viewAllLink)}>View All &rarr;</button>
+      </div>
+      <div className={styles.grid}>
+        {products.map((product) => (
+          <ProductCard
+            key={product.id}
+            product={product}
+            onAddToCart={addToCart}
+            onToggleWishlist={toggleWishlist}
+            isWishlisted={isInWishlist(product.id)}
+            onClick={() => navigate(`/products/${product.id}`)}
+          />
+        ))}
+      </div>
+    </section>
   );
 };
 
