@@ -668,13 +668,42 @@
       "stock": 30,
       "lowStockThreshold": 5,
       "weight": 0.6,
-      "dimensions": { "length": 30, "width": 25, "height": 5 },
+      "dimensions": {
+        "length": 30,
+        "width": 25,
+        "height": 5
+      },
       "variants": [
-        { "id": "v1", "name": "Maroon & Gold", "price": 5999, "stock": 10, "sku": "SAR-BNR-SLK-MRN" },
-        { "id": "v2", "name": "Royal Blue & Gold", "price": 5999, "stock": 10, "sku": "SAR-BNR-SLK-BLU" },
-        { "id": "v3", "name": "Green & Gold", "price": 6499, "stock": 10, "sku": "SAR-BNR-SLK-GRN" }
+        {
+          "id": "v1",
+          "name": "Maroon & Gold",
+          "price": 5999,
+          "stock": 10,
+          "sku": "SAR-BNR-SLK-MRN"
+        },
+        {
+          "id": "v2",
+          "name": "Royal Blue & Gold",
+          "price": 5999,
+          "stock": 10,
+          "sku": "SAR-BNR-SLK-BLU"
+        },
+        {
+          "id": "v3",
+          "name": "Green & Gold",
+          "price": 6499,
+          "stock": 10,
+          "sku": "SAR-BNR-SLK-GRN"
+        }
       ],
-      "tags": ["saree", "silk", "banarasi", "wedding", "ethnic", "traditional"],
+      "tags": [
+        "saree",
+        "silk",
+        "banarasi",
+        "wedding",
+        "ethnic",
+        "traditional"
+      ],
       "featured": true,
       "trending": true,
       "hot": false,
@@ -706,14 +735,49 @@
       "stock": 50,
       "lowStockThreshold": 8,
       "weight": 0.5,
-      "dimensions": { "length": 28, "width": 22, "height": 4 },
+      "dimensions": {
+        "length": 28,
+        "width": 22,
+        "height": 4
+      },
       "variants": [
-        { "id": "v1", "name": "S", "price": 3499, "stock": 12, "sku": "KRT-ANK-DSG-S" },
-        { "id": "v2", "name": "M", "price": 3499, "stock": 15, "sku": "KRT-ANK-DSG-M" },
-        { "id": "v3", "name": "L", "price": 3499, "stock": 13, "sku": "KRT-ANK-DSG-L" },
-        { "id": "v4", "name": "XL", "price": 3499, "stock": 10, "sku": "KRT-ANK-DSG-XL" }
+        {
+          "id": "v1",
+          "name": "S",
+          "price": 3499,
+          "stock": 12,
+          "sku": "KRT-ANK-DSG-S"
+        },
+        {
+          "id": "v2",
+          "name": "M",
+          "price": 3499,
+          "stock": 15,
+          "sku": "KRT-ANK-DSG-M"
+        },
+        {
+          "id": "v3",
+          "name": "L",
+          "price": 3499,
+          "stock": 13,
+          "sku": "KRT-ANK-DSG-L"
+        },
+        {
+          "id": "v4",
+          "name": "XL",
+          "price": 3499,
+          "stock": 10,
+          "sku": "KRT-ANK-DSG-XL"
+        }
       ],
-      "tags": ["kurta", "anarkali", "ethnic", "embroidery", "festive", "women"],
+      "tags": [
+        "kurta",
+        "anarkali",
+        "ethnic",
+        "embroidery",
+        "festive",
+        "women"
+      ],
       "featured": true,
       "trending": false,
       "hot": true,
@@ -745,14 +809,49 @@
       "stock": 80,
       "lowStockThreshold": 15,
       "weight": 0.5,
-      "dimensions": { "length": 32, "width": 12, "height": 12 },
+      "dimensions": {
+        "length": 32,
+        "width": 12,
+        "height": 12
+      },
       "variants": [
-        { "id": "v1", "name": "UK 7 - Black", "price": 3999, "stock": 20, "sku": "FTW-ASR-7-BLK" },
-        { "id": "v2", "name": "UK 8 - Black", "price": 3999, "stock": 20, "sku": "FTW-ASR-8-BLK" },
-        { "id": "v3", "name": "UK 9 - Blue", "price": 3999, "stock": 20, "sku": "FTW-ASR-9-BLU" },
-        { "id": "v4", "name": "UK 10 - Blue", "price": 3999, "stock": 20, "sku": "FTW-ASR-10-BLU" }
+        {
+          "id": "v1",
+          "name": "UK 7 - Black",
+          "price": 3999,
+          "stock": 20,
+          "sku": "FTW-ASR-7-BLK"
+        },
+        {
+          "id": "v2",
+          "name": "UK 8 - Black",
+          "price": 3999,
+          "stock": 20,
+          "sku": "FTW-ASR-8-BLK"
+        },
+        {
+          "id": "v3",
+          "name": "UK 9 - Blue",
+          "price": 3999,
+          "stock": 20,
+          "sku": "FTW-ASR-9-BLU"
+        },
+        {
+          "id": "v4",
+          "name": "UK 10 - Blue",
+          "price": 3999,
+          "stock": 20,
+          "sku": "FTW-ASR-10-BLU"
+        }
       ],
-      "tags": ["shoes", "running", "sports", "fitness", "lightweight", "sneakers"],
+      "tags": [
+        "shoes",
+        "running",
+        "sports",
+        "fitness",
+        "lightweight",
+        "sneakers"
+      ],
       "featured": true,
       "trending": true,
       "hot": false,
@@ -783,13 +882,42 @@
       "stock": 100,
       "lowStockThreshold": 20,
       "weight": 0.45,
-      "dimensions": { "length": 18, "width": 7, "height": 7 },
+      "dimensions": {
+        "length": 18,
+        "width": 7,
+        "height": 7
+      },
       "variants": [
-        { "id": "v1", "name": "Midnight Black", "price": 2999, "stock": 40, "sku": "AUD-BBX-SPK-BLK" },
-        { "id": "v2", "name": "Ocean Blue", "price": 2999, "stock": 30, "sku": "AUD-BBX-SPK-BLU" },
-        { "id": "v3", "name": "Olive Green", "price": 2999, "stock": 30, "sku": "AUD-BBX-SPK-GRN" }
+        {
+          "id": "v1",
+          "name": "Midnight Black",
+          "price": 2999,
+          "stock": 40,
+          "sku": "AUD-BBX-SPK-BLK"
+        },
+        {
+          "id": "v2",
+          "name": "Ocean Blue",
+          "price": 2999,
+          "stock": 30,
+          "sku": "AUD-BBX-SPK-BLU"
+        },
+        {
+          "id": "v3",
+          "name": "Olive Green",
+          "price": 2999,
+          "stock": 30,
+          "sku": "AUD-BBX-SPK-GRN"
+        }
       ],
-      "tags": ["speaker", "bluetooth", "portable", "waterproof", "bass", "wireless"],
+      "tags": [
+        "speaker",
+        "bluetooth",
+        "portable",
+        "waterproof",
+        "bass",
+        "wireless"
+      ],
       "featured": false,
       "trending": true,
       "hot": true,
@@ -821,12 +949,35 @@
       "stock": 25,
       "lowStockThreshold": 5,
       "weight": 8.5,
-      "dimensions": { "length": 45, "width": 40, "height": 25 },
+      "dimensions": {
+        "length": 45,
+        "width": 40,
+        "height": 25
+      },
       "variants": [
-        { "id": "v1", "name": "Royal Floral", "price": 4999, "stock": 10, "sku": "KIT-CDS-24P-FLR" },
-        { "id": "v2", "name": "Classic White", "price": 4499, "stock": 15, "sku": "KIT-CDS-24P-WHT" }
+        {
+          "id": "v1",
+          "name": "Royal Floral",
+          "price": 4999,
+          "stock": 10,
+          "sku": "KIT-CDS-24P-FLR"
+        },
+        {
+          "id": "v2",
+          "name": "Classic White",
+          "price": 4499,
+          "stock": 15,
+          "sku": "KIT-CDS-24P-WHT"
+        }
       ],
-      "tags": ["dinner set", "bone china", "kitchen", "dining", "crockery", "housewarming"],
+      "tags": [
+        "dinner set",
+        "bone china",
+        "kitchen",
+        "dining",
+        "crockery",
+        "housewarming"
+      ],
       "featured": true,
       "trending": false,
       "hot": false,
@@ -857,13 +1008,42 @@
       "stock": 60,
       "lowStockThreshold": 10,
       "weight": 1.2,
-      "dimensions": { "length": 183, "width": 61, "height": 0.6 },
+      "dimensions": {
+        "length": 183,
+        "width": 61,
+        "height": 0.6
+      },
       "variants": [
-        { "id": "v1", "name": "Purple", "price": 1499, "stock": 20, "sku": "SPT-PFX-YGA-PRP" },
-        { "id": "v2", "name": "Teal", "price": 1499, "stock": 20, "sku": "SPT-PFX-YGA-TEL" },
-        { "id": "v3", "name": "Grey", "price": 1499, "stock": 20, "sku": "SPT-PFX-YGA-GRY" }
+        {
+          "id": "v1",
+          "name": "Purple",
+          "price": 1499,
+          "stock": 20,
+          "sku": "SPT-PFX-YGA-PRP"
+        },
+        {
+          "id": "v2",
+          "name": "Teal",
+          "price": 1499,
+          "stock": 20,
+          "sku": "SPT-PFX-YGA-TEL"
+        },
+        {
+          "id": "v3",
+          "name": "Grey",
+          "price": 1499,
+          "stock": 20,
+          "sku": "SPT-PFX-YGA-GRY"
+        }
       ],
-      "tags": ["yoga", "mat", "fitness", "exercise", "non-slip", "eco-friendly"],
+      "tags": [
+        "yoga",
+        "mat",
+        "fitness",
+        "exercise",
+        "non-slip",
+        "eco-friendly"
+      ],
       "featured": false,
       "trending": true,
       "hot": false,
@@ -895,9 +1075,21 @@
       "stock": 15,
       "lowStockThreshold": 3,
       "weight": 12.5,
-      "dimensions": { "length": 124, "width": 72, "height": 8 },
+      "dimensions": {
+        "length": 124,
+        "width": 72,
+        "height": 8
+      },
       "variants": [],
-      "tags": ["tv", "smart tv", "4k", "led", "dolby", "entertainment", "electronics"],
+      "tags": [
+        "tv",
+        "smart tv",
+        "4k",
+        "led",
+        "dolby",
+        "entertainment",
+        "electronics"
+      ],
       "featured": true,
       "trending": true,
       "hot": true,
@@ -927,14 +1119,43 @@
       "costPrice": 650,
       "stock": 70,
       "lowStockThreshold": 15,
-      "weight": 1.0,
-      "dimensions": { "length": 35, "width": 30, "height": 8 },
+      "weight": 1,
+      "dimensions": {
+        "length": 35,
+        "width": 30,
+        "height": 8
+      },
       "variants": [
-        { "id": "v1", "name": "Floral Blue", "price": 1299, "stock": 25, "sku": "HOM-CBS-KNG-FBL" },
-        { "id": "v2", "name": "Geometric Grey", "price": 1299, "stock": 25, "sku": "HOM-CBS-KNG-GGR" },
-        { "id": "v3", "name": "Paisley Maroon", "price": 1399, "stock": 20, "sku": "HOM-CBS-KNG-PMR" }
+        {
+          "id": "v1",
+          "name": "Floral Blue",
+          "price": 1299,
+          "stock": 25,
+          "sku": "HOM-CBS-KNG-FBL"
+        },
+        {
+          "id": "v2",
+          "name": "Geometric Grey",
+          "price": 1299,
+          "stock": 25,
+          "sku": "HOM-CBS-KNG-GGR"
+        },
+        {
+          "id": "v3",
+          "name": "Paisley Maroon",
+          "price": 1399,
+          "stock": 20,
+          "sku": "HOM-CBS-KNG-PMR"
+        }
       ],
-      "tags": ["bedsheet", "cotton", "king size", "bedroom", "home", "pillow cover"],
+      "tags": [
+        "bedsheet",
+        "cotton",
+        "king size",
+        "bedroom",
+        "home",
+        "pillow cover"
+      ],
       "featured": false,
       "trending": false,
       "hot": false,
@@ -965,9 +1186,20 @@
       "stock": 20,
       "lowStockThreshold": 5,
       "weight": 1.2,
-      "dimensions": { "length": 86, "width": 11, "height": 6 },
+      "dimensions": {
+        "length": 86,
+        "width": 11,
+        "height": 6
+      },
       "variants": [],
-      "tags": ["cricket", "bat", "english willow", "sports", "outdoor", "game"],
+      "tags": [
+        "cricket",
+        "bat",
+        "english willow",
+        "sports",
+        "outdoor",
+        "game"
+      ],
       "featured": false,
       "trending": true,
       "hot": false,
@@ -998,13 +1230,42 @@
       "stock": 200,
       "lowStockThreshold": 30,
       "weight": 0.04,
-      "dimensions": { "length": 16, "width": 8, "height": 1.2 },
+      "dimensions": {
+        "length": 16,
+        "width": 8,
+        "height": 1.2
+      },
       "variants": [
-        { "id": "v1", "name": "Crystal Clear", "price": 999, "stock": 80, "sku": "ACC-NVT-CSE-CLR" },
-        { "id": "v2", "name": "Matte Black", "price": 1099, "stock": 60, "sku": "ACC-NVT-CSE-MBK" },
-        { "id": "v3", "name": "Navy Blue", "price": 1099, "stock": 60, "sku": "ACC-NVT-CSE-NBL" }
+        {
+          "id": "v1",
+          "name": "Crystal Clear",
+          "price": 999,
+          "stock": 80,
+          "sku": "ACC-NVT-CSE-CLR"
+        },
+        {
+          "id": "v2",
+          "name": "Matte Black",
+          "price": 1099,
+          "stock": 60,
+          "sku": "ACC-NVT-CSE-MBK"
+        },
+        {
+          "id": "v3",
+          "name": "Navy Blue",
+          "price": 1099,
+          "stock": 60,
+          "sku": "ACC-NVT-CSE-NBL"
+        }
       ],
-      "tags": ["phone case", "iphone", "magsafe", "shockproof", "accessories", "protective"],
+      "tags": [
+        "phone case",
+        "iphone",
+        "magsafe",
+        "shockproof",
+        "accessories",
+        "protective"
+      ],
       "featured": false,
       "trending": false,
       "hot": true,
@@ -1035,14 +1296,50 @@
       "stock": 90,
       "lowStockThreshold": 15,
       "weight": 0.3,
-      "dimensions": { "length": 30, "width": 22, "height": 3 },
+      "dimensions": {
+        "length": 30,
+        "width": 22,
+        "height": 3
+      },
       "variants": [
-        { "id": "v1", "name": "S - White", "price": 1999, "stock": 20, "sku": "CLT-MFS-S-WHT" },
-        { "id": "v2", "name": "M - White", "price": 1999, "stock": 25, "sku": "CLT-MFS-M-WHT" },
-        { "id": "v3", "name": "L - Light Blue", "price": 1999, "stock": 25, "sku": "CLT-MFS-L-BLU" },
-        { "id": "v4", "name": "XL - Light Blue", "price": 1999, "stock": 20, "sku": "CLT-MFS-XL-BLU" }
+        {
+          "id": "v1",
+          "name": "S - White",
+          "price": 1999,
+          "stock": 20,
+          "sku": "CLT-MFS-S-WHT"
+        },
+        {
+          "id": "v2",
+          "name": "M - White",
+          "price": 1999,
+          "stock": 25,
+          "sku": "CLT-MFS-M-WHT"
+        },
+        {
+          "id": "v3",
+          "name": "L - Light Blue",
+          "price": 1999,
+          "stock": 25,
+          "sku": "CLT-MFS-L-BLU"
+        },
+        {
+          "id": "v4",
+          "name": "XL - Light Blue",
+          "price": 1999,
+          "stock": 20,
+          "sku": "CLT-MFS-XL-BLU"
+        }
       ],
-      "tags": ["shirt", "formal", "cotton", "slim fit", "men", "office", "professional"],
+      "tags": [
+        "shirt",
+        "formal",
+        "cotton",
+        "slim fit",
+        "men",
+        "office",
+        "professional"
+      ],
       "featured": true,
       "trending": false,
       "hot": false,
@@ -1072,13 +1369,36 @@
       "costPrice": 1200,
       "stock": 35,
       "lowStockThreshold": 5,
-      "weight": 3.0,
-      "dimensions": { "length": 62, "width": 42, "height": 4 },
+      "weight": 3,
+      "dimensions": {
+        "length": 62,
+        "width": 42,
+        "height": 4
+      },
       "variants": [
-        { "id": "v1", "name": "Blue & Gold", "price": 2499, "stock": 15, "sku": "HOM-WAC-ABS-BGD" },
-        { "id": "v2", "name": "Earthy Tones", "price": 2499, "stock": 20, "sku": "HOM-WAC-ABS-ETH" }
+        {
+          "id": "v1",
+          "name": "Blue & Gold",
+          "price": 2499,
+          "stock": 15,
+          "sku": "HOM-WAC-ABS-BGD"
+        },
+        {
+          "id": "v2",
+          "name": "Earthy Tones",
+          "price": 2499,
+          "stock": 20,
+          "sku": "HOM-WAC-ABS-ETH"
+        }
       ],
-      "tags": ["wall art", "canvas", "abstract", "decor", "living room", "modern art"],
+      "tags": [
+        "wall art",
+        "canvas",
+        "abstract",
+        "decor",
+        "living room",
+        "modern art"
+      ],
       "featured": false,
       "trending": false,
       "hot": false,
@@ -1109,13 +1429,42 @@
       "stock": 150,
       "lowStockThreshold": 25,
       "weight": 0.4,
-      "dimensions": { "length": 28, "width": 8, "height": 8 },
+      "dimensions": {
+        "length": 28,
+        "width": 8,
+        "height": 8
+      },
       "variants": [
-        { "id": "v1", "name": "Pacific Blue", "price": 1299, "stock": 50, "sku": "SPT-HFL-WTR-BLU" },
-        { "id": "v2", "name": "Charcoal Black", "price": 1299, "stock": 50, "sku": "SPT-HFL-WTR-BLK" },
-        { "id": "v3", "name": "Coral Pink", "price": 1299, "stock": 50, "sku": "SPT-HFL-WTR-PNK" }
+        {
+          "id": "v1",
+          "name": "Pacific Blue",
+          "price": 1299,
+          "stock": 50,
+          "sku": "SPT-HFL-WTR-BLU"
+        },
+        {
+          "id": "v2",
+          "name": "Charcoal Black",
+          "price": 1299,
+          "stock": 50,
+          "sku": "SPT-HFL-WTR-BLK"
+        },
+        {
+          "id": "v3",
+          "name": "Coral Pink",
+          "price": 1299,
+          "stock": 50,
+          "sku": "SPT-HFL-WTR-PNK"
+        }
       ],
-      "tags": ["water bottle", "insulated", "stainless steel", "sports", "gym", "hydration"],
+      "tags": [
+        "water bottle",
+        "insulated",
+        "stainless steel",
+        "sports",
+        "gym",
+        "hydration"
+      ],
       "featured": false,
       "trending": true,
       "hot": false,
@@ -1146,9 +1495,20 @@
       "stock": 40,
       "lowStockThreshold": 8,
       "weight": 2.5,
-      "dimensions": { "length": 40, "width": 30, "height": 15 },
+      "dimensions": {
+        "length": 40,
+        "width": 30,
+        "height": 15
+      },
       "variants": [],
-      "tags": ["building blocks", "kids", "toys", "STEM", "educational", "creative"],
+      "tags": [
+        "building blocks",
+        "kids",
+        "toys",
+        "STEM",
+        "educational",
+        "creative"
+      ],
       "featured": true,
       "trending": false,
       "hot": true,
@@ -1161,7 +1521,22 @@
       "updatedAt": "2025-03-14T00:00:00.000Z"
     }
   ],
-  "cart": [],
+  "cart": [
+    {
+      "id": "3-default",
+      "productId": 3,
+      "variantId": "v1",
+      "variantName": "Black / Rubber Band",
+      "name": "FitPulse Smartwatch Series 5",
+      "image": "https://placehold.co/600x400/0f3460/FFFFFF?text=FitPulse+Watch",
+      "price": 14999,
+      "comparePrice": 19999,
+      "currency": "INR",
+      "quantity": 1,
+      "cartItemId": 1773988479463,
+      "userId": 3
+    }
+  ],
   "orders": [
     {
       "id": 1,
@@ -1384,6 +1759,60 @@
       "notes": "",
       "createdAt": "2026-03-15T16:00:00.000Z",
       "updatedAt": "2026-03-15T16:00:00.000Z"
+    },
+    {
+      "items": [
+        {
+          "productId": 3,
+          "variantId": "v1",
+          "name": "FitPulse Smartwatch Series 5 - Black / Rubber Band",
+          "image": "https://placehold.co/600x400/0f3460/FFFFFF?text=FitPulse+Watch",
+          "sku": "",
+          "price": 14999,
+          "quantity": 1,
+          "subtotal": 14999
+        }
+      ],
+      "shippingAddress": {
+        "firstName": "Bappi",
+        "lastName": "Das",
+        "phone": "+919707112233",
+        "addressLine1": "Moutupuri, Barpeta",
+        "addressLine2": "",
+        "city": "Howly",
+        "state": "Assam",
+        "postalCode": "781316",
+        "country": "India"
+      },
+      "billingAddress": {
+        "firstName": "Bappi",
+        "lastName": "Das",
+        "phone": "+919707112233",
+        "addressLine1": "Moutupuri, Barpeta",
+        "addressLine2": "",
+        "city": "Howly",
+        "state": "Assam",
+        "postalCode": "781316",
+        "country": "India"
+      },
+      "subtotal": 14999,
+      "discountAmount": 0,
+      "couponCode": null,
+      "shippingAmount": 0,
+      "taxAmount": 2700,
+      "total": 17699,
+      "paymentMethod": "cod",
+      "paymentStatus": "pending",
+      "fulfillmentStatus": "unfulfilled",
+      "shippingStatus": "pending",
+      "trackingNumber": null,
+      "notes": "",
+      "userId": 3,
+      "orderNumber": "ORD-MMYJ01ED-ZR26",
+      "status": "completed",
+      "createdAt": "2026-03-20T06:36:26.005Z",
+      "updatedAt": "2026-03-20T06:36:26.005Z",
+      "id": 5
     }
   ],
   "returns": [
@@ -1654,7 +2083,47 @@
       "updatedAt": "2026-03-12T15:00:00.000Z"
     }
   ],
-  "wishlist": [],
+  "wishlist": [
+    {
+      "userId": 3,
+      "productId": 3,
+      "id": 1773988467439,
+      "name": "FitPulse Smartwatch Series 5",
+      "image": "https://placehold.co/600x400/0f3460/FFFFFF?text=FitPulse+Watch",
+      "brand": "FitPulse",
+      "price": 14999,
+      "comparePrice": 19999,
+      "rating": 4.5,
+      "totalReviews": 215,
+      "shortDescription": "Advanced health tracking smartwatch with GPS and AMOLED display",
+      "variants": [
+        {
+          "id": "v1",
+          "name": "Black / Rubber Band",
+          "price": 14999,
+          "stock": 30,
+          "sku": "ELC-FPS-SW5-BLK-R"
+        },
+        {
+          "id": "v2",
+          "name": "Silver / Metal Band",
+          "price": 16999,
+          "stock": 25,
+          "sku": "ELC-FPS-SW5-SLV-M"
+        },
+        {
+          "id": "v3",
+          "name": "Gold / Leather Band",
+          "price": 18999,
+          "stock": 20,
+          "sku": "ELC-FPS-SW5-GLD-L"
+        }
+      ],
+      "trending": false,
+      "hot": true,
+      "addedAt": "2026-03-20T06:34:27.439Z"
+    }
+  ],
   "leads": [
     {
       "id": 1,
