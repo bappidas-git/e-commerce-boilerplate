@@ -2048,11 +2048,11 @@
       "rating": 5,
       "title": "Absolutely love these earbuds!",
       "body": "The sound quality is incredible for the price. ANC works great in noisy environments like cafes and trains. Battery easily lasts 2 days with my usage. The fit is secure and comfortable. Highly recommended!",
-      "status": "approved",
+      "status": "rejected",
       "isVerifiedPurchase": true,
       "helpfulCount": 24,
       "createdAt": "2026-01-25T09:00:00.000Z",
-      "updatedAt": "2026-01-26T10:00:00.000Z"
+      "updatedAt": "2026-04-17T14:32:19.189Z"
     },
     {
       "id": 2,
@@ -2076,11 +2076,11 @@
       "rating": 5,
       "title": "Best mechanical keyboard under 7k",
       "body": "Typing feel is satisfying and the RGB is gorgeous. Build feels very solid with the aluminum frame. No lag or missed keystrokes even during intense gaming. Highly recommend the brown switches for a balance between gaming and typing.",
-      "status": "pending",
+      "status": "approved",
       "isVerifiedPurchase": false,
       "helpfulCount": 0,
       "createdAt": "2026-03-12T15:00:00.000Z",
-      "updatedAt": "2026-03-12T15:00:00.000Z"
+      "updatedAt": "2026-04-17T14:32:29.365Z"
     }
   ],
   "wishlist": [
@@ -2165,10 +2165,10 @@
       "category": "product",
       "subject": "Product availability inquiry",
       "message": "Do you have the FitPulse Smartwatch in size 44mm? The website shows it's available but I wanted to confirm before ordering.",
-      "status": "new",
+      "status": "contacted",
       "createdAt": "2026-03-18T10:30:00.000Z",
-      "updatedAt": "2026-03-18T10:30:00.000Z",
-      "notes": ""
+      "updatedAt": "2026-04-17T14:22:33.071Z",
+      "notes": "fdsadfsafwe"
     }
   ],
   "settings": {
