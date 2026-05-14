@@ -743,7 +743,15 @@ const ProductDetails = () => {
                         <tr>
                           <td className={styles.specLabel}>Dimensions</td>
                           <td className={styles.specValue}>
-                            {product.dimensions}
+                            {typeof product.dimensions === "object"
+                              ? [
+                                  product.dimensions.length,
+                                  product.dimensions.width,
+                                  product.dimensions.height,
+                                ]
+                                  .filter((v) => v != null && v !== "")
+                                  .join(" × ")
+                              : product.dimensions}
                           </td>
                         </tr>
                       )}
