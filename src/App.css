@@ -45,7 +45,10 @@ body.dark .App {
 
 .main-content {
   flex: 1;
-  padding-top: 64px;
+  /* The fixed Header renders its own in-flow spacer that offsets the header
+     height exactly, and each page supplies its own top padding — so no
+     padding-top here (a redundant one previously left a ~64px empty gap).
+     padding-bottom keeps content clear of the fixed mobile BottomNav. */
   padding-bottom: 80px;
   min-height: calc(100vh - 70px);
   background-color: #f5f7fa;
@@ -185,7 +188,6 @@ body.light::-webkit-scrollbar-thumb {
 /* Mobile styles */
 @media (max-width: 768px) {
   .main-content {
-    padding-top: 55px;
     padding-bottom: 70px;
   }
 
