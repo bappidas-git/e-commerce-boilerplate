@@ -24,7 +24,7 @@ const ORDERS_PER_PAGE = 5;
 const OrderHistory = () => {
   const navigate = useNavigate();
   const { isDarkMode } = useTheme();
-  const { isAuthenticated, user } = useAuth();
+  const { isAuthenticated, openAuthModal } = useAuth();
 
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -135,15 +135,17 @@ const OrderHistory = () => {
             <p className={styles.loginSubtext}>
               Please sign in to view your order history. Your orders are linked to your account.
             </p>
-            <button
-              className={styles.btnPrimary}
-              onClick={() => navigate("/login")}
-            >
-              Sign In
-            </button>
-            <Link to="/" className={styles.linkSecondary}>
-              Back to Home
-            </Link>
+            <div className={styles.loginActions}>
+              <button
+                className={styles.btnPrimary}
+                onClick={() => openAuthModal("login")}
+              >
+                Log In
+              </button>
+              <Link to="/" className={styles.linkSecondary}>
+                Back to Home
+              </Link>
+            </div>
           </motion.div>
         </div>
       </div>

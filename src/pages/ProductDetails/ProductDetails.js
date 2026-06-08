@@ -126,15 +126,24 @@ const ProductDetails = () => {
       setSelectedImageIndex(0);
       setQuantity(1);
 
-      // Save to recently viewed
+      // Save to recently viewed. Keyed "recentlyViewed" — must match the key
+      // Home.js reads. Store the display fields Home's product card needs
+      // (images, comparePrice, rating, variants…) so the cards render fully.
       try {
         const viewed = JSON.parse(localStorage.getItem("recentlyViewed") || "[]");
         const filtered = viewed.filter((item) => String(item.id) !== String(data.id));
         filtered.unshift({
           id: data.id,
+          slug: data.slug,
           name: data.name,
+          brand: data.brand,
           image: data.images?.[0] || data.image,
+          images: data.images,
           price: data.price,
+          comparePrice: data.comparePrice,
+          variants: data.variants,
+          rating: data.rating,
+          totalReviews: data.totalReviews,
           viewedAt: new Date().toISOString(),
         });
         localStorage.setItem("recentlyViewed", JSON.stringify(filtered.slice(0, 20)));
@@ -876,7 +885,7 @@ const ProductDetails = () => {
                 return (
                   <Link
                     key={rp.id}
-                    to={`/product/${rp.id}`}
+                    to={`/products/${rp.id}`}
                     className={styles.similarCard}
                   >
                     <div className={styles.similarImageWrapper}>

@@ -1,3 +1,15 @@
+// Inline SVG placeholder (no network) used when an image is missing or its URL
+// fails to load, so image-bearing cards always degrade gracefully.
+export const PLACEHOLDER_IMG =
+  "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='400'%3E%3Crect width='100%25' height='100%25' fill='%23e2e8f0'/%3E%3Ctext x='50%25' y='50%25' font-family='system-ui,sans-serif' font-size='22' fill='%2394a3b8' text-anchor='middle' dominant-baseline='middle'%3ENo Image%3C/text%3E%3C/svg%3E";
+
+// <img onError> handler: swap to the placeholder once (guarded against loops).
+export const onImageError = (e) => {
+  if (e.currentTarget.src === PLACEHOLDER_IMG) return;
+  e.currentTarget.onerror = null;
+  e.currentTarget.src = PLACEHOLDER_IMG;
+};
+
 export const formatCurrency = (amount, currency = "INR") => {
   const locale = currency === "INR" ? "en-IN" : "en-US";
   return new Intl.NumberFormat(locale, {
@@ -44,6 +56,39 @@ export const getProductMaxDiscount = (product) => {
   return 0;
 };
 
+// Pick the variant whose price matches the displayed (minimum) price, i.e. the
+// cheapest variant. Returns null for products without variants. Used so a
+// card's quick "Add to Cart" enqueues exactly the variant whose price is shown.
+export const getDefaultCartVariant = (product) => {
+  if (!product?.variants?.length) return null;
+  return product.variants.reduce((lowest, v) =>
+    (parseFloat(v.price) || Infinity) < (parseFloat(lowest.price) || Infinity)
+      ? v
+      : lowest
+  );
+};
+
+// Build a normalized cart line for a "quick add" from a product card. The id
+// scheme mirrors the product detail page (`${id}-${variantId}` when a variant
+// exists, otherwise the bare product id) so quick-adds merge with PDP adds, and
+// the price always equals the (minimum) price the card displays — never a
+// synthetic `${id}-default` id that would collide with real variant cart ids.
+export const buildCartItem = (product) => {
+  const { sellingPrice } = getProductMinPrice(product);
+  const variant = getDefaultCartVariant(product);
+  return {
+    id: variant ? `${product.id}-${variant.id}` : String(product.id),
+    productId: product.id,
+    variantId: variant?.id || null,
+    variantName: variant?.name || null,
+    name: product.name,
+    image: product.images?.[0] || product.image || "",
+    price: variant ? parseFloat(variant.price) || sellingPrice : sellingPrice,
+    comparePrice: product.comparePrice || 0,
+    currency: "INR",
+  };
+};
+
 export const formatNumber = (num) => {
   return new Intl.NumberFormat("en-US").format(num);
 };
@@ -77,8 +122,8 @@ export const slugify = (text) => {
     .toString()
     .toLowerCase()
     .replace(/\s+/g, "-")
-    .replace(/[^\w\-]+/g, "")
-    .replace(/\-\-+/g, "-")
+    .replace(/[^\w-]+/g, "")
+    .replace(/--+/g, "-")
     .replace(/^-+/, "")
     .replace(/-+$/, "");
 };

@@ -376,9 +376,16 @@
   color: #a0aec0;
 }
 
+.loginActions {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  margin-top: 1.75rem;
+}
+
 .linkSecondary {
   display: inline-block;
-  margin-top: 1rem;
   color: #667eea;
   font-size: 0.9rem;
   text-decoration: none;

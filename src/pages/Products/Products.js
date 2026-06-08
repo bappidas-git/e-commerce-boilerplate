@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback } from "react";
-import { useNavigate, useLocation, useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { motion } from "framer-motion";
 import { useTheme } from "../../context/ThemeContext";
 import { useCart } from "../../hooks/useCart";
@@ -162,7 +162,6 @@ const EmptyIllustration = () => (
 // ---------------------------------------------------------------------------
 const Products = () => {
   const navigate = useNavigate();
-  const location = useLocation();
   const [searchParams, setSearchParams] = useSearchParams();
   const { isDarkMode } = useTheme();
   const { addToCart } = useCart();
@@ -219,6 +218,24 @@ const Products = () => {
     fetchData();
   }, []);
 
+  // Category links arrive as either an id (Home cards / header) or a slug
+  // (hero category bar). Once categories load, normalize the selection to slugs
+  // so the URL, sidebar checkboxes, toggle and breadcrumb all stay consistent.
+  useEffect(() => {
+    if (categories.length === 0 || selectedCategories.length === 0) return;
+    const normalized = selectedCategories.map((token) => {
+      const cat = categories.find(
+        (c) => c.slug === token || String(c.id) === String(token)
+      );
+      return cat ? cat.slug : token;
+    });
+    if (normalized.join(",") !== selectedCategories.join(",")) {
+      setSelectedCategories(normalized);
+      syncUrlParams({ category: normalized });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [categories]);
+
   // ---- Sync URL params when filters change ----
   const syncUrlParams = useCallback(
     (overrides = {}) => {
@@ -268,9 +285,22 @@ const Products = () => {
       );
     }
 
-    // Categories
+    // Categories — products carry a numeric `categoryId`; the selected tokens
+    // may be ids or slugs (different entry points pass different things), so
+    // resolve each token to a category id via the loaded categories and match
+    // on that.
     if (selectedCategories.length > 0) {
-      result = result.filter((p) => selectedCategories.includes(p.category) || selectedCategories.includes(p.categorySlug));
+      const selectedCategoryIds = selectedCategories
+        .map((token) => {
+          const cat = categories.find(
+            (c) => c.slug === token || String(c.id) === String(token)
+          );
+          return cat ? String(cat.id) : null;
+        })
+        .filter(Boolean);
+      result = result.filter((p) =>
+        selectedCategoryIds.includes(String(p.categoryId))
+      );
     }
 
     // Price range
@@ -325,7 +355,7 @@ const Products = () => {
     }
 
     return result;
-  }, [allProducts, urlSearch, selectedCategories, minPrice, maxPrice, minRating, minDiscount, inStockOnly, selectedBrands, sortBy]);
+  }, [allProducts, categories, urlSearch, selectedCategories, minPrice, maxPrice, minRating, minDiscount, inStockOnly, selectedBrands, sortBy]);
 
   // ---- Pagination ----
   const totalPages = Math.max(1, Math.ceil(filteredProducts.length / perPage));
@@ -463,7 +493,9 @@ const Products = () => {
   // ---- Category name helper ----
   const getCategoryName = useCallback(
     (slug) => {
-      const cat = categories.find((c) => c.slug === slug || c.id === slug);
+      const cat = categories.find(
+        (c) => c.slug === slug || String(c.id) === String(slug)
+      );
       return cat ? cat.name : slug;
     },
     [categories]
@@ -508,13 +540,15 @@ const Products = () => {
             <label key={cat.id || cat.slug} className={styles.checkboxLabel}>
               <input
                 type="checkbox"
-                checked={selectedCategories.includes(cat.slug)}
+                checked={selectedCategories.some(
+                  (t) => t === cat.slug || String(t) === String(cat.id)
+                )}
                 onChange={() => handleCategoryToggle(cat.slug)}
                 className={styles.checkbox}
               />
               <span className={styles.checkboxText}>{cat.name}</span>
               <span className={styles.filterCount}>
-                ({allProducts.filter((p) => p.category === cat.slug).length})
+                ({allProducts.filter((p) => String(p.categoryId) === String(cat.id)).length})
               </span>
             </label>
           ))}

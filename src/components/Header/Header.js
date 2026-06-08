@@ -48,7 +48,15 @@ const Header = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { isDarkMode, toggleTheme } = useTheme();
-  const { user, isAuthenticated, logout } = useAuth();
+  const {
+    user,
+    isAuthenticated,
+    logout,
+    authModalOpen,
+    authModalTab,
+    openAuthModal,
+    closeAuthModal,
+  } = useAuth();
   const { getCartItemCount } = useCart();
   const { getWishlistCount } = useWishlist();
   const isMobile = useMediaQuery("(max-width:768px)");
@@ -61,7 +69,6 @@ const Header = () => {
   const [categories, setCategories] = useState([]);
   const [userMenuAnchor, setUserMenuAnchor] = useState(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [authModalOpen, setAuthModalOpen] = useState(false);
   const [searchModalOpen, setSearchModalOpen] = useState(false);
   const [cartDrawerOpen, setCartDrawerOpen] = useState(false);
   const [allCategoriesOpen, setAllCategoriesOpen] = useState(false);
@@ -89,7 +96,7 @@ const Header = () => {
     if (isAuthenticated) {
       setUserMenuAnchor(e.currentTarget);
     } else {
-      setAuthModalOpen(true);
+      openAuthModal("login");
     }
   };
 
@@ -459,11 +466,11 @@ const Header = () => {
           ]
         ) : (
           [
-            <MenuItem key="login" onClick={() => { handleUserMenuClose(); setAuthModalOpen(true); }} className={styles.menuItem}>
+            <MenuItem key="login" onClick={() => { handleUserMenuClose(); openAuthModal("login"); }} className={styles.menuItem}>
               <LoginIcon fontSize="small" className={styles.menuItemIcon} />
               Login
             </MenuItem>,
-            <MenuItem key="register" onClick={() => { handleUserMenuClose(); setAuthModalOpen(true); }} className={styles.menuItem}>
+            <MenuItem key="register" onClick={() => { handleUserMenuClose(); openAuthModal("signup"); }} className={styles.menuItem}>
               <PersonAdd fontSize="small" className={styles.menuItemIcon} />
               Register
             </MenuItem>,
@@ -476,9 +483,9 @@ const Header = () => {
       <SidebarMenu
         open={sidebarOpen}
         onClose={() => setSidebarOpen(false)}
-        onOpenAuth={() => setAuthModalOpen(true)}
+        onOpenAuth={() => openAuthModal("login")}
       />
-      <AuthModal open={authModalOpen} onClose={() => setAuthModalOpen(false)} />
+      <AuthModal open={authModalOpen} onClose={closeAuthModal} defaultTab={authModalTab} />
       <SearchModal open={searchModalOpen} onClose={() => setSearchModalOpen(false)} />
     </>
   );
