@@ -16,6 +16,17 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
 
+  // Global auth-modal state so any page (wishlist, orders, …) can open the
+  // login/signup modal. The modal itself is rendered once, in the Header.
+  const [authModalOpen, setAuthModalOpen] = useState(false);
+  const [authModalTab, setAuthModalTab] = useState("login");
+
+  const openAuthModal = (tab = "login") => {
+    setAuthModalTab(tab === "signup" ? "signup" : "login");
+    setAuthModalOpen(true);
+  };
+  const closeAuthModal = () => setAuthModalOpen(false);
+
   useEffect(() => {
     // Check for existing session on mount
     const storedUser = sessionStorage.getItem("user");
@@ -144,6 +155,10 @@ export const AuthProvider = ({ children }) => {
     register,
     logout,
     updateUser,
+    authModalOpen,
+    authModalTab,
+    openAuthModal,
+    closeAuthModal,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

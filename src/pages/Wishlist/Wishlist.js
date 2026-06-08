@@ -43,7 +43,7 @@ const Wishlist = () => {
   const { isDarkMode } = useTheme();
   const { wishlistItems, isLoading, removeFromWishlist, clearWishlist } = useWishlist();
   const { addToCart } = useCart();
-  const { user } = useAuth();
+  const { user, openAuthModal } = useAuth();
 
   const [sortBy, setSortBy] = useState("dateDesc");
   const [removingId, setRemovingId] = useState(null);
@@ -137,7 +137,7 @@ const Wishlist = () => {
             </p>
             <button
               className={styles.loginButton}
-              onClick={() => navigate("/login")}
+              onClick={() => openAuthModal("login")}
             >
               Log In
             </button>
