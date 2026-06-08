@@ -213,7 +213,7 @@ const CartDrawer = ({ open, onClose }) => {
                         <div
                           className={styles.itemImage}
                           onClick={() =>
-                            handleNavigate(`/product/${item.productId || item.id}`)
+                            handleNavigate(`/products/${item.productId || item.id}`)
                           }
                         >
                           <img

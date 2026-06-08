@@ -85,7 +85,10 @@ export const CartProvider = ({ children }) => {
     }
   };
 
-  const addToCart = async (product, quantity = 1) => {
+  const addToCart = async (product, quantity = 1, options = {}) => {
+    // openDrawer can be disabled by callers that navigate away immediately
+    // (e.g. "Buy Now" → /checkout) so the drawer doesn't flash over the page.
+    const { openDrawer = true } = options;
     try {
       const existingItem = cartItems.find((item) => item.id === product.id);
 
@@ -154,8 +157,8 @@ export const CartProvider = ({ children }) => {
         });
       }
 
-      // Open cart drawer
-      setIsCartOpen(true);
+      // Open cart drawer (unless the caller opted out)
+      if (openDrawer) setIsCartOpen(true);
     } catch (error) {
       console.error("Error adding to cart:", error);
 

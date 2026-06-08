@@ -309,6 +309,27 @@
   color: #9ca3af;
 }
 
+/* SKU line (variant-aware) */
+.skuLine {
+  font-size: 0.8rem;
+  color: #6b7280;
+  margin: 0 0 16px;
+}
+
+.skuLine span {
+  font-weight: 600;
+  color: #374151;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+
+.dark .skuLine {
+  color: #9ca3af;
+}
+
+.dark .skuLine span {
+  color: #e5e7eb;
+}
+
 /* 4. Short Description */
 .shortDescription {
   font-size: 0.95rem;
@@ -1021,11 +1042,62 @@
   text-align: left;
 }
 
+.reviewBarsCaption {
+  font-size: 0.72rem;
+  color: #9ca3af;
+  margin-top: 6px;
+}
+
+.reviewBarsEmpty {
+  font-size: 0.85rem;
+  color: #9ca3af;
+  align-self: center;
+}
+
 /* Individual Reviews */
 .reviewsLoading {
   text-align: center;
   padding: 40px;
   color: #6b7280;
+}
+
+/* Reviews failed to load */
+.reviewsError {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  text-align: center;
+  padding: 36px;
+  color: #6b7280;
+}
+
+.dark .reviewsError {
+  color: #9ca3af;
+}
+
+.retryBtn {
+  padding: 8px 22px;
+  background: #667eea;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.retryBtn:hover {
+  background: #5568d6;
+}
+
+.dark .retryBtn {
+  background: #7c3aed;
+}
+
+.dark .retryBtn:hover {
+  background: #6d28d9;
 }
 
 .noReviews {
