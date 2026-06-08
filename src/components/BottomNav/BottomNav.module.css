@@ -103,8 +103,11 @@
   height: 28px;
 }
 
-.icon {
+.iconWrap .icon {
   font-size: 22px;
+}
+
+.icon {
   line-height: 1;
   transition: transform 0.2s ease;
 }
@@ -187,7 +190,7 @@
     padding: 6px 12px;
   }
 
-  .icon {
+  .iconWrap .icon {
     font-size: 20px;
   }
 
@@ -228,7 +231,7 @@
     padding: 10px 20px;
   }
 
-  .icon {
+  .iconWrap .icon {
     font-size: 24px;
   }
 

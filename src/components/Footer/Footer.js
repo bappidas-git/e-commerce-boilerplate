@@ -39,7 +39,7 @@ const Footer = () => {
   ];
 
   const customerServiceLinks = [
-    { label: "My Account", path: "/account" },
+    { label: "My Account", path: "/profile" },
     { label: "Order Tracking", path: "/orders" },
     { label: "Shipping Info", path: "/shipping" },
     { label: "Returns & Exchange", path: "/refund" },

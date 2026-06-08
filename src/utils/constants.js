@@ -99,6 +99,12 @@ export const CURRENCIES = {
 };
 export const DEFAULT_CURRENCY = CURRENCIES.INR;
 
+// Shipping
+// Single source of truth for the free-shipping threshold. Mirrors the
+// Standard shipping method's `freeAbove` value in db.json (₹999) and is
+// shared by the Header banner and the CartDrawer progress bar.
+export const FREE_SHIPPING_THRESHOLD = 999;
+
 // Social links (update per project)
 export const SOCIAL_LINKS = {
   FACEBOOK: "",

@@ -4,9 +4,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useCart } from "../../hooks/useCart";
 import { useTheme } from "../../context/ThemeContext";
 import { formatCurrency, truncateText } from "../../utils/helpers";
+import { FREE_SHIPPING_THRESHOLD } from "../../utils/constants";
 import styles from "./CartDrawer.module.css";
-
-const FREE_SHIPPING_THRESHOLD = 999;
 
 const CartDrawer = ({ open, onClose }) => {
   const navigate = useNavigate();

@@ -1,17 +1,23 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { useAuth } from "../../hooks/useAuth";
 import { useWishlist } from "../../context/WishlistContext";
 import { useTheme } from "../../context/ThemeContext";
+import {
+  HomeOutlined,
+  GridViewOutlined,
+  Search as SearchIcon,
+  FavoriteBorder,
+  PersonOutline,
+} from "@mui/icons-material";
 import SearchModal from "../SearchModal/SearchModal";
 import styles from "./BottomNav.module.css";
 
 const NAV_ITEMS = [
-  { key: "home", label: "Home", icon: "\u2302", path: "/" },
-  { key: "categories", label: "Categories", icon: "\u2630", path: "/products" },
-  { key: "search", label: "Search", icon: "\u2315", path: null },
-  { key: "wishlist", label: "Wishlist", icon: "\u2661", path: "/wishlist" },
-  { key: "account", label: "Account", icon: "\u263A", path: "/profile" },
+  { key: "home", label: "Home", Icon: HomeOutlined, path: "/" },
+  { key: "categories", label: "Categories", Icon: GridViewOutlined, path: "/products" },
+  { key: "search", label: "Search", Icon: SearchIcon, path: null },
+  { key: "wishlist", label: "Wishlist", Icon: FavoriteBorder, path: "/wishlist" },
+  { key: "account", label: "Account", Icon: PersonOutline, path: "/profile" },
 ];
 
 const BottomNav = () => {
@@ -74,15 +80,17 @@ const BottomNav = () => {
         <div className={styles.navItems}>
           {NAV_ITEMS.map((item) => {
             const isActive = activeKey === item.key;
+            const Icon = item.Icon;
             return (
               <button
                 key={item.key}
                 className={`${styles.navItem} ${isActive ? styles.active : ""}`}
                 onClick={() => handleNavClick(item)}
                 aria-label={item.label}
+                aria-current={isActive ? "page" : undefined}
               >
                 <span className={styles.iconWrap}>
-                  <span className={styles.icon}>{item.icon}</span>
+                  <Icon className={styles.icon} />
                   {item.key === "wishlist" && wishlistCount > 0 && (
                     <span className={styles.badge}>
                       {wishlistCount > 99 ? "99+" : wishlistCount}
