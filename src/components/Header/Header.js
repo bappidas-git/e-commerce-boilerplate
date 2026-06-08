@@ -57,7 +57,7 @@ const Header = () => {
     openAuthModal,
     closeAuthModal,
   } = useAuth();
-  const { getCartItemCount } = useCart();
+  const { getCartItemCount, isCartOpen, setIsCartOpen } = useCart();
   const { getWishlistCount } = useWishlist();
   const isMobile = useMediaQuery("(max-width:768px)");
   const isTablet = useMediaQuery("(max-width:1024px)");
@@ -70,7 +70,6 @@ const Header = () => {
   const [userMenuAnchor, setUserMenuAnchor] = useState(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [searchModalOpen, setSearchModalOpen] = useState(false);
-  const [cartDrawerOpen, setCartDrawerOpen] = useState(false);
   const [allCategoriesOpen, setAllCategoriesOpen] = useState(false);
   const allCategoriesRef = useRef(null);
 
@@ -113,7 +112,7 @@ const Header = () => {
     navigate("/");
   };
 
-  const handleCartClick = () => setCartDrawerOpen(true);
+  const handleCartClick = () => setIsCartOpen(true);
   const handleSearchClick = () => setSearchModalOpen(true);
   const handleMobileMenuClick = () => setSidebarOpen(true);
 
@@ -479,7 +478,7 @@ const Header = () => {
       </Menu>
 
       {/* ===== MODALS & DRAWERS ===== */}
-      <CartDrawer open={cartDrawerOpen} onClose={() => setCartDrawerOpen(false)} />
+      <CartDrawer open={isCartOpen} onClose={() => setIsCartOpen(false)} />
       <SidebarMenu
         open={sidebarOpen}
         onClose={() => setSidebarOpen(false)}

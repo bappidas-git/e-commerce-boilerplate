@@ -1,12 +1,17 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { useTheme } from "../../context/ThemeContext";
 import { useCart } from "../../hooks/useCart";
 import { useWishlist } from "../../context/WishlistContext";
-import { useAuth } from "../../hooks/useAuth";
 import apiService from "../../services/api";
-import { formatCurrency, getProductMinPrice, formatDate } from "../../utils/helpers";
+import {
+  formatCurrency,
+  getProductMinPrice,
+  formatDate,
+  PLACEHOLDER_IMG,
+  onImageError,
+} from "../../utils/helpers";
 import styles from "./ProductDetails.module.css";
 
 // ─── Star Rating Component ──────────────────────────────────────────────────
@@ -90,7 +95,7 @@ const ProductDetails = () => {
   const { isDarkMode } = useTheme();
   const { addToCart } = useCart();
   const { toggleWishlist, isInWishlist } = useWishlist();
-  const { user } = useAuth();
+  const tabsRef = useRef(null);
 
   // ── State ──────────────────────────────────────────────────────────────
   const [product, setProduct] = useState(null);
@@ -104,6 +109,7 @@ const ProductDetails = () => {
   const [activeTab, setActiveTab] = useState("description");
   const [reviews, setReviews] = useState([]);
   const [reviewsLoading, setReviewsLoading] = useState(false);
+  const [reviewsError, setReviewsError] = useState(false);
   const [relatedProducts, setRelatedProducts] = useState([]);
   const [pincode, setPincode] = useState("");
   const [deliveryInfo, setDeliveryInfo] = useState(null);
@@ -173,11 +179,13 @@ const ProductDetails = () => {
     if (!id) return;
     try {
       setReviewsLoading(true);
+      setReviewsError(false);
       const data = await apiService.products.getReviews(id);
       setReviews(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error("Error fetching reviews:", error);
       setReviews([]);
+      setReviewsError(true);
     } finally {
       setReviewsLoading(false);
     }
@@ -223,12 +231,28 @@ const ProductDetails = () => {
     comparePrice > currentPrice
       ? Math.round(((comparePrice - currentPrice) / comparePrice) * 100)
       : 0;
+  const currentSku = selectedVariant?.sku || product?.sku || "";
+  // Stock for the active selection. A variant lacking its own stock field falls
+  // back to the product-level stock (real data) instead of being treated as 0.
   const currentStock = selectedVariant
-    ? selectedVariant.stock
+    ? typeof selectedVariant.stock === "number"
+      ? selectedVariant.stock
+      : product?.stock
     : product?.stock;
-  const isOutOfStock = currentStock !== undefined && currentStock <= 0;
-  const isLowStock =
-    !isOutOfStock && currentStock !== undefined && currentStock <= 5;
+  const hasStockInfo = typeof currentStock === "number";
+  const isOutOfStock = hasStockInfo && currentStock <= 0;
+  const isLowStock = !isOutOfStock && hasStockInfo && currentStock <= 5;
+  // Quantity ceiling derived from real stock. When stock is genuinely unknown
+  // (no variant/product stock field at all), cap conservatively rather than
+  // silently jumping to a hardcoded 99.
+  const STOCK_UNKNOWN_MAX = 10;
+  const maxQuantity = hasStockInfo ? Math.max(1, currentStock) : STOCK_UNKNOWN_MAX;
+
+  // Keep the chosen quantity within the active selection's stock. Switching to a
+  // lower-stock variant clamps down instead of leaving an over-stock quantity.
+  useEffect(() => {
+    setQuantity((q) => Math.min(Math.max(1, q), maxQuantity));
+  }, [maxQuantity]);
 
   // ── Zoom handlers ──────────────────────────────────────────────────────
   const handleMouseMove = (e) => {
@@ -239,7 +263,7 @@ const ProductDetails = () => {
   };
 
   // ── Add to cart ────────────────────────────────────────────────────────
-  const handleAddToCart = useCallback(() => {
+  const handleAddToCart = useCallback((options) => {
     if (!product) return;
     if (product.variants?.length > 0 && !selectedVariant) return;
 
@@ -258,14 +282,23 @@ const ProductDetails = () => {
       currency: "INR",
     };
 
-    addToCart(cartItem, quantity);
+    return addToCart(cartItem, quantity, options);
   }, [product, selectedVariant, quantity, addToCart]);
 
   // ── Buy now ────────────────────────────────────────────────────────────
-  const handleBuyNow = useCallback(() => {
-    handleAddToCart();
+  const handleBuyNow = useCallback(async () => {
+    // Add without opening the drawer, then go straight to checkout.
+    await handleAddToCart({ openDrawer: false });
     navigate("/checkout");
   }, [handleAddToCart, navigate]);
+
+  // ── Write a review → jump to the Reviews tab ───────────────────────────
+  const handleWriteReview = () => {
+    setActiveTab("reviews");
+    requestAnimationFrame(() =>
+      tabsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })
+    );
+  };
 
   // ── Delivery check (mock) ──────────────────────────────────────────────
   const handleCheckDelivery = () => {
@@ -295,10 +328,16 @@ const ProductDetails = () => {
     star,
     count: reviews.filter((r) => Math.round(r.rating) === star).length,
   }));
-  const avgRating =
+  const computedAvg =
     reviews.length > 0
-      ? (reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length).toFixed(1)
-      : product?.rating || 0;
+      ? reviews.reduce((sum, r) => sum + (Number(r.rating) || 0), 0) / reviews.length
+      : null;
+  // Prefer the product's aggregate rating so the Reviews tab reconciles with the
+  // rating shown at the top of the page (that figure reflects *all* ratings, not
+  // just the written reviews we fetch here). Fall back to the computed average.
+  const displayAvg =
+    product?.rating != null ? Number(product.rating) : computedAvg || 0;
+  const totalRatingsCount = product?.totalReviews ?? reviews.length;
 
   // ── Render ─────────────────────────────────────────────────────────────
   if (loading) return <Skeleton />;
@@ -362,6 +401,8 @@ const ProductDetails = () => {
                       <img
                         src={img}
                         alt={`${product.name} ${idx + 1}`}
+                        loading="lazy"
+                        onError={onImageError}
                       />
                     </button>
                   ))}
@@ -381,12 +422,10 @@ const ProductDetails = () => {
                   </span>
                 )}
                 <img
-                  src={
-                    images[selectedImageIndex] ||
-                    "https://placehold.co/600x600?text=No+Image"
-                  }
+                  src={images[selectedImageIndex] || PLACEHOLDER_IMG}
                   alt={product.name}
                   className={styles.mainImage}
+                  onError={onImageError}
                   style={
                     isZooming
                       ? {
@@ -416,7 +455,7 @@ const ProductDetails = () => {
               </span>
               <button
                 className={styles.writeReviewLink}
-                onClick={() => setActiveTab("reviews")}
+                onClick={handleWriteReview}
               >
                 Write a review
               </button>
@@ -439,6 +478,13 @@ const ProductDetails = () => {
               )}
               <div className={styles.taxNote}>Inclusive of all taxes</div>
             </div>
+
+            {/* SKU (reflects the selected variant) */}
+            {currentSku && (
+              <div className={styles.skuLine}>
+                SKU: <span>{currentSku}</span>
+              </div>
+            )}
 
             {/* 4. Short description */}
             {product.description && (
@@ -498,12 +544,8 @@ const ProductDetails = () => {
                 <span className={styles.quantityValue}>{quantity}</span>
                 <button
                   className={styles.quantityBtn}
-                  onClick={() =>
-                    setQuantity(
-                      Math.min(quantity + 1, currentStock || 99)
-                    )
-                  }
-                  disabled={isOutOfStock || quantity >= (currentStock || 99)}
+                  onClick={() => setQuantity(Math.min(quantity + 1, maxQuantity))}
+                  disabled={isOutOfStock || quantity >= maxQuantity}
                 >
                   &#43;
                 </button>
@@ -527,7 +569,7 @@ const ProductDetails = () => {
             <div className={styles.actionButtons}>
               <button
                 className={styles.addToCartBtn}
-                onClick={handleAddToCart}
+                onClick={() => handleAddToCart()}
                 disabled={isOutOfStock}
               >
                 <svg
@@ -692,7 +734,7 @@ const ProductDetails = () => {
         {/* ═══════════════════════════════════════════════════════════════ */}
         {/* Below the Fold: Tabs                                          */}
         {/* ═══════════════════════════════════════════════════════════════ */}
-        <div className={styles.tabsSection}>
+        <div className={styles.tabsSection} ref={tabsRef}>
           <div className={styles.tabNav}>
             <button
               className={`${styles.tabButton} ${
@@ -736,10 +778,10 @@ const ProductDetails = () => {
                           <td className={styles.specValue}>{product.brand}</td>
                         </tr>
                       )}
-                      {product.sku && (
+                      {currentSku && (
                         <tr>
                           <td className={styles.specLabel}>SKU</td>
-                          <td className={styles.specValue}>{product.sku}</td>
+                          <td className={styles.specValue}>{currentSku}</td>
                         </tr>
                       )}
                       {product.weight && (
@@ -795,22 +837,36 @@ const ProductDetails = () => {
                 {/* Average rating breakdown */}
                 <div className={styles.reviewSummary}>
                   <div className={styles.reviewAvgBlock}>
-                    <span className={styles.reviewAvgNumber}>{avgRating}</span>
-                    <StarRating rating={Number(avgRating)} size={22} />
+                    <span className={styles.reviewAvgNumber}>
+                      {displayAvg.toFixed(1)}
+                    </span>
+                    <StarRating rating={displayAvg} size={22} />
                     <span className={styles.reviewAvgTotal}>
-                      Based on {reviews.length} review
-                      {reviews.length !== 1 ? "s" : ""}
+                      Based on {totalRatingsCount.toLocaleString()} rating
+                      {totalRatingsCount !== 1 ? "s" : ""}
                     </span>
                   </div>
                   <div className={styles.reviewBars}>
-                    {reviewBreakdown.map(({ star, count }) => (
-                      <RatingBar
-                        key={star}
-                        star={star}
-                        count={count}
-                        total={reviews.length}
-                      />
-                    ))}
+                    {reviews.length > 0 ? (
+                      <>
+                        {reviewBreakdown.map(({ star, count }) => (
+                          <RatingBar
+                            key={star}
+                            star={star}
+                            count={count}
+                            total={reviews.length}
+                          />
+                        ))}
+                        <span className={styles.reviewBarsCaption}>
+                          Distribution of {reviews.length} written review
+                          {reviews.length !== 1 ? "s" : ""}
+                        </span>
+                      </>
+                    ) : reviewsError ? null : (
+                      <span className={styles.reviewBarsEmpty}>
+                        No written reviews yet.
+                      </span>
+                    )}
                   </div>
                 </div>
 
@@ -818,6 +874,17 @@ const ProductDetails = () => {
                 {reviewsLoading ? (
                   <div className={styles.reviewsLoading}>
                     Loading reviews...
+                  </div>
+                ) : reviewsError ? (
+                  <div className={styles.reviewsError}>
+                    <p>Sorry, we couldn&rsquo;t load reviews right now.</p>
+                    <button
+                      type="button"
+                      className={styles.retryBtn}
+                      onClick={fetchReviews}
+                    >
+                      Retry
+                    </button>
                   </div>
                 ) : reviews.length === 0 ? (
                   <div className={styles.noReviews}>
@@ -890,13 +957,11 @@ const ProductDetails = () => {
                   >
                     <div className={styles.similarImageWrapper}>
                       <img
-                        src={
-                          rp.images?.[0] ||
-                          rp.image ||
-                          "https://placehold.co/200x200?text=Product"
-                        }
+                        src={rp.images?.[0] || rp.image || PLACEHOLDER_IMG}
                         alt={rp.name}
                         className={styles.similarImage}
+                        loading="lazy"
+                        onError={onImageError}
                       />
                     </div>
                     <div className={styles.similarInfo}>
