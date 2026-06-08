@@ -298,6 +298,23 @@
   background: rgba(255, 255, 255, 0.08);
 }
 
+/* Logout (destructive) */
+.panel[data-theme="light"] .logoutItem {
+  color: #e53e3e;
+}
+
+.panel[data-theme="light"] .logoutItem:hover {
+  background: #fff5f5;
+}
+
+.panel[data-theme="dark"] .logoutItem {
+  color: #fc8181;
+}
+
+.panel[data-theme="dark"] .logoutItem:hover {
+  background: rgba(252, 129, 129, 0.1);
+}
+
 .menuIcon {
   width: 26px;
   text-align: center;

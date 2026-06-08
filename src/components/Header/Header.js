@@ -5,21 +5,18 @@ import { useCart } from "../../hooks/useCart";
 import { useAuth } from "../../hooks/useAuth";
 import { useWishlist } from "../../context/WishlistContext";
 import apiService from "../../services/api";
-import { APP_NAME, SUPPORT_PHONE } from "../../utils/constants";
+import { APP_NAME, SUPPORT_PHONE, FREE_SHIPPING_THRESHOLD } from "../../utils/constants";
 import { formatCurrency } from "../../utils/helpers";
 import CartDrawer from "../CartDrawer/CartDrawer";
 import SidebarMenu from "../SidebarMenu/SidebarMenu";
 import AuthModal from "../AuthModal/AuthModal";
 import SearchModal from "../SearchModal/SearchModal";
 import {
-  AppBar,
-  Toolbar,
   IconButton,
   Badge,
   Avatar,
   Menu,
   MenuItem,
-  Box,
   Typography,
   useMediaQuery,
   Divider,
@@ -41,7 +38,6 @@ import {
   Login as LoginIcon,
   PersonAdd,
   LocalOffer,
-  Close as CloseIcon,
   Brightness4,
   Brightness7,
 } from "@mui/icons-material";
@@ -51,12 +47,16 @@ import styles from "./Header.module.css";
 const Header = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { isDarkMode, toggleTheme, theme } = useTheme();
+  const { isDarkMode, toggleTheme } = useTheme();
   const { user, isAuthenticated, logout } = useAuth();
-  const { cart, cartCount, cartTotal } = useCart();
-  const { wishlistCount } = useWishlist();
+  const { getCartItemCount } = useCart();
+  const { getWishlistCount } = useWishlist();
   const isMobile = useMediaQuery("(max-width:768px)");
   const isTablet = useMediaQuery("(max-width:1024px)");
+
+  // Live badge counts (context exposes getters, not raw values)
+  const cartCount = getCartItemCount();
+  const wishlistCount = getWishlistCount();
 
   const [categories, setCategories] = useState([]);
   const [userMenuAnchor, setUserMenuAnchor] = useState(null);
@@ -120,8 +120,8 @@ const Header = () => {
   return (
     <>
       <header className={`${styles.header} ${isDarkMode ? styles.dark : styles.light}`}>
-        {/* ===== TOP BAR ===== */}
-        {!isMobile && (
+        {/* ===== TOP BAR (desktop only; tablet/mobile hide it) ===== */}
+        {!isTablet && (
           <motion.div
             className={styles.topBar}
             initial={{ y: -30, opacity: 0 }}
@@ -131,7 +131,7 @@ const Header = () => {
             <div className={styles.topBarInner}>
               <div className={styles.topBarLeft}>
                 <ShippingIcon className={styles.topBarIcon} />
-                <span>Free delivery on orders over {formatCurrency ? formatCurrency(499) : "$499"}</span>
+                <span>Free delivery on orders over {formatCurrency(FREE_SHIPPING_THRESHOLD)}</span>
               </div>
               <div className={styles.topBarRight}>
                 <a href={`tel:${SUPPORT_PHONE}`} className={styles.topBarLink}>
@@ -212,6 +212,23 @@ const Header = () => {
                     aria-label="Search"
                   >
                     <SearchIcon />
+                  </IconButton>
+                </motion.div>
+              )}
+
+              {/* Theme toggle (tablet only — keeps it reachable now the top bar is hidden) */}
+              {isTablet && !isMobile && (
+                <motion.div
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  className={styles.actionItem}
+                >
+                  <IconButton
+                    onClick={toggleTheme}
+                    className={styles.actionIcon}
+                    aria-label="Toggle theme"
+                  >
+                    {isDarkMode ? <Brightness7 /> : <Brightness4 />}
                   </IconButton>
                 </motion.div>
               )}
@@ -386,10 +403,11 @@ const Header = () => {
         )}
       </header>
 
-      {/* Spacer to push content below fixed header */}
+      {/* Spacer to push content below fixed header.
+          Desktop = topBar(36)+main(64)+nav(40); tablet = main(64)+nav(40); mobile = main(56). */}
       <div
         className={styles.headerSpacer}
-        style={{ height: isMobile ? 60 : 140 }}
+        style={{ height: isMobile ? 60 : isTablet ? 104 : 140 }}
       />
 
       {/* ===== USER DROPDOWN MENU ===== */}
@@ -455,7 +473,11 @@ const Header = () => {
 
       {/* ===== MODALS & DRAWERS ===== */}
       <CartDrawer open={cartDrawerOpen} onClose={() => setCartDrawerOpen(false)} />
-      <SidebarMenu open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+      <SidebarMenu
+        open={sidebarOpen}
+        onClose={() => setSidebarOpen(false)}
+        onOpenAuth={() => setAuthModalOpen(true)}
+      />
       <AuthModal open={authModalOpen} onClose={() => setAuthModalOpen(false)} />
       <SearchModal open={searchModalOpen} onClose={() => setSearchModalOpen(false)} />
     </>

@@ -10,7 +10,7 @@ import styles from "./SidebarMenu.module.css";
 const SidebarMenu = ({ open, onClose, onOpenAuth }) => {
   const navigate = useNavigate();
   const { isDarkMode, toggleTheme } = useTheme();
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
 
   const [categories, setCategories] = useState([]);
   const [categoriesExpanded, setCategoriesExpanded] = useState(false);
@@ -53,11 +53,22 @@ const SidebarMenu = ({ open, onClose, onOpenAuth }) => {
     if (onOpenAuth) onOpenAuth();
   };
 
+  const handleLogout = () => {
+    onClose();
+    logout();
+    navigate("/");
+  };
+
   const getUserInitials = () => {
     if (!user) return "";
-    const first = user.firstName || user.name?.split(" ")[0] || "";
-    const last = user.lastName || user.name?.split(" ")[1] || "";
-    return (first.charAt(0) + last.charAt(0)).toUpperCase();
+    const parts = (user.name || "").trim().split(/\s+/).filter(Boolean);
+    const first = user.firstName || parts[0] || "";
+    const last = user.lastName || parts.slice(1).join(" ") || "";
+    const initials = `${first.charAt(0)}${last.charAt(0)}`.toUpperCase();
+    if (initials) return initials;
+    // Fall back gracefully for single-name or email-only users
+    if (user.email) return user.email.charAt(0).toUpperCase();
+    return "U";
   };
 
   const getUserDisplayName = () => {
@@ -362,6 +373,22 @@ const SidebarMenu = ({ open, onClose, onOpenAuth }) => {
                     <span className={styles.menuLabel}>My Profile</span>
                   </button>
                 </motion.div>
+
+                {user && (
+                  <motion.div
+                    variants={staggerItem(9)}
+                    initial="hidden"
+                    animate="visible"
+                  >
+                    <button
+                      className={`${styles.menuItem} ${styles.logoutItem}`}
+                      onClick={handleLogout}
+                    >
+                      <span className={styles.menuIcon}>&#x1F6AA;</span>
+                      <span className={styles.menuLabel}>Logout</span>
+                    </button>
+                  </motion.div>
+                )}
               </div>
 
               <div className={styles.divider} />
@@ -369,7 +396,7 @@ const SidebarMenu = ({ open, onClose, onOpenAuth }) => {
               {/* ========== Bottom Section ========== */}
               <div className={styles.section}>
                 <motion.div
-                  variants={staggerItem(9)}
+                  variants={staggerItem(10)}
                   initial="hidden"
                   animate="visible"
                 >
@@ -383,13 +410,13 @@ const SidebarMenu = ({ open, onClose, onOpenAuth }) => {
                 </motion.div>
 
                 <motion.div
-                  variants={staggerItem(10)}
+                  variants={staggerItem(11)}
                   initial="hidden"
                   animate="visible"
                 >
                   <div className={styles.themeToggleRow}>
                     <span className={styles.menuIcon}>
-                      {isDarkMode ? "\u263E" : "\u2600\uFE0F"}
+                      {isDarkMode ? "\u{1F319}" : "\u2600\uFE0F"}
                     </span>
                     <span className={styles.menuLabel}>
                       {isDarkMode ? "Dark Mode" : "Light Mode"}
