@@ -134,8 +134,10 @@
   width: 240px;
   min-width: 240px;
   position: sticky;
-  top: 80px;
-  max-height: calc(100vh - 100px);
+  /* Clear the fixed header (desktop = 140px) plus a small gap so the sticky
+     sidebar's top isn't tucked underneath it while scrolling. */
+  top: 152px;
+  max-height: calc(100vh - 172px);
   overflow-y: auto;
   background: var(--sidebar-bg);
   border: 1px solid var(--border);
@@ -951,7 +953,9 @@
   position: fixed;
   inset: 0;
   background: var(--overlay-bg);
-  z-index: 1000;
+  /* Above the fixed Header (1100) and BottomNav (1200) so the sheet — and
+     especially its "Clear All / Show Results" footer — is never covered. */
+  z-index: 1300;
   display: flex;
   align-items: flex-end;
 }
@@ -1026,6 +1030,11 @@
   cursor: pointer;
 }
 
+.bottomSheetClearBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 .bottomSheetApplyBtn {
   flex: 2;
   padding: 12px;
@@ -1055,6 +1064,9 @@
   .sidebar {
     width: 210px;
     min-width: 210px;
+    /* On tablet the header top bar is hidden, so the fixed header is 104px. */
+    top: 116px;
+    max-height: calc(100vh - 128px);
   }
 }
 
