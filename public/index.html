@@ -2,7 +2,8 @@
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <link rel="icon" href="%PUBLIC_URL%/favicon.ico" />
+    <link rel="icon" type="image/svg+xml" href="%PUBLIC_URL%/favicon.svg" />
+    <link rel="alternate icon" type="image/png" href="%PUBLIC_URL%/logo192.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="theme-color" content="#667eea" />
     <meta
@@ -26,7 +27,7 @@
       property="og:description"
       content="Fast, secure, and reliable delivery for all your favourite products. Shop now and enjoy exclusive deals."
     />
-    <meta property="og:image" content="%PUBLIC_URL%/og-image.png" />
+    <meta property="og:image" content="%PUBLIC_URL%/logo512.png" />
 
     <!-- Twitter -->
     <meta property="twitter:card" content="summary_large_image" />
@@ -39,7 +40,7 @@
       property="twitter:description"
       content="Fast, secure, and reliable delivery for all your favourite products. Shop now and enjoy exclusive deals."
     />
-    <meta property="twitter:image" content="%PUBLIC_URL%/twitter-image.png" />
+    <meta property="twitter:image" content="%PUBLIC_URL%/logo512.png" />
 
     <link rel="apple-touch-icon" href="%PUBLIC_URL%/logo192.png" />
     <!--
@@ -473,36 +474,59 @@
     -->
 
     <script>
-      // Hide loading screen when React app is ready
-      window.addEventListener("load", function () {
-        setTimeout(function () {
+      // Theme detection and initial setup — applied BEFORE React mounts so the
+      // first paint already has the correct theme (matches src/context/ThemeContext.js,
+      // which keys CSS off body.dark / body.light). Avoids a flash of the wrong theme.
+      (function () {
+        var savedTheme = localStorage.getItem("theme");
+        var prefersDark = window.matchMedia(
+          "(prefers-color-scheme: dark)"
+        ).matches;
+        var isDark = savedTheme === "dark" || (!savedTheme && prefersDark);
+
+        document.body.classList.add(isDark ? "dark" : "light");
+        document.body.style.background = isDark
+          ? "linear-gradient(135deg, #0a0e27 0%, #1a1f3a 100%)"
+          : "linear-gradient(135deg, #f5f7fa 0%, #ffffff 100%)";
+      })();
+
+      // Hide the loading screen once React has mounted. React signals readiness
+      // by adding the "react-loaded" class to <body> (see src/index.js). We watch
+      // for that class instead of using a fixed delay, so the loader never fades
+      // out before content is ready (no flash of unstyled content). A fallback
+      // timeout guarantees the loader can never get permanently stuck visible.
+      (function () {
+        var hidden = false;
+        function hideLoadingScreen() {
+          if (hidden) return;
+          hidden = true;
           document.body.classList.add("react-loaded");
-          const loadingScreen = document.getElementById("loading-screen");
+          var loadingScreen = document.getElementById("loading-screen");
           if (loadingScreen) {
             loadingScreen.classList.add("fade-out");
             setTimeout(function () {
               loadingScreen.style.display = "none";
-            }, 500);
+            }, 600);
           }
-        }, 1000);
-      });
-
-      // Theme detection and initial setup
-      (function () {
-        const savedTheme = localStorage.getItem("theme");
-        const prefersDark = window.matchMedia(
-          "(prefers-color-scheme: dark)"
-        ).matches;
-        const isDark = savedTheme === "dark" || (!savedTheme && prefersDark);
-
-        if (isDark) {
-          document.documentElement.classList.add("dark");
-          document.body.style.background =
-            "linear-gradient(135deg, #0a0e27 0%, #1a1f3a 100%)";
-        } else {
-          document.body.style.background =
-            "linear-gradient(135deg, #f5f7fa 0%, #ffffff 100%)";
         }
+
+        if (document.body.classList.contains("react-loaded")) {
+          hideLoadingScreen();
+        } else if (typeof MutationObserver !== "undefined") {
+          var observer = new MutationObserver(function () {
+            if (document.body.classList.contains("react-loaded")) {
+              hideLoadingScreen();
+              observer.disconnect();
+            }
+          });
+          observer.observe(document.body, {
+            attributes: true,
+            attributeFilter: ["class"],
+          });
+        }
+
+        // Safety net: never let the loader hang if React is slow or fails.
+        setTimeout(hideLoadingScreen, 10000);
       })();
     </script>
   </body>

@@ -1,4 +1,9 @@
 {
+  "banners": [
+    { "id": 1, "title": "Flash Sale", "subtitle": "Up to 70% Off on Electronics", "cta": "Shop Now", "link": "/products?category=electronics", "gradient": "linear-gradient(135deg, #667eea 0%, #764ba2 100%)" },
+    { "id": 2, "title": "New Arrivals", "subtitle": "Discover Latest Fashion Trends", "cta": "Explore", "link": "/products?category=clothing", "gradient": "linear-gradient(135deg, #f093fb 0%, #f5576c 100%)" },
+    { "id": 3, "title": "Ethnic Collection", "subtitle": "Traditional Meets Modern", "cta": "Shop Collection", "link": "/products?category=womens-ethnic-wear", "gradient": "linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)" }
+  ],
   "users": [
     {
       "id": 1,

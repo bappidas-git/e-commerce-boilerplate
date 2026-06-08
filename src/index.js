@@ -35,4 +35,14 @@ root.render(
     <App />
   </React.StrictMode>
 );
+
+// Signal that React has mounted so the HTML loading screen (public/index.html)
+// can fade out. Tying this to the actual mount — rather than an arbitrary
+// timer — prevents a flash of unstyled content while React boots, and the
+// loader's own fallback timeout guarantees it can never get stuck visible.
+if (typeof window !== "undefined") {
+  requestAnimationFrame(() => {
+    document.body.classList.add("react-loaded");
+  });
+}
 // reportWebVitals();
