@@ -135,6 +135,9 @@ const ProductCard = ({ product, onAddToCart, onToggleWishlist, isWishlisted }) =
 
       {/* Info */}
       <div className={styles.productInfo}>
+        {product.brand && (
+          <p className={styles.productBrand}>{product.brand}</p>
+        )}
         <h3 className={styles.productName}>{truncateText(name, 48)}</h3>
 
         <StarRating
