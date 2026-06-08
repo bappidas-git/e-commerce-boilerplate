@@ -4,7 +4,14 @@ import { motion } from "framer-motion";
 import { useTheme } from "../../context/ThemeContext";
 import { useCart } from "../../hooks/useCart";
 import { useWishlist } from "../../context/WishlistContext";
-import { formatCurrency, getProductMinPrice, truncateText } from "../../utils/helpers";
+import {
+  formatCurrency,
+  getProductMinPrice,
+  truncateText,
+  buildCartItem,
+  PLACEHOLDER_IMG,
+  onImageError,
+} from "../../utils/helpers";
 import styles from "./FeaturedProducts.module.css";
 
 const ProductCard = ({ product, onAddToCart, onToggleWishlist, isWishlisted, onClick }) => {
@@ -18,7 +25,12 @@ const ProductCard = ({ product, onAddToCart, onToggleWishlist, isWishlisted, onC
       onClick={onClick}
     >
       <div className={styles.imageWrapper}>
-        <img src={product.images?.[0] || `https://placehold.co/300x300/e2e8f0/475569?text=${encodeURIComponent(product.name)}`} alt={product.name} />
+        <img
+          src={product.images?.[0] || PLACEHOLDER_IMG}
+          alt={product.name}
+          loading="lazy"
+          onError={onImageError}
+        />
         {discount > 0 && <span className={styles.discountBadge}>{discount}% OFF</span>}
         <button
           className={`${styles.wishlistBtn} ${isWishlisted ? styles.wishlisted : ""}`}
@@ -43,16 +55,7 @@ const ProductCard = ({ product, onAddToCart, onToggleWishlist, isWishlisted, onC
           className={styles.addToCartBtn}
           onClick={(e) => {
             e.stopPropagation();
-            onAddToCart({
-              id: `${product.id}-${product.variants?.[0]?.id || "default"}`,
-              productId: product.id,
-              name: product.name,
-              image: product.images?.[0] || "",
-              price: sellingPrice,
-              comparePrice: originalPrice,
-              variantId: product.variants?.[0]?.id || null,
-              variantName: product.variants?.[0]?.name || null,
-            });
+            onAddToCart(buildCartItem(product));
           }}
         >
           Add to Cart

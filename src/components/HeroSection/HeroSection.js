@@ -98,9 +98,15 @@ const HeroSection = () => {
     fetchCategories();
   }, []);
 
+  // Keep currentSlide in range if the banner list size changes (e.g. API
+  // returns a different count than the defaults) so it never goes out of bounds.
+  useEffect(() => {
+    setCurrentSlide((prev) => (prev >= banners.length ? 0 : prev));
+  }, [banners.length]);
+
   // Auto-slide
   useEffect(() => {
-    if (isPaused) return;
+    if (isPaused || banners.length <= 1) return;
     const interval = setInterval(() => {
       setCurrentSlide((prev) => (prev + 1) % banners.length);
     }, 5000);

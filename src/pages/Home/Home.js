@@ -1,19 +1,28 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { motion } from "framer-motion";
+import { Icon } from "@iconify/react";
 import { useTheme } from "../../context/ThemeContext";
 import { useCart } from "../../hooks/useCart";
 import { useWishlist } from "../../context/WishlistContext";
-import { useAuth } from "../../hooks/useAuth";
 import apiService from "../../services/api";
 import HeroSection from "../../components/HeroSection/HeroSection";
-import { APP_NAME, WHY_CHOOSE_US, ANIMATION_VARIANTS } from "../../utils/constants";
-import { formatCurrency, getProductMinPrice, truncateText } from "../../utils/helpers";
+import { APP_NAME, WHY_CHOOSE_US } from "../../utils/constants";
+import {
+  formatCurrency,
+  getProductMinPrice,
+  truncateText,
+  buildCartItem,
+  PLACEHOLDER_IMG,
+  onImageError,
+} from "../../utils/helpers";
 import styles from "./Home.module.css";
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
-const RECENTLY_VIEWED_KEY = "recentlyViewedProducts";
+// Must match the key written by ProductDetails.js so viewing a product
+// populates this list end-to-end.
+const RECENTLY_VIEWED_KEY = "recentlyViewed";
 
 const getRecentlyViewed = () => {
   try {
@@ -66,7 +75,7 @@ const StarRating = ({ rating = 0, reviewCount = 0 }) => {
 const ProductCard = ({ product, onAddToCart, onToggleWishlist, isWishlisted }) => {
   const navigate = useNavigate();
   const { sellingPrice, originalPrice, discount } = getProductMinPrice(product);
-  const image = product.images?.[0] || product.image || "/assets/placeholder.jpg";
+  const image = product.images?.[0] || product.image || PLACEHOLDER_IMG;
   const name = product.name || "Untitled Product";
 
   const handleCardClick = () => {
@@ -97,6 +106,7 @@ const ProductCard = ({ product, onAddToCart, onToggleWishlist, isWishlisted }) =
           alt={name}
           className={styles.productImage}
           loading="lazy"
+          onError={onImageError}
         />
         <div className={styles.productImageOverlay}>
           <button
@@ -257,11 +267,9 @@ const SectionHeader = ({ title, subtitle, linkText, linkTo }) => (
 // ══════════════════════════════════════════════════════════════════════════════
 
 const Home = () => {
-  const navigate = useNavigate();
   const { isDarkMode } = useTheme();
   const { addToCart } = useCart();
   const { toggleWishlist, isInWishlist } = useWishlist();
-  const { isAuthenticated } = useAuth();
 
   const [categories, setCategories] = useState([]);
   const [featuredProducts, setFeaturedProducts] = useState([]);
@@ -313,30 +321,20 @@ const Home = () => {
 
   const handleAddToCart = useCallback(
     (product) => {
-      const { sellingPrice } = getProductMinPrice(product);
-      addToCart(
-        {
-          id: product.id,
-          productId: product.id,
-          name: product.name,
-          image: product.images?.[0] || product.image,
-          price: sellingPrice,
-        },
-        1
-      );
+      // Variant-aware line whose id/price match the product page (see
+      // buildCartItem) so quick-adds merge instead of duplicating.
+      addToCart(buildCartItem(product), 1);
     },
     [addToCart]
   );
 
+  // Wishlist works for guests (persisted to localStorage), matching the
+  // product detail page — no auth gate / dead-end redirect.
   const handleToggleWishlist = useCallback(
     (product) => {
-      if (!isAuthenticated) {
-        navigate("/login");
-        return;
-      }
       toggleWishlist(product);
     },
-    [toggleWishlist, isAuthenticated, navigate]
+    [toggleWishlist]
   );
 
   // ── Skeleton loader ──────────────────────────────────────────────────────
@@ -463,6 +461,7 @@ const Home = () => {
                           alt={cat.name}
                           className={styles.categoryImage}
                           loading="lazy"
+                          onError={onImageError}
                         />
                       )}
                       <div className={styles.categoryOverlay}>
@@ -562,7 +561,9 @@ const Home = () => {
                 viewport={{ once: true }}
                 transition={{ delay: i * 0.1 }}
               >
-                <div className={styles.trustIcon}>{item.icon}</div>
+                <div className={styles.trustIcon}>
+                  <Icon icon={item.icon} />
+                </div>
                 <h4 className={styles.trustTitle}>{item.title}</h4>
                 <p className={styles.trustDesc}>{item.description}</p>
               </motion.div>

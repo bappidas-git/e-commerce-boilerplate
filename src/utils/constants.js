@@ -170,7 +170,7 @@ export const WHY_CHOOSE_US = [
     id: 3,
     title: "Easy Returns",
     description: "7-day hassle-free returns with full refund guarantee",
-    icon: "mdi:package-variant-return",
+    icon: "mdi:backup-restore",
   },
   {
     id: 4,
