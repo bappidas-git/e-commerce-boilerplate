@@ -1,11 +1,17 @@
-import React, { useState, useEffect, useMemo, useCallback } from "react";
+import React, { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { useTheme } from "../../context/ThemeContext";
 import { useCart } from "../../hooks/useCart";
 import { useWishlist } from "../../context/WishlistContext";
 import apiService from "../../services/api";
-import { formatCurrency, getProductMinPrice, truncateText } from "../../utils/helpers";
+import {
+  formatCurrency,
+  getProductMinPrice,
+  truncateText,
+  buildCartItem,
+  getDeviceType,
+} from "../../utils/helpers";
 import styles from "./Products.module.css";
 
 // ---------------------------------------------------------------------------
@@ -19,6 +25,30 @@ const SORT_OPTIONS = [
   { value: "rating", label: "Avg. Customer Rating" },
   { value: "popularity", label: "Popularity" },
 ];
+
+// Accept common sort aliases from deep links (e.g. ?sort=price_asc) and map them
+// to canonical option values; anything unrecognised falls back to "relevance".
+const SORT_ALIASES = {
+  price_asc: "price-low",
+  "price-asc": "price-low",
+  price_low: "price-low",
+  lowtohigh: "price-low",
+  price_desc: "price-high",
+  "price-desc": "price-high",
+  price_high: "price-high",
+  hightolow: "price-high",
+  latest: "newest",
+  new: "newest",
+  popular: "popularity",
+  "best-rated": "rating",
+};
+
+const normalizeSort = (raw) => {
+  if (!raw) return "relevance";
+  const v = String(raw).toLowerCase();
+  if (SORT_OPTIONS.some((o) => o.value === v)) return v;
+  return SORT_ALIASES[v] || "relevance";
+};
 
 const PRICE_RANGES = [
   { label: "Under \u20b9500", min: 0, max: 500 },
@@ -176,11 +206,18 @@ const Products = () => {
   const [viewMode, setViewMode] = useState("grid"); // grid | list
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
 
+  // ---- Refs ----
+  const mainRef = useRef(null); // top of results region, for page-change scroll
+  const mobileTriggerRef = useRef(null); // restore focus here when the sheet closes
+  const sheetCloseRef = useRef(null); // focus this when the sheet opens
+  const pendingScrollRef = useRef(false); // set by pagination, consumed post-commit
+
   // ---- Read URL params ----
   const urlCategory = searchParams.get("category") || "";
   const urlSearch = searchParams.get("search") || "";
-  const urlSort = searchParams.get("sort") || "relevance";
+  const urlSort = normalizeSort(searchParams.get("sort"));
   const urlPage = parseInt(searchParams.get("page"), 10) || 1;
+  const urlPerPage = parseInt(searchParams.get("per_page"), 10);
   const urlMinPrice = searchParams.get("min_price") || "";
   const urlMaxPrice = searchParams.get("max_price") || "";
 
@@ -194,7 +231,9 @@ const Products = () => {
   const [selectedBrands, setSelectedBrands] = useState([]);
   const [sortBy, setSortBy] = useState(urlSort);
   const [currentPage, setCurrentPage] = useState(urlPage);
-  const [perPage, setPerPage] = useState(12);
+  const [perPage, setPerPage] = useState(() =>
+    PER_PAGE_OPTIONS.includes(urlPerPage) ? urlPerPage : 12
+  );
 
   // ---- Fetch data on mount ----
   useEffect(() => {
@@ -237,6 +276,8 @@ const Products = () => {
   }, [categories]);
 
   // ---- Sync URL params when filters change ----
+  // NOTE: any param mutated in the same handler MUST be passed as an override —
+  // the closure below still holds this render's (pre-update) state values.
   const syncUrlParams = useCallback(
     (overrides = {}) => {
       const merged = {
@@ -244,6 +285,7 @@ const Products = () => {
         search: overrides.search !== undefined ? overrides.search : urlSearch,
         sort: overrides.sort !== undefined ? overrides.sort : sortBy,
         page: overrides.page !== undefined ? overrides.page : currentPage,
+        per_page: overrides.per_page !== undefined ? overrides.per_page : perPage,
         min_price: overrides.min_price !== undefined ? overrides.min_price : minPrice,
         max_price: overrides.max_price !== undefined ? overrides.max_price : maxPrice,
       };
@@ -252,12 +294,21 @@ const Products = () => {
       if (merged.search) params.set("search", merged.search);
       if (merged.sort && merged.sort !== "relevance") params.set("sort", merged.sort);
       if (merged.page > 1) params.set("page", String(merged.page));
+      if (merged.per_page && Number(merged.per_page) !== 12) params.set("per_page", String(merged.per_page));
       if (merged.min_price) params.set("min_price", merged.min_price);
       if (merged.max_price) params.set("max_price", merged.max_price);
       setSearchParams(params, { replace: true });
     },
-    [selectedCategories, urlSearch, sortBy, currentPage, minPrice, maxPrice, setSearchParams]
+    [selectedCategories, urlSearch, sortBy, currentPage, perPage, minPrice, maxPrice, setSearchParams]
   );
+
+  // Reset to page 1 and drop the stale page param from the URL. Use this for the
+  // session-only filters (rating/discount/in-stock/brand) that are not URL params
+  // themselves — they only need the page reset reflected in the URL.
+  const resetToFirstPage = useCallback(() => {
+    setCurrentPage(1);
+    syncUrlParams({ page: 1 });
+  }, [syncUrlParams]);
 
   // ---- Derived: brands extracted from loaded products ----
   const availableBrands = useMemo(() => {
@@ -266,6 +317,16 @@ const Products = () => {
       if (p.brand) brands.add(p.brand);
     });
     return Array.from(brands).sort();
+  }, [allProducts]);
+
+  // ---- Derived: product count per category id (computed once per dataset) ----
+  const categoryCounts = useMemo(() => {
+    const counts = new Map();
+    allProducts.forEach((p) => {
+      const key = String(p.categoryId);
+      counts.set(key, (counts.get(key) || 0) + 1);
+    });
+    return counts;
   }, [allProducts]);
 
   // ---- Filtering + Sorting (client-side) ----
@@ -365,12 +426,52 @@ const Products = () => {
     [filteredProducts, safePage, perPage]
   );
 
-  // Reset to page 1 when filters change
+  // Keep currentPage within range whenever the result set shrinks (e.g. filters
+  // applied, or a deep-linked page that no longer exists). The value guard
+  // (currentPage !== safePage) terminates after one correction, so adding
+  // syncUrlParams to the deps cannot loop.
   useEffect(() => {
-    if (currentPage > totalPages) {
-      setCurrentPage(1);
+    if (currentPage !== safePage) {
+      setCurrentPage(safePage);
+      syncUrlParams({ page: safePage });
     }
-  }, [filteredProducts.length, totalPages, currentPage]);
+  }, [safePage, currentPage, syncUrlParams]);
+
+  // Scroll the results back to the top after a pagination/per-page change. Runs
+  // post-commit (so the new page's layout is settled and the smooth scroll isn't
+  // cancelled by the re-render), and only when a pager action requested it — not
+  // on every filter change. Offset clears the fixed header (varies by device).
+  useEffect(() => {
+    if (!pendingScrollRef.current) return;
+    pendingScrollRef.current = false;
+    const offsetByDevice = { mobile: 70, tablet: 114, desktop: 150 };
+    const offset = offsetByDevice[getDeviceType()] || 0;
+    const el = mainRef.current;
+    const y = el ? el.getBoundingClientRect().top + window.scrollY - offset : 0;
+    window.scrollTo({ top: Math.max(0, y), behavior: "smooth" });
+  }, [safePage, perPage]);
+
+  // ---- Mobile filter sheet: lock body scroll, close on Escape, manage focus ----
+  useEffect(() => {
+    if (!mobileFiltersOpen) return undefined;
+    // The trigger button is persistently mounted, so capturing it here is safe
+    // and keeps the effect-cleanup ref-stability lint rule happy.
+    const trigger = mobileTriggerRef.current;
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    const onKeyDown = (e) => {
+      if (e.key === "Escape") setMobileFiltersOpen(false);
+    };
+    window.addEventListener("keydown", onKeyDown);
+    const focusTimer = setTimeout(() => sheetCloseRef.current?.focus(), 60);
+    return () => {
+      document.body.style.overflow = prevOverflow;
+      window.removeEventListener("keydown", onKeyDown);
+      clearTimeout(focusTimer);
+      // Return focus to the trigger so keyboard users aren't dropped at <body>.
+      trigger?.focus();
+    };
+  }, [mobileFiltersOpen]);
 
   // ---- Helpers ----
   const hasActiveFilters =
@@ -382,6 +483,10 @@ const Products = () => {
     inStockOnly ||
     selectedBrands.length > 0;
 
+  // Whether anything is constraining the result set — includes the search query
+  // (set from the header), so the empty state always offers a way out.
+  const hasAnyConstraint = hasActiveFilters || Boolean(urlSearch);
+
   const clearAllFilters = useCallback(() => {
     setSelectedCategories([]);
     setMinPrice("");
@@ -390,8 +495,18 @@ const Products = () => {
     setMinDiscount(0);
     setInStockOnly(false);
     setSelectedBrands([]);
+    setSortBy("relevance");
     setCurrentPage(1);
-    syncUrlParams({ category: [], min_price: "", max_price: "", page: 1 });
+    // Pass every reset value as an explicit override so no stale param survives.
+    // per_page is intentionally preserved (it's a view preference, not a filter).
+    syncUrlParams({
+      category: [],
+      search: "",
+      sort: "relevance",
+      min_price: "",
+      max_price: "",
+      page: 1,
+    });
   }, [syncUrlParams]);
 
   const handleCategoryToggle = useCallback(
@@ -419,8 +534,25 @@ const Products = () => {
   );
 
   const handlePriceApply = useCallback(() => {
+    // Sanitize: ignore NaN / non-positive values, and swap only when BOTH bounds
+    // are valid finite numbers and inverted. An empty max means "no upper bound"
+    // and must not be coerced to 0.
+    const lo = parseFloat(minPrice);
+    const hi = parseFloat(maxPrice);
+    const loValid = !isNaN(lo) && lo > 0;
+    const hiValid = !isNaN(hi) && hi > 0;
+    let nextMin = loValid ? lo : "";
+    let nextMax = hiValid ? hi : "";
+    if (loValid && hiValid && lo > hi) {
+      nextMin = hi;
+      nextMax = lo;
+    }
+    const minStr = nextMin === "" ? "" : String(nextMin);
+    const maxStr = nextMax === "" ? "" : String(nextMax);
+    setMinPrice(minStr);
+    setMaxPrice(maxStr);
     setCurrentPage(1);
-    syncUrlParams({ min_price: minPrice, max_price: maxPrice, page: 1 });
+    syncUrlParams({ min_price: minStr, max_price: maxStr, page: 1 });
   }, [minPrice, maxPrice, syncUrlParams]);
 
   const handleSortChange = useCallback(
@@ -435,25 +567,28 @@ const Products = () => {
   const handlePageChange = useCallback(
     (page) => {
       const p = Math.max(1, Math.min(page, totalPages));
+      pendingScrollRef.current = true; // scroll handled post-commit (see effect)
       setCurrentPage(p);
       syncUrlParams({ page: p });
-      window.scrollTo({ top: 0, behavior: "smooth" });
     },
     [totalPages, syncUrlParams]
   );
 
   const handlePerPageChange = useCallback(
     (value) => {
+      pendingScrollRef.current = true;
       setPerPage(value);
       setCurrentPage(1);
-      syncUrlParams({ page: 1 });
+      syncUrlParams({ per_page: value, page: 1 });
     },
     [syncUrlParams]
   );
 
   const handleProductClick = useCallback(
     (product) => {
-      navigate(`/products/${product.slug || product.id}`);
+      // Route is /products/:id resolved via getById — link by numeric id (as the
+      // rest of the app does); a slug would 404 against the mock/JSON API.
+      navigate(`/products/${product.id}`);
     },
     [navigate]
   );
@@ -461,16 +596,9 @@ const Products = () => {
   const handleAddToCart = useCallback(
     (e, product) => {
       e.stopPropagation();
-      const priceInfo = getProductMinPrice(product);
-      addToCart({
-        id: product.id,
-        productId: product.id,
-        name: product.name,
-        image: product.images?.[0] || product.image || "",
-        price: priceInfo.sellingPrice,
-        comparePrice: priceInfo.originalPrice,
-        quantity: 1,
-      });
+      // buildCartItem produces the same id scheme the product page uses, so a
+      // quick-add merges with a detail-page add instead of creating a duplicate.
+      addToCart(buildCartItem(product));
     },
     [addToCart]
   );
@@ -483,12 +611,38 @@ const Products = () => {
     [toggleWishlist]
   );
 
-  const handleBrandToggle = useCallback((brand) => {
-    setSelectedBrands((prev) =>
-      prev.includes(brand) ? prev.filter((b) => b !== brand) : [...prev, brand]
-    );
-    setCurrentPage(1);
-  }, []);
+  // Select semantics (value, or 0 to clear). onChange handles keyboard + click;
+  // a paired onClick clears when the already-selected radio is re-clicked.
+  const handleRatingChange = useCallback(
+    (value) => {
+      setMinRating(value);
+      resetToFirstPage();
+    },
+    [resetToFirstPage]
+  );
+
+  const handleDiscountChange = useCallback(
+    (value) => {
+      setMinDiscount(value);
+      resetToFirstPage();
+    },
+    [resetToFirstPage]
+  );
+
+  const handleInStockToggle = useCallback(() => {
+    setInStockOnly((v) => !v);
+    resetToFirstPage();
+  }, [resetToFirstPage]);
+
+  const handleBrandToggle = useCallback(
+    (brand) => {
+      setSelectedBrands((prev) =>
+        prev.includes(brand) ? prev.filter((b) => b !== brand) : [...prev, brand]
+      );
+      resetToFirstPage();
+    },
+    [resetToFirstPage]
+  );
 
   // ---- Category name helper ----
   const getCategoryName = useCallback(
@@ -548,7 +702,7 @@ const Products = () => {
               />
               <span className={styles.checkboxText}>{cat.name}</span>
               <span className={styles.filterCount}>
-                ({allProducts.filter((p) => String(p.categoryId) === String(cat.id)).length})
+                ({categoryCounts.get(String(cat.id)) || 0})
               </span>
             </label>
           ))}
@@ -601,7 +755,8 @@ const Products = () => {
                 type="radio"
                 name="rating"
                 checked={minRating === r}
-                onChange={() => { setMinRating(minRating === r ? 0 : r); setCurrentPage(1); }}
+                onChange={() => handleRatingChange(r)}
+                onClick={() => { if (minRating === r) handleRatingChange(0); }}
                 className={styles.radio}
               />
               <span className={styles.ratingOption}>
@@ -622,7 +777,8 @@ const Products = () => {
                 type="radio"
                 name="discount"
                 checked={minDiscount === d}
-                onChange={() => { setMinDiscount(minDiscount === d ? 0 : d); setCurrentPage(1); }}
+                onChange={() => handleDiscountChange(d)}
+                onClick={() => { if (minDiscount === d) handleDiscountChange(0); }}
                 className={styles.radio}
               />
               <span className={styles.checkboxText}>{d}% or more</span>
@@ -638,7 +794,7 @@ const Products = () => {
           <span className={styles.checkboxText}>In Stock Only</span>
           <button
             className={`${styles.toggle} ${inStockOnly ? styles.toggleOn : ""}`}
-            onClick={() => { setInStockOnly((v) => !v); setCurrentPage(1); }}
+            onClick={handleInStockToggle}
             type="button"
             role="switch"
             aria-checked={inStockOnly}
@@ -690,7 +846,6 @@ const Products = () => {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.3, delay: Math.min(index * 0.04, 0.4) }}
-        layout
       >
         <div
           className={`${styles.card} ${viewMode === "list" ? styles.cardList : ""}`}
@@ -801,7 +956,7 @@ const Products = () => {
         </aside>
 
         {/* ===== Main content ===== */}
-        <main className={styles.main}>
+        <main className={styles.main} ref={mainRef}>
           {/* Sort bar */}
           <div className={styles.sortBar}>
             <div className={styles.sortBarLeft}>
@@ -809,6 +964,9 @@ const Products = () => {
               <button
                 className={styles.mobileFilterBtn}
                 onClick={() => setMobileFiltersOpen(true)}
+                ref={mobileTriggerRef}
+                aria-haspopup="dialog"
+                aria-expanded={mobileFiltersOpen}
               >
                 <FilterIcon />
                 <span>Filters</span>
@@ -816,11 +974,25 @@ const Products = () => {
               </button>
 
               <span className={styles.resultsCount}>
-                Showing{" "}
-                <strong>
-                  {filteredProducts.length}
-                </strong>{" "}
-                products
+                {loading ? (
+                  "Loading products…"
+                ) : filteredProducts.length === 0 ? (
+                  "No products found"
+                ) : filteredProducts.length > perPage ? (
+                  <>
+                    Showing{" "}
+                    <strong>
+                      {(safePage - 1) * perPage + 1}&ndash;
+                      {Math.min(safePage * perPage, filteredProducts.length)}
+                    </strong>{" "}
+                    of <strong>{filteredProducts.length}</strong> products
+                  </>
+                ) : (
+                  <>
+                    Showing <strong>{filteredProducts.length}</strong>{" "}
+                    {filteredProducts.length === 1 ? "product" : "products"}
+                  </>
+                )}
               </span>
             </div>
 
@@ -875,9 +1047,17 @@ const Products = () => {
               <EmptyIllustration />
               <h3 className={styles.emptyTitle}>No products found</h3>
               <p className={styles.emptyText}>
-                We could not find any products matching your criteria. Try adjusting your filters or search query.
+                {urlSearch ? (
+                  <>
+                    We could not find any products matching{" "}
+                    <strong>&ldquo;{urlSearch}&rdquo;</strong>. Try a different
+                    search or adjust your filters.
+                  </>
+                ) : (
+                  "We could not find any products matching your criteria. Try adjusting your filters."
+                )}
               </p>
-              {hasActiveFilters && (
+              {hasAnyConstraint && (
                 <button className={styles.emptyBtn} onClick={clearAllFilters}>
                   Clear All Filters
                 </button>
@@ -952,44 +1132,59 @@ const Products = () => {
       </div>
 
       {/* ===== Mobile filter bottom sheet ===== */}
-      {mobileFiltersOpen && (
-        <div className={styles.overlay} onClick={() => setMobileFiltersOpen(false)}>
+      <AnimatePresence>
+        {mobileFiltersOpen && (
           <motion.div
-            className={styles.bottomSheet}
-            initial={{ y: "100%" }}
-            animate={{ y: 0 }}
-            exit={{ y: "100%" }}
-            transition={{ type: "spring", damping: 30, stiffness: 300 }}
-            onClick={(e) => e.stopPropagation()}
+            className={styles.overlay}
+            onClick={() => setMobileFiltersOpen(false)}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
           >
-            <div className={styles.bottomSheetHeader}>
-              <h3 className={styles.bottomSheetTitle}>Filters</h3>
-              <button
-                className={styles.bottomSheetClose}
-                onClick={() => setMobileFiltersOpen(false)}
-                aria-label="Close filters"
-              >
-                <CloseIcon />
-              </button>
-            </div>
-            <div className={styles.bottomSheetBody}>{renderFilters(true)}</div>
-            <div className={styles.bottomSheetFooter}>
-              <button
-                className={styles.bottomSheetClearBtn}
-                onClick={clearAllFilters}
-              >
-                Clear All
-              </button>
-              <button
-                className={styles.bottomSheetApplyBtn}
-                onClick={() => setMobileFiltersOpen(false)}
-              >
-                Show {filteredProducts.length} Results
-              </button>
-            </div>
+            <motion.div
+              className={styles.bottomSheet}
+              role="dialog"
+              aria-modal="true"
+              aria-label="Product filters"
+              initial={{ y: "100%" }}
+              animate={{ y: 0 }}
+              exit={{ y: "100%" }}
+              transition={{ type: "spring", damping: 30, stiffness: 300 }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className={styles.bottomSheetHeader}>
+                <h3 className={styles.bottomSheetTitle}>Filters</h3>
+                <button
+                  className={styles.bottomSheetClose}
+                  onClick={() => setMobileFiltersOpen(false)}
+                  aria-label="Close filters"
+                  ref={sheetCloseRef}
+                >
+                  <CloseIcon />
+                </button>
+              </div>
+              <div className={styles.bottomSheetBody}>{renderFilters(true)}</div>
+              <div className={styles.bottomSheetFooter}>
+                <button
+                  className={styles.bottomSheetClearBtn}
+                  onClick={clearAllFilters}
+                  disabled={!hasAnyConstraint}
+                >
+                  Clear All
+                </button>
+                <button
+                  className={styles.bottomSheetApplyBtn}
+                  onClick={() => setMobileFiltersOpen(false)}
+                >
+                  Show {filteredProducts.length}{" "}
+                  {filteredProducts.length === 1 ? "Result" : "Results"}
+                </button>
+              </div>
+            </motion.div>
           </motion.div>
-        </div>
-      )}
+        )}
+      </AnimatePresence>
     </div>
   );
 };
