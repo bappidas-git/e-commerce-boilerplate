@@ -72,6 +72,7 @@
   display: flex;
   align-items: center;
   gap: 10px;
+  margin: 0;
   padding: 10px 16px;
   border-radius: 12px;
   border: 1.5px solid;
@@ -99,16 +100,20 @@
 }
 
 .searchIcon {
-  font-size: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   flex-shrink: 0;
   line-height: 1;
 }
 
 .overlay[data-theme="dark"] .searchIcon {
+  color: #f1f5f9;
   opacity: 0.5;
 }
 
 .overlay[data-theme="light"] .searchIcon {
+  color: #1e293b;
   opacity: 0.45;
 }
 
@@ -367,6 +372,9 @@
 }
 
 .viewAllBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   background: none;
   border: none;
   font-family: inherit;
@@ -407,9 +415,17 @@
 }
 
 .emptyIcon {
-  font-size: 48px;
+  display: flex;
   margin-bottom: 16px;
   opacity: 0.4;
+}
+
+.overlay[data-theme="dark"] .emptyIcon {
+  color: #cbd5e1;
+}
+
+.overlay[data-theme="light"] .emptyIcon {
+  color: #475569;
 }
 
 .emptyTitle {
@@ -454,6 +470,12 @@
   cursor: pointer;
   transition: all 0.2s ease;
   border: 1px solid;
+  width: 100%;
+  text-align: left;
+  font: inherit;
+  color: inherit;
+  -webkit-appearance: none;
+  appearance: none;
 }
 
 .overlay[data-theme="dark"] .productCard {
@@ -500,6 +522,7 @@
   flex: 1;
   display: flex;
   flex-direction: column;
+  align-items: flex-start;
   gap: 3px;
   min-width: 0;
 }
@@ -556,20 +579,22 @@
   margin-top: 2px;
 }
 
-.productRating {
-  display: flex;
+.stars {
+  display: inline-flex;
   align-items: center;
-  gap: 4px;
-  font-size: 0.78rem;
+  gap: 1px;
 }
 
-.stars {
-  color: #f59e0b;
-  letter-spacing: 1px;
+.starDefs {
+  position: absolute;
+  width: 0;
+  height: 0;
+  pointer-events: none;
 }
 
 .ratingNum {
   font-weight: 500;
+  font-size: 0.78rem;
 }
 
 .overlay[data-theme="dark"] .ratingNum {
@@ -607,6 +632,9 @@
 }
 
 .sectionTitle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   margin: 0;
   font-size: 0.9rem;
   font-weight: 600;
@@ -659,6 +687,9 @@
 }
 
 .searchChip {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
   padding: 8px 16px;
   border-radius: 24px;
   border: 1.5px solid;
@@ -668,6 +699,11 @@
   cursor: pointer;
   transition: all 0.2s ease;
   white-space: nowrap;
+}
+
+.searchChip svg {
+  opacity: 0.65;
+  flex-shrink: 0;
 }
 
 .overlay[data-theme="dark"] .searchChip {
