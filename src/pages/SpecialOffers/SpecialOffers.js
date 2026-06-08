@@ -5,7 +5,7 @@ import { useTheme } from "../../context/ThemeContext";
 import { useCart } from "../../hooks/useCart";
 import { useWishlist } from "../../context/WishlistContext";
 import apiService from "../../services/api";
-import { formatCurrency, getProductMinPrice, getProductMaxDiscount, copyToClipboard, truncateText } from "../../utils/helpers";
+import { formatCurrency, getProductMinPrice, getProductMaxDiscount, buildCartItem, copyToClipboard, truncateText } from "../../utils/helpers";
 import styles from "./SpecialOffers.module.css";
 
 // ── Hardcoded Coupons ────────────────────────────────────────────────────────
@@ -238,18 +238,9 @@ const SpecialOffers = () => {
   }, []);
 
   const handleAddToCart = useCallback(
-    (product) => {
-      const minPrice = getProductMinPrice(product);
-      addToCart(
-        {
-          id: product.id,
-          name: product.name,
-          price: minPrice.sellingPrice,
-          image: product.images?.[0] || product.image,
-        },
-        1
-      );
-    },
+    // buildCartItem produces the same id scheme (and default variant/price) the
+    // product page uses, so offer adds merge with PDP adds instead of duplicating.
+    (product) => addToCart(buildCartItem(product), 1),
     [addToCart]
   );
 

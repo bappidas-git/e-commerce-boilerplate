@@ -76,6 +76,7 @@ export const getDefaultCartVariant = (product) => {
 export const buildCartItem = (product) => {
   const { sellingPrice } = getProductMinPrice(product);
   const variant = getDefaultCartVariant(product);
+  const stock = variant ? variant.stock : product.stock;
   return {
     id: variant ? `${product.id}-${variant.id}` : String(product.id),
     productId: product.id,
@@ -86,6 +87,7 @@ export const buildCartItem = (product) => {
     price: variant ? parseFloat(variant.price) || sellingPrice : sellingPrice,
     comparePrice: product.comparePrice || 0,
     currency: "INR",
+    ...(stock != null && stock !== "" ? { stock: Number(stock) } : {}),
   };
 };
 

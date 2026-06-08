@@ -6,7 +6,7 @@ import { useWishlist } from "../../context/WishlistContext";
 import { useCart } from "../../hooks/useCart";
 import { useAuth } from "../../hooks/useAuth";
 import apiService from "../../services/api";
-import { formatCurrency, getProductMinPrice } from "../../utils/helpers";
+import { formatCurrency, getProductMinPrice, getDefaultCartVariant } from "../../utils/helpers";
 import styles from "./Wishlist.module.css";
 
 const SORT_OPTIONS = [
@@ -82,20 +82,25 @@ const Wishlist = () => {
 
   const handleAddToCart = (e, item) => {
     e.stopPropagation();
-    const priceInfo = getProductMinPrice(item);
-    const cartProduct = {
-      id: `${item.productId}-default`,
-      productId: item.productId,
-      variantId: item.variants?.[0]?.id || null,
-      variantName: item.variants?.[0]?.name || null,
-      name: item.name,
-      image: item.image,
-      price: priceInfo.sellingPrice,
-      comparePrice: priceInfo.originalPrice,
-      currency: "INR",
-      quantity: 1,
-    };
-    addToCart(cartProduct, 1);
+    const { sellingPrice, originalPrice } = getProductMinPrice(item);
+    // Use the same default (cheapest) variant + id scheme as the product page
+    // and cards so a wishlist add merges with those instead of duplicating.
+    const variant = getDefaultCartVariant(item);
+    const stock = variant ? variant.stock : item.stock;
+    addToCart(
+      {
+        productId: item.productId,
+        variantId: variant?.id || null,
+        variantName: variant?.name || null,
+        name: item.name,
+        image: item.image,
+        price: variant ? parseFloat(variant.price) || sellingPrice : sellingPrice,
+        comparePrice: originalPrice,
+        currency: "INR",
+        ...(stock != null && stock !== "" ? { stock: Number(stock) } : {}),
+      },
+      1
+    );
   };
 
   const handleMoveToCart = async (e, item) => {

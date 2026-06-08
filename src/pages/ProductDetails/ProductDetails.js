@@ -268,6 +268,7 @@ const ProductDetails = () => {
     if (product.variants?.length > 0 && !selectedVariant) return;
 
     const effectivePrice = selectedVariant ? selectedVariant.price : product.price;
+    const effectiveStock = selectedVariant ? selectedVariant.stock : product.stock;
     const cartItem = {
       id: selectedVariant
         ? `${product.id}-${selectedVariant.id}`
@@ -280,6 +281,9 @@ const ProductDetails = () => {
       price: effectivePrice,
       comparePrice: product.comparePrice || 0,
       currency: "INR",
+      ...(effectiveStock != null && effectiveStock !== ""
+        ? { stock: Number(effectiveStock) }
+        : {}),
     };
 
     return addToCart(cartItem, quantity, options);

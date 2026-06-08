@@ -429,14 +429,24 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  cursor: pointer;
+  transition: color 0.15s ease;
 }
 
 .dark .itemName {
   color: #f1f5f9;
 }
 
+.dark .itemName:hover {
+  color: #a78bfa;
+}
+
 .light .itemName {
   color: #1e293b;
+}
+
+.light .itemName:hover {
+  color: #6366f1;
 }
 
 .itemVariant {
