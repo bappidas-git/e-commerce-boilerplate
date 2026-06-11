@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
+import Swal from "sweetalert2";
 import { useTheme } from "../../context/ThemeContext";
 import { useAuth } from "../../hooks/useAuth";
 import apiService from "../../services/api";
-import { formatCurrency, formatDate } from "../../utils/helpers";
+import { formatCurrency, formatDate, normalizeOrderAddress } from "../../utils/helpers";
 import styles from "./OrderHistory.module.css";
 
 const STATUS_CONFIG = {
@@ -20,6 +21,7 @@ const STATUS_CONFIG = {
 
 const FILTER_OPTIONS = ["All", "Processing", "Shipped", "Delivered", "Cancelled"];
 const ORDERS_PER_PAGE = 5;
+const RETURN_WINDOW_DAYS = 7; // per the 7-day return policy (see /refund-policy)
 
 // Orders carry paymentStatus / fulfillmentStatus / shippingStatus (the shape
 // checkout writes and Admin manages) — collapse those into the single display
@@ -48,6 +50,8 @@ const OrderHistory = () => {
 
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [fetchError, setFetchError] = useState(false);
+  const [cancellingId, setCancellingId] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [activeFilter, setActiveFilter] = useState("All");
   const [expandedOrder, setExpandedOrder] = useState(null);
@@ -67,14 +71,18 @@ const OrderHistory = () => {
 
   const fetchOrders = async () => {
     setLoading(true);
+    setFetchError(false);
     try {
       const response = await apiService.orders.getByUserId(user?.id);
       const data = Array.isArray(response) ? response : response?.data || response?.orders || [];
-      const sorted = data.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+      const sorted = [...data].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
       setOrders(sorted);
     } catch (err) {
+      // Keep "No Orders Yet" honest: a failed fetch renders the error state,
+      // never the empty state.
       console.error("Failed to fetch orders:", err);
       setOrders([]);
+      setFetchError(true);
     } finally {
       setLoading(false);
     }
@@ -91,23 +99,48 @@ const OrderHistory = () => {
   };
 
   const isReturnEligible = (order) => {
-    if (order.status !== "delivered" && order.status !== "completed") return false;
-    const deliveryDate = new Date(order.deliveredAt || order.updatedAt || order.createdAt);
-    const daysSinceDelivery = (Date.now() - deliveryDate.getTime()) / (1000 * 60 * 60 * 24);
-    return daysSinceDelivery <= 7;
+    if (deriveOrderStatus(order) !== "delivered") return false;
+    // The window starts when the parcel arrived: deliveredAt when recorded,
+    // else updatedAt (bumped by the delivered status change) — never
+    // createdAt, which would open the window before delivery.
+    const deliveredOn = order.deliveredAt || order.updatedAt;
+    if (!deliveredOn) return false;
+    const daysSinceDelivery = (Date.now() - new Date(deliveredOn).getTime()) / (1000 * 60 * 60 * 24);
+    return daysSinceDelivery <= RETURN_WINDOW_DAYS;
   };
 
-  const isCancellable = (order) => {
-    return order.status === "pending" || order.status === "processing";
-  };
+  // Orders can be cancelled until they ship — i.e. while the derived status
+  // is still "processing" (covers pending-payment and unfulfilled orders).
+  const isCancellable = (order) => deriveOrderStatus(order) === "processing";
 
-  const handleCancelOrder = async (orderId) => {
-    if (!window.confirm("Are you sure you want to cancel this order?")) return;
+  const handleCancelOrder = async (order) => {
+    if (cancellingId) return;
+    const result = await Swal.fire({
+      title: "Cancel this order?",
+      text: `Order ${order.orderNumber || `#${order.id}`} will be cancelled. This cannot be undone.`,
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#d32f2f",
+      confirmButtonText: "Cancel Order",
+      cancelButtonText: "Keep Order",
+    });
+    if (!result.isConfirmed) return;
+
+    setCancellingId(order.id);
     try {
-      await apiService.cancelOrder(orderId);
-      fetchOrders();
+      const updated = await apiService.orders.cancel(order.id);
+      setOrders((prev) =>
+        prev.map((o) => (o.id === order.id ? { ...o, ...updated } : o))
+      );
     } catch (err) {
       console.error("Failed to cancel order:", err);
+      Swal.fire({
+        icon: "error",
+        title: "Couldn't cancel order",
+        text: "Something went wrong while cancelling. Please try again.",
+      });
+    } finally {
+      setCancellingId(null);
     }
   };
 
@@ -134,6 +167,11 @@ const OrderHistory = () => {
   useEffect(() => {
     setCurrentPage(1);
   }, [searchQuery, activeFilter]);
+
+  // Keep the page in range when the result set shrinks (e.g. after a refresh).
+  useEffect(() => {
+    if (totalPages > 0 && currentPage > totalPages) setCurrentPage(totalPages);
+  }, [currentPage, totalPages]);
 
   // Not authenticated - show login prompt (only once the session restore has
   // settled, so a reload while logged in doesn't flash this screen)
@@ -186,7 +224,7 @@ const OrderHistory = () => {
         >
           <div className={styles.headerLeft}>
             <h1 className={styles.pageTitle}>My Orders</h1>
-            {!loading && (
+            {!loading && !fetchError && (
               <span className={styles.orderCount}>
                 {filteredOrders.length} order{filteredOrders.length !== 1 ? "s" : ""}
               </span>
@@ -250,8 +288,33 @@ const OrderHistory = () => {
           </div>
         )}
 
+        {/* Error State — fetch failed; never masquerade as "No Orders Yet" */}
+        {!loading && fetchError && (
+          <motion.div
+            className={styles.errorState}
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+          >
+            <div className={styles.errorIcon}>
+              <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="10" />
+                <line x1="12" y1="8" x2="12" y2="12" />
+                <line x1="12" y1="16" x2="12.01" y2="16" />
+              </svg>
+            </div>
+            <h3 className={styles.emptyTitle}>Couldn't Load Your Orders</h3>
+            <p className={styles.emptySubtext}>
+              Something went wrong while fetching your orders. Please check your
+              connection and try again.
+            </p>
+            <button className={styles.btnPrimary} onClick={fetchOrders}>
+              Try Again
+            </button>
+          </motion.div>
+        )}
+
         {/* Empty State */}
-        {!loading && filteredOrders.length === 0 && orders.length === 0 && (
+        {!loading && !fetchError && filteredOrders.length === 0 && orders.length === 0 && (
           <motion.div
             className={styles.emptyState}
             initial={{ opacity: 0, scale: 0.95 }}
@@ -421,9 +484,17 @@ const OrderHistory = () => {
                       {isCancellable(order) && (
                         <button
                           className={styles.btnOutlineDanger}
-                          onClick={() => handleCancelOrder(order.id || order.orderNumber)}
+                          onClick={() => handleCancelOrder(order)}
+                          disabled={cancellingId !== null}
                         >
-                          Cancel Order
+                          {cancellingId === order.id ? (
+                            <>
+                              <span className={styles.btnSpinner} />
+                              Cancelling...
+                            </>
+                          ) : (
+                            "Cancel Order"
+                          )}
                         </button>
                       )}
                     </div>
@@ -515,33 +586,35 @@ const OrderHistory = () => {
                             <div className={styles.detailBlock}>
                               <h4 className={styles.detailBlockTitle}>Shipping Address</h4>
                               <div className={styles.detailContent}>
-                                {order.shippingAddress ? (
-                                  <>
-                                    <p>{order.shippingAddress.name || `${order.shippingAddress.firstName || ""} ${order.shippingAddress.lastName || ""}`.trim()}</p>
-                                    <p>{order.shippingAddress.addressLine1 || order.shippingAddress.street || order.shippingAddress.line1 || order.shippingAddress.address}</p>
-                                    {(order.shippingAddress.addressLine2 || order.shippingAddress.line2) && (
-                                      <p>{order.shippingAddress.addressLine2 || order.shippingAddress.line2}</p>
-                                    )}
-                                    <p>
-                                      {order.shippingAddress.city}
-                                      {order.shippingAddress.state ? `, ${order.shippingAddress.state}` : ""}
-                                      {order.shippingAddress.zip || order.shippingAddress.postalCode
-                                        ? ` - ${order.shippingAddress.zip || order.shippingAddress.postalCode}`
-                                        : ""}
-                                    </p>
-                                    {order.shippingAddress.country && <p>{order.shippingAddress.country}</p>}
-                                  </>
-                                ) : (
-                                  <p className={styles.textMuted}>Shipping address not available</p>
-                                )}
+                                {(() => {
+                                  const addr = normalizeOrderAddress(order.shippingAddress);
+                                  if (!addr) {
+                                    return <p className={styles.textMuted}>Shipping address not available</p>;
+                                  }
+                                  return (
+                                    <>
+                                      {addr.name && <p>{addr.name}</p>}
+                                      {addr.line1 && <p>{addr.line1}</p>}
+                                      {addr.line2 && <p>{addr.line2}</p>}
+                                      {addr.cityLine && <p>{addr.cityLine}</p>}
+                                      {addr.country && <p>{addr.country}</p>}
+                                      {addr.phone && <p>Phone: {addr.phone}</p>}
+                                    </>
+                                  );
+                                })()}
                               </div>
                             </div>
 
                             {/* Payment Method */}
                             <div className={styles.detailBlock}>
-                              <h4 className={styles.detailBlockTitle}>Payment Method</h4>
+                              <h4 className={styles.detailBlockTitle}>Payment</h4>
                               <div className={styles.detailContent}>
-                                <p>{order.paymentMethod ? order.paymentMethod.toUpperCase() : "N/A"}</p>
+                                <p>{order.paymentMethod ? order.paymentMethod.replace(/_/g, " ").toUpperCase() : "N/A"}</p>
+                                {order.paymentStatus && (
+                                  <p className={styles.textMuted}>
+                                    Status: {order.paymentStatus.replace(/_/g, " ")}
+                                  </p>
+                                )}
                               </div>
                             </div>
 

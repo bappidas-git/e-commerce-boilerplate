@@ -3,7 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { useTheme } from "../../context/ThemeContext";
 import apiService from "../../services/api";
-import { formatCurrency, formatDate } from "../../utils/helpers";
+import { formatCurrency, formatDate, normalizeOrderAddress } from "../../utils/helpers";
 import styles from "./OrderConfirmation.module.css";
 
 const OrderConfirmation = () => {
@@ -13,11 +13,13 @@ const OrderConfirmation = () => {
 
   const [order, setOrder] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [fetchError, setFetchError] = useState(false);
   const [copied, setCopied] = useState(false);
   const [showCheck, setShowCheck] = useState(false);
 
   useEffect(() => {
     fetchOrder();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [orderNumber]);
 
   useEffect(() => {
@@ -29,13 +31,16 @@ const OrderConfirmation = () => {
 
   const fetchOrder = async () => {
     setLoading(true);
+    setFetchError(false);
     try {
       const response = await apiService.orders.getByOrderNumber(orderNumber);
       const data = response?.data || response?.order || response;
       setOrder(data || null);
     } catch (err) {
+      // A failed request is not "order not found" — offer a retry instead.
       console.error("Failed to fetch order:", err);
       setOrder(null);
+      setFetchError(true);
     } finally {
       setLoading(false);
     }
@@ -48,16 +53,19 @@ const OrderConfirmation = () => {
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const getEstimatedDelivery = () => {
-    const created = new Date(order?.createdAt || Date.now());
-    const delivery = new Date(created);
-    delivery.setDate(delivery.getDate() + 5);
-    return delivery.toLocaleDateString("en-IN", {
+  const formatDeliveryDate = (date) =>
+    date.toLocaleDateString("en-IN", {
       weekday: "long",
       year: "numeric",
       month: "long",
       day: "numeric",
     });
+
+  const getEstimatedDelivery = () => {
+    const created = new Date(order?.createdAt || Date.now());
+    const delivery = new Date(created);
+    delivery.setDate(delivery.getDate() + 5);
+    return formatDeliveryDate(delivery);
   };
 
   const handleDownloadInvoice = () => {
@@ -73,6 +81,39 @@ const OrderConfirmation = () => {
           <div className={styles.loadingState}>
             <div className={styles.spinner} />
             <p>Loading order details...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Fetch failed — distinct from "not found" so a flaky network never claims
+  // the order doesn't exist.
+  if (fetchError) {
+    return (
+      <div className={`${styles.page} ${isDarkMode ? styles.dark : ""}`}>
+        <div className={styles.container}>
+          <div className={styles.notFound}>
+            <div className={styles.notFoundIcon}>
+              <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="10" />
+                <line x1="12" y1="8" x2="12" y2="12" />
+                <line x1="12" y1="16" x2="12.01" y2="16" />
+              </svg>
+            </div>
+            <h2>Couldn't Load Your Order</h2>
+            <p>
+              Something went wrong while fetching order {orderNumber}. Please
+              check your connection and try again.
+            </p>
+            <div className={styles.notFoundActions}>
+              <button className={styles.btnPrimary} onClick={fetchOrder}>
+                Try Again
+              </button>
+              <button className={styles.btnSecondary} onClick={() => navigate("/orders")}>
+                View Order History
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -117,6 +158,29 @@ const OrderConfirmation = () => {
   const shippingAmount = order.shippingAmount ?? order.shipping ?? 0;
   const discountAmount = order.discountAmount ?? 0;
   const isPaymentPending = order.paymentStatus === "pending";
+  const shippingAddr = normalizeOrderAddress(order.shippingAddress);
+  const isDelivered = order.shippingStatus === "delivered";
+
+  // Badge text mirrors the order's real paymentStatus — never a hardcoded
+  // "successful".
+  const paymentStatusInfo = (() => {
+    switch (order.paymentStatus) {
+      case "paid":
+        return { label: "Payment Successful", modifier: "" };
+      case "failed":
+        return { label: "Payment Failed", modifier: styles.paymentStatusFailed };
+      case "refunded":
+        return { label: "Payment Refunded", modifier: styles.paymentStatusFailed };
+      default:
+        return {
+          label:
+            order.paymentMethod === "cod"
+              ? "Payment Pending — Pay on Delivery"
+              : "Payment Pending",
+          modifier: styles.paymentStatusPending,
+        };
+    }
+  })();
 
   return (
     <div className={`${styles.page} ${isDarkMode ? styles.dark : ""}`}>
@@ -203,8 +267,14 @@ const OrderConfirmation = () => {
             </svg>
           </div>
           <div className={styles.deliveryText}>
-            <span className={styles.deliveryLabel}>Estimated Delivery</span>
-            <span className={styles.deliveryDate}>{getEstimatedDelivery()}</span>
+            <span className={styles.deliveryLabel}>
+              {isDelivered ? "Delivered" : "Estimated Delivery"}
+            </span>
+            <span className={styles.deliveryDate}>
+              {isDelivered
+                ? formatDeliveryDate(new Date(order.deliveredAt || order.updatedAt))
+                : getEstimatedDelivery()}
+            </span>
           </div>
         </motion.div>
 
@@ -300,28 +370,17 @@ const OrderConfirmation = () => {
                 </h3>
               </div>
               <div className={styles.cardBody}>
-                {order.shippingAddress ? (
+                {shippingAddr ? (
                   <div className={styles.addressBlock}>
-                    <p className={styles.addressName}>
-                      {order.shippingAddress.name ||
-                        `${order.shippingAddress.firstName || ""} ${order.shippingAddress.lastName || ""}`.trim()}
-                    </p>
-                    <p>{order.shippingAddress.addressLine1 || order.shippingAddress.street || order.shippingAddress.line1 || order.shippingAddress.address}</p>
-                    {(order.shippingAddress.addressLine2 || order.shippingAddress.line2) && (
-                      <p>{order.shippingAddress.addressLine2 || order.shippingAddress.line2}</p>
+                    {shippingAddr.name && (
+                      <p className={styles.addressName}>{shippingAddr.name}</p>
                     )}
-                    <p>
-                      {order.shippingAddress.city}
-                      {order.shippingAddress.state ? `, ${order.shippingAddress.state}` : ""}
-                      {order.shippingAddress.zip || order.shippingAddress.postalCode
-                        ? ` - ${order.shippingAddress.zip || order.shippingAddress.postalCode}`
-                        : ""}
-                    </p>
-                    {order.shippingAddress.country && <p>{order.shippingAddress.country}</p>}
-                    {order.shippingAddress.phone && (
-                      <p className={styles.addressPhone}>
-                        Phone: {order.shippingAddress.phone}
-                      </p>
+                    {shippingAddr.line1 && <p>{shippingAddr.line1}</p>}
+                    {shippingAddr.line2 && <p>{shippingAddr.line2}</p>}
+                    {shippingAddr.cityLine && <p>{shippingAddr.cityLine}</p>}
+                    {shippingAddr.country && <p>{shippingAddr.country}</p>}
+                    {shippingAddr.phone && (
+                      <p className={styles.addressPhone}>Phone: {shippingAddr.phone}</p>
                     )}
                   </div>
                 ) : (
@@ -353,9 +412,9 @@ const OrderConfirmation = () => {
                 <div className={styles.paymentBadge}>
                   {order.paymentMethod ? order.paymentMethod.replace(/_/g, " ").toUpperCase() : "N/A"}
                 </div>
-                <div className={`${styles.paymentStatus} ${isPaymentPending ? styles.paymentStatusPending : ""}`}>
+                <div className={`${styles.paymentStatus} ${paymentStatusInfo.modifier}`}>
                   <span className={styles.paymentStatusDot} />
-                  {isPaymentPending ? "Payment Pending — Pay on Delivery" : "Payment Successful"}
+                  {paymentStatusInfo.label}
                 </div>
               </div>
             </motion.div>

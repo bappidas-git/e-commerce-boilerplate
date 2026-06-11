@@ -423,6 +423,23 @@ const apiService = {
         return extractData(response);
       } catch (error) { console.error("Get order by number error:", error); throw error; }
     },
+
+    cancel: async (id) => {
+      try {
+        if (IS_MOCK_API) {
+          // Cancellation is a fulfillment outcome — payment changes (refunds)
+          // stay with Admin. deriveOrderStatus maps this to "cancelled".
+          const response = await api.patch(`/orders/${id}`, {
+            fulfillmentStatus: "cancelled",
+            cancelledAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+          });
+          return response.data;
+        }
+        const response = await api.post(`/orders/${id}/cancel`);
+        return extractData(response);
+      } catch (error) { console.error("Cancel order error:", error); throw error; }
+    },
   },
 
   // ===========================================================================

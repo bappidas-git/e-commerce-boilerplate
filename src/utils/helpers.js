@@ -172,6 +172,33 @@ export const getInitials = (firstName, lastName) => {
   return first + last;
 };
 
+// Orders store addresses in the checkout shape (firstName/lastName, phone,
+// addressLine1/addressLine2, city, state, postalCode, country). Some sources
+// may still carry legacy aliases (name, street/line1, zip) — collapse them
+// here so Order Confirmation and Order History render identical blocks.
+export const normalizeOrderAddress = (address) => {
+  if (!address) return null;
+  const name =
+    [address.firstName, address.lastName].filter(Boolean).join(" ") ||
+    address.name ||
+    "";
+  const postalCode = address.postalCode || address.zip || "";
+  const cityLine = [
+    [address.city, address.state].filter(Boolean).join(", "),
+    postalCode,
+  ]
+    .filter(Boolean)
+    .join(" - ");
+  return {
+    name,
+    line1: address.addressLine1 || address.street || address.line1 || address.address || "",
+    line2: address.addressLine2 || address.line2 || "",
+    cityLine,
+    country: address.country || "",
+    phone: address.phone || "",
+  };
+};
+
 export const formatDate = (date, format = "medium") => {
   const options = {
     short: { month: "short", day: "numeric", year: "numeric" },

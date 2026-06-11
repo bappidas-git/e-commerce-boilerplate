@@ -591,6 +591,14 @@
   background: #d69e2e;
 }
 
+.paymentStatusFailed {
+  color: #e53e3e;
+}
+
+.paymentStatusFailed .paymentStatusDot {
+  background: #e53e3e;
+}
+
 @keyframes pulse {
   0%, 100% { opacity: 1; }
   50% { opacity: 0.5; }
