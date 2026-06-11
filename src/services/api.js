@@ -486,6 +486,24 @@ const apiService = {
   // Coupons
   // ===========================================================================
   coupons: {
+    // Public list of active coupons for storefront display (e.g. the Special
+    // Offers page). Sourced from the same `coupons` store the Admin manages and
+    // the checkout validates against, so every advertised code redeems. Callers
+    // should still drop expired / exhausted ones (mirroring validate()).
+    getActive: async (params = {}) => {
+      try {
+        if (IS_MOCK_API) {
+          const response = await api.get("/coupons", { params: { isActive: true, ...params } });
+          return Array.isArray(response.data) ? response.data : [];
+        }
+        const response = await api.get("/coupons", { params });
+        return extractData(response);
+      } catch (error) {
+        console.error("Get active coupons error:", error);
+        return [];
+      }
+    },
+
     validate: async (code, orderAmount) => {
       const reject = (message) => {
         const err = new Error(message);

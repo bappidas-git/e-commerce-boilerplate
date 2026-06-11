@@ -1,21 +1,34 @@
 import React, { useState, useEffect, useMemo, useCallback } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { useTheme } from "../../context/ThemeContext";
 import { useCart } from "../../hooks/useCart";
 import { useWishlist } from "../../context/WishlistContext";
 import apiService from "../../services/api";
-import { formatCurrency, getProductMinPrice, getProductMaxDiscount, buildCartItem, copyToClipboard, truncateText } from "../../utils/helpers";
+import {
+  formatCurrency,
+  getProductMinPrice,
+  getProductMaxDiscount,
+  buildCartItem,
+  copyToClipboard,
+  truncateText,
+  onImageError,
+} from "../../utils/helpers";
 import styles from "./SpecialOffers.module.css";
 
-// ── Hardcoded Coupons ────────────────────────────────────────────────────────
+// ── Coupon display helpers ───────────────────────────────────────────────────
+// Coupons shown here come from the same store the Admin manages and Checkout
+// validates against (apiService.coupons), so every advertised code redeems.
 
-const COUPONS = [
-  { code: "SAVE20", description: "20% off on orders above $100", discount: "20%", minOrder: "$100", expiry: "2026-04-30" },
-  { code: "FLAT50", description: "Flat $50 off on orders above $200", discount: "$50", minOrder: "$200", expiry: "2026-04-15" },
-  { code: "FREESHIP", description: "Free shipping on all orders", discount: "Free Shipping", minOrder: "None", expiry: "2026-05-01" },
-  { code: "WELCOME10", description: "10% off for new customers", discount: "10%", minOrder: "None", expiry: "2026-06-30" },
-];
+// Compact rupee figure for promo copy — round values read cleaner without paise.
+const rupees = (n) => `₹${Math.round(Number(n) || 0).toLocaleString("en-IN")}`;
+
+// Expiry shown on a coupon card — the same instant the checkout enforces.
+const formatExpiry = (iso) =>
+  new Date(iso).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" });
+
+// Headline figure on a coupon's stub: "20%" for percentage, "₹500" for fixed.
+const couponHeadline = (c) => (c.type === "percentage" ? `${c.value}%` : rupees(c.value));
 
 // ── Countdown Timer Hook ─────────────────────────────────────────────────────
 
@@ -70,7 +83,7 @@ const StarRating = ({ rating, reviewCount }) => {
 
 // ── Product Card ─────────────────────────────────────────────────────────────
 
-const ProductCard = ({ product, onAddToCart, onToggleWishlist, isWishlisted, index }) => {
+const ProductCard = ({ product, categoryName, onAddToCart, onToggleWishlist, isWishlisted, index }) => {
   const navigate = useNavigate();
   const minPrice = getProductMinPrice(product);
   const maxDiscount = getProductMaxDiscount(product);
@@ -101,6 +114,7 @@ const ProductCard = ({ product, onAddToCart, onToggleWishlist, isWishlisted, ind
           alt={product.name}
           className={styles.productImage}
           loading="lazy"
+          onError={onImageError}
         />
         {maxDiscount > 0 && (
           <span className={styles.discountBadge}>-{maxDiscount}%</span>
@@ -110,7 +124,7 @@ const ProductCard = ({ product, onAddToCart, onToggleWishlist, isWishlisted, ind
           onClick={handleWishlist}
           aria-label={isWishlisted ? "Remove from wishlist" : "Add to wishlist"}
         >
-          {isWishlisted ? "\u2764" : "\u2661"}
+          {isWishlisted ? "❤" : "♡"}
         </button>
         <div className={styles.productOverlay}>
           <button
@@ -126,7 +140,7 @@ const ProductCard = ({ product, onAddToCart, onToggleWishlist, isWishlisted, ind
       </div>
 
       <div className={styles.productInfo}>
-        <span className={styles.productCategory}>{product.category}</span>
+        {categoryName && <span className={styles.productCategory}>{categoryName}</span>}
         <h3 className={styles.productName}>{truncateText(product.name, 48)}</h3>
         <StarRating rating={product.rating || 0} reviewCount={product.totalReviews || 0} />
 
@@ -152,13 +166,24 @@ const ProductCard = ({ product, onAddToCart, onToggleWishlist, isWishlisted, ind
   );
 };
 
-// ── Skeleton Loader ──────────────────────────────────────────────────────────
+// ── Skeleton Loaders ─────────────────────────────────────────────────────────
 
 const ProductSkeleton = () => (
   <div className={styles.productCard}>
     <div className={`${styles.productImageWrap} ${styles.skeletonImage}`} />
     <div className={styles.productInfo}>
       <div className={`${styles.skeletonLine} ${styles.skeletonShort}`} />
+      <div className={`${styles.skeletonLine} ${styles.skeletonMedium}`} />
+      <div className={`${styles.skeletonLine} ${styles.skeletonShort}`} />
+      <div className={`${styles.skeletonLine} ${styles.skeletonFull}`} />
+    </div>
+  </div>
+);
+
+const CouponSkeleton = () => (
+  <div className={styles.couponCard}>
+    <div className={styles.couponSkeletonLeft} />
+    <div className={styles.couponRight}>
       <div className={`${styles.skeletonLine} ${styles.skeletonMedium}`} />
       <div className={`${styles.skeletonLine} ${styles.skeletonShort}`} />
       <div className={`${styles.skeletonLine} ${styles.skeletonFull}`} />
@@ -176,27 +201,32 @@ const SpecialOffers = () => {
 
   const [products, setProducts] = useState([]);
   const [categories, setCategories] = useState([]);
+  const [coupons, setCoupons] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("all");
   const [copiedCode, setCopiedCode] = useState(null);
 
   const timeLeft = useCountdown();
 
-  // Fetch data
+  // Fetch products (for deals), categories (for accurate tabs) and the real
+  // coupons (so advertised codes match what checkout accepts) in one pass.
   useEffect(() => {
     const fetchData = async () => {
       try {
         setLoading(true);
-        const [productsData, categoriesData] = await Promise.all([
+        const [productsData, categoriesData, couponsData] = await Promise.all([
           apiService.products.getAll(),
           apiService.categories.getAll(),
+          apiService.coupons.getActive(),
         ]);
         setProducts(Array.isArray(productsData) ? productsData : []);
         setCategories(Array.isArray(categoriesData) ? categoriesData : []);
+        setCoupons(Array.isArray(couponsData) ? couponsData : []);
       } catch (error) {
-        console.error("Error fetching data:", error);
+        console.error("Error fetching offers data:", error);
         setProducts([]);
         setCategories([]);
+        setCoupons([]);
       } finally {
         setLoading(false);
       }
@@ -204,29 +234,47 @@ const SpecialOffers = () => {
     fetchData();
   }, []);
 
-  // Filter & sort discounted products
+  // Only advertise coupons a shopper can actually redeem right now: active,
+  // not past expiry, not usage-exhausted — the same gates checkout enforces.
+  // (minOrderAmount is order-dependent, so it's shown on the card instead.)
+  const activeCoupons = useMemo(() => {
+    const now = new Date();
+    return coupons.filter(
+      (c) =>
+        c.isActive !== false &&
+        (!c.expiresAt || new Date(c.expiresAt) > now) &&
+        !(c.usageLimit && c.usedCount >= c.usageLimit)
+    );
+  }, [coupons]);
+
+  // Map of categoryId → name; products carry a numeric categoryId only.
+  const categoryMap = useMemo(() => {
+    const map = {};
+    categories.forEach((c) => { map[c.id] = c.name; });
+    return map;
+  }, [categories]);
+
+  // Filter & sort discounted products (highest discount first).
   const discountedProducts = useMemo(() => {
     return products
       .filter((p) => getProductMaxDiscount(p) > 0)
       .sort((a, b) => getProductMaxDiscount(b) - getProductMaxDiscount(a));
   }, [products]);
 
-  // Category tabs derived from discounted products
+  // Category tabs = real categories that actually have a deal, in catalogue order.
   const dealCategories = useMemo(() => {
-    const catSet = new Set(discountedProducts.map((p) => p.category).filter(Boolean));
-    return Array.from(catSet);
-  }, [discountedProducts]);
+    const ids = new Set(discountedProducts.map((p) => p.categoryId).filter((id) => id != null));
+    return categories.filter((c) => ids.has(c.id));
+  }, [discountedProducts, categories]);
 
-  // Filtered by active tab
+  // Filtered by active tab (tab value is a categoryId, or "all").
   const filteredProducts = useMemo(() => {
     if (activeTab === "all") return discountedProducts;
-    return discountedProducts.filter((p) => p.category === activeTab);
+    return discountedProducts.filter((p) => p.categoryId === activeTab);
   }, [discountedProducts, activeTab]);
 
-  // Deal of the Day: top 3 by discount
-  const dealOfTheDay = useMemo(() => {
-    return discountedProducts.slice(0, 3);
-  }, [discountedProducts]);
+  // Deal of the Day: top 3 by discount.
+  const dealOfTheDay = useMemo(() => discountedProducts.slice(0, 3), [discountedProducts]);
 
   // Handlers
   const handleCopyCode = useCallback(async (code) => {
@@ -273,7 +321,14 @@ const SpecialOffers = () => {
             className={styles.heroInner}
           >
             <span className={styles.heroTag}>Limited Time</span>
-            <h1 className={styles.heroTitle}>Special Offers &amp; Deals</h1>
+            <motion.h1
+              className={styles.heroTitle}
+              initial={{ opacity: 0, scale: 0.94 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.5, delay: 0.1 }}
+            >
+              Special Offers &amp; Deals
+            </motion.h1>
             <p className={styles.heroSubtitle}>
               Discover unbeatable prices on top products. New deals drop daily — don't miss out!
             </p>
@@ -305,38 +360,58 @@ const SpecialOffers = () => {
         <section className={styles.section}>
           <div className={styles.sectionHeader}>
             <h2 className={styles.sectionTitle}>Active Coupons</h2>
-            <p className={styles.sectionSubtitle}>Copy a code and apply at checkout</p>
+            <p className={styles.sectionSubtitle}>Copy a code and apply it at checkout</p>
           </div>
-          <div className={styles.couponGrid}>
-            {COUPONS.map((coupon) => (
-              <motion.div
-                key={coupon.code}
-                className={styles.couponCard}
-                whileHover={{ y: -4 }}
-                transition={{ duration: 0.2 }}
-              >
-                <div className={styles.couponLeft}>
-                  <span className={styles.couponDiscount}>{coupon.discount}</span>
-                  <span className={styles.couponLabel}>OFF</span>
-                </div>
-                <div className={styles.couponRight}>
-                  <p className={styles.couponDesc}>{coupon.description}</p>
-                  <p className={styles.couponMeta}>
-                    Min: {coupon.minOrder} &middot; Expires: {new Date(coupon.expiry).toLocaleDateString()}
-                  </p>
-                  <div className={styles.couponCodeRow}>
-                    <code className={styles.couponCode}>{coupon.code}</code>
-                    <button
-                      className={`${styles.copyBtn} ${copiedCode === coupon.code ? styles.copied : ""}`}
-                      onClick={() => handleCopyCode(coupon.code)}
-                    >
-                      {copiedCode === coupon.code ? "Copied!" : "Copy Code"}
-                    </button>
+
+          {loading ? (
+            <div className={styles.couponGrid}>
+              {Array.from({ length: 4 }, (_, i) => (
+                <CouponSkeleton key={i} />
+              ))}
+            </div>
+          ) : activeCoupons.length > 0 ? (
+            <div className={styles.couponGrid}>
+              {activeCoupons.map((coupon) => (
+                <motion.div
+                  key={coupon.id ?? coupon.code}
+                  className={styles.couponCard}
+                  whileHover={{ y: -4 }}
+                  transition={{ duration: 0.2 }}
+                >
+                  <div className={styles.couponLeft}>
+                    <span className={styles.couponDiscount}>{couponHeadline(coupon)}</span>
+                    <span className={styles.couponLabel}>OFF</span>
                   </div>
-                </div>
-              </motion.div>
-            ))}
-          </div>
+                  <div className={styles.couponRight}>
+                    <p className={styles.couponDesc}>{coupon.description || `${couponHeadline(coupon)} off`}</p>
+                    <p className={styles.couponMeta}>
+                      {coupon.minOrderAmount > 0 ? `Min order ${rupees(coupon.minOrderAmount)}` : "No minimum order"}
+                      {coupon.type === "percentage" && coupon.maxDiscount
+                        ? ` · Up to ${rupees(coupon.maxDiscount)} off`
+                        : ""}
+                    </p>
+                    <p className={styles.couponMeta}>
+                      {coupon.expiresAt ? `Expires ${formatExpiry(coupon.expiresAt)}` : "No expiry"}
+                    </p>
+                    <div className={styles.couponCodeRow}>
+                      <code className={styles.couponCode}>{coupon.code}</code>
+                      <button
+                        className={`${styles.copyBtn} ${copiedCode === coupon.code ? styles.copied : ""}`}
+                        onClick={() => handleCopyCode(coupon.code)}
+                        aria-label={`Copy coupon code ${coupon.code}`}
+                      >
+                        {copiedCode === coupon.code ? "Copied!" : "Copy Code"}
+                      </button>
+                    </div>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+          ) : (
+            <p className={styles.couponEmpty}>
+              No active coupons right now — check back soon for fresh codes!
+            </p>
+          )}
         </section>
 
         {/* ── Deal of the Day ───────────────────────────────────────────── */}
@@ -358,6 +433,7 @@ const SpecialOffers = () => {
               {dealOfTheDay.map((product, idx) => {
                 const minPrice = getProductMinPrice(product);
                 const maxDiscount = getProductMaxDiscount(product);
+                const saving = minPrice.originalPrice - minPrice.sellingPrice;
                 return (
                   <motion.div
                     key={product.id}
@@ -372,6 +448,7 @@ const SpecialOffers = () => {
                         src={product.images?.[0] || product.image || "https://placehold.co/600x400?text=No+Image"}
                         alt={product.name}
                         className={styles.dotdImage}
+                        onError={onImageError}
                       />
                       <span className={styles.dotdBadge}>-{maxDiscount}%</span>
                     </div>
@@ -385,15 +462,14 @@ const SpecialOffers = () => {
                           {formatCurrency(minPrice.originalPrice, minPrice.currency)}
                         </span>
                       </div>
-                      <div className={styles.dotdProgressWrap}>
-                        <div
-                          className={styles.dotdProgressBar}
-                          style={{ width: `${Math.min(70 + idx * 10, 95)}%` }}
-                        />
-                      </div>
-                      <span className={styles.dotdClaimed}>
-                        {Math.min(70 + idx * 10, 95)}% claimed
-                      </span>
+                      {saving > 0 && (
+                        <p className={styles.dotdSavings}>
+                          You save{" "}
+                          <span className={styles.dotdSavingsAmount}>
+                            {formatCurrency(saving, minPrice.currency)}
+                          </span>
+                        </p>
+                      )}
                       <button
                         className={styles.dotdBtn}
                         onClick={(e) => {
@@ -411,33 +487,37 @@ const SpecialOffers = () => {
           </section>
         )}
 
-        {/* ── Category Tabs ─────────────────────────────────────────────── */}
-        {!loading && dealCategories.length > 0 && (
+        {/* ── Deals by Category ─────────────────────────────────────────── */}
+        {!loading && discountedProducts.length > 0 && (
           <section className={styles.section}>
             <div className={styles.sectionHeader}>
-              <h2 className={styles.sectionTitle}>Deals by Category</h2>
+              <h2 className={styles.sectionTitle}>
+                {dealCategories.length > 0 ? "Deals by Category" : "All Deals"}
+              </h2>
               <p className={styles.sectionSubtitle}>
                 {filteredProducts.length} deal{filteredProducts.length !== 1 ? "s" : ""} available
               </p>
             </div>
 
-            <div className={styles.tabBar}>
-              <button
-                className={`${styles.tab} ${activeTab === "all" ? styles.tabActive : ""}`}
-                onClick={() => setActiveTab("all")}
-              >
-                All Deals
-              </button>
-              {dealCategories.map((cat) => (
+            {dealCategories.length > 0 && (
+              <div className={styles.tabBar}>
                 <button
-                  key={cat}
-                  className={`${styles.tab} ${activeTab === cat ? styles.tabActive : ""}`}
-                  onClick={() => setActiveTab(cat)}
+                  className={`${styles.tab} ${activeTab === "all" ? styles.tabActive : ""}`}
+                  onClick={() => setActiveTab("all")}
                 >
-                  {cat}
+                  All Deals
                 </button>
-              ))}
-            </div>
+                {dealCategories.map((cat) => (
+                  <button
+                    key={cat.id}
+                    className={`${styles.tab} ${activeTab === cat.id ? styles.tabActive : ""}`}
+                    onClick={() => setActiveTab(cat.id)}
+                  >
+                    {cat.name}
+                  </button>
+                ))}
+              </div>
+            )}
 
             {/* ── Products Grid ─────────────────────────────────────────── */}
             <div className={styles.productsGrid}>
@@ -446,6 +526,7 @@ const SpecialOffers = () => {
                   <ProductCard
                     key={product.id}
                     product={product}
+                    categoryName={categoryMap[product.categoryId]}
                     index={index}
                     onAddToCart={handleAddToCart}
                     onToggleWishlist={handleToggleWishlist}
