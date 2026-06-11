@@ -1,11 +1,21 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { useCart } from "../../hooks/useCart";
 import { useTheme } from "../../context/ThemeContext";
-import { formatCurrency, truncateText } from "../../utils/helpers";
+import {
+  formatCurrency,
+  truncateText,
+  PLACEHOLDER_IMG,
+  onImageError,
+} from "../../utils/helpers";
 import { FREE_SHIPPING_THRESHOLD } from "../../utils/constants";
 import styles from "./CartDrawer.module.css";
+
+// Shipping shown while below the free threshold. Mirrors the Standard method's
+// flatRate in db.json; the free-shipping cutoff itself comes from the shared
+// FREE_SHIPPING_THRESHOLD constant (same source as Header + Checkout).
+const FLAT_SHIPPING = 99;
 
 const CartDrawer = ({ open, onClose }) => {
   const navigate = useNavigate();
@@ -22,12 +32,22 @@ const CartDrawer = ({ open, onClose }) => {
   const cartCount = getCartItemCount ? getCartItemCount() : 0;
   const cartTotal = getCartTotal ? getCartTotal() : 0;
 
-  const shippingCost = cartTotal >= FREE_SHIPPING_THRESHOLD ? 0 : 99;
+  const shippingCost = cartTotal >= FREE_SHIPPING_THRESHOLD ? 0 : FLAT_SHIPPING;
   const amountToFreeShipping = Math.max(0, FREE_SHIPPING_THRESHOLD - cartTotal);
   const shippingProgress = Math.min(
     100,
     (cartTotal / FREE_SHIPPING_THRESHOLD) * 100
   );
+
+  // Lock body scroll while the drawer is open so the page behind it can't move.
+  useEffect(() => {
+    if (!open) return;
+    const previous = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = previous;
+    };
+  }, [open]);
 
   const handleQuantityChange = (itemId, newQuantity) => {
     if (newQuantity < 1) return;
@@ -192,6 +212,11 @@ const CartDrawer = ({ open, onClose }) => {
                     const hasDiscount =
                       item.comparePrice && item.comparePrice > item.price;
                     const lineTotal = item.price * item.quantity;
+                    const atStockLimit =
+                      typeof item.stock === "number" &&
+                      item.stock > 0 &&
+                      item.quantity >= item.stock;
+                    const productHref = `/products/${item.productId || item.id}`;
 
                     return (
                       <motion.div
@@ -212,27 +237,26 @@ const CartDrawer = ({ open, onClose }) => {
                       >
                         <div
                           className={styles.itemImage}
-                          onClick={() =>
-                            handleNavigate(`/products/${item.productId || item.id}`)
-                          }
+                          onClick={() => handleNavigate(productHref)}
                         >
                           <img
-                            src={
-                              item.image ||
-                              "https://placehold.co/80x80?text=No+Image"
-                            }
+                            src={item.image || PLACEHOLDER_IMG}
                             alt={item.name}
+                            onError={onImageError}
                           />
                         </div>
 
                         <div className={styles.itemDetails}>
                           <div className={styles.itemMeta}>
-                            <h4 className={styles.itemName}>
+                            <h4
+                              className={styles.itemName}
+                              onClick={() => handleNavigate(productHref)}
+                            >
                               {truncateText(item.name, 45)}
                             </h4>
-                            {item.variant && (
+                            {item.variantName && (
                               <span className={styles.itemVariant}>
-                                {item.variant}
+                                {item.variantName}
                               </span>
                             )}
                           </div>
@@ -276,6 +300,10 @@ const CartDrawer = ({ open, onClose }) => {
                                 className={styles.quantityBtn}
                                 onClick={() =>
                                   handleQuantityChange(item.id, item.quantity + 1)
+                                }
+                                disabled={atStockLimit}
+                                title={
+                                  atStockLimit ? "No more stock available" : undefined
                                 }
                                 aria-label="Increase quantity"
                               >
