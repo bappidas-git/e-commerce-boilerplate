@@ -327,6 +327,20 @@
   color: #a0aec0;
 }
 
+/* ===== Error State ===== */
+.errorState {
+  composes: emptyState;
+}
+
+.errorIcon {
+  color: #fc8181;
+  margin-bottom: 1rem;
+}
+
+.dark .errorIcon {
+  color: #e53e3e;
+}
+
 /* ===== Login Prompt ===== */
 .loginPrompt {
   text-align: center;
@@ -478,6 +492,21 @@
   background: rgba(102, 126, 234, 0.05);
 }
 
+.btnOutline:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.btnSpinner {
+  width: 13px;
+  height: 13px;
+  border: 2px solid currentColor;
+  border-top-color: transparent;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+  flex-shrink: 0;
+}
+
 .dark .btnOutline {
   color: #a0aec0;
   border-color: rgba(167, 139, 250, 0.2);
@@ -606,6 +635,10 @@
   display: flex;
   flex-direction: column;
   gap: 0.25rem;
+}
+
+.cardHeaderRight {
+  flex-shrink: 0;
 }
 
 .orderNumberRow {

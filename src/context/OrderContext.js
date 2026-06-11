@@ -34,8 +34,11 @@ export const OrderProvider = ({ children }) => {
     try {
       setIsLoading(true);
       const userOrders = await apiService.orders.getByUserId(user.id);
+      const list = Array.isArray(userOrders)
+        ? userOrders
+        : userOrders?.data || userOrders?.orders || [];
       // Sort by date, newest first
-      const sortedOrders = userOrders.sort(
+      const sortedOrders = [...list].sort(
         (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
       );
       setOrders(sortedOrders);
