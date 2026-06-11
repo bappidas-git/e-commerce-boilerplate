@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Navigate } from "react-router-dom";
 import {
   Box,
   Paper,
@@ -16,10 +16,11 @@ import { useAdmin } from "../../context/AdminContext";
 import { useTheme } from "../../context/ThemeContext";
 
 const LOGO = "https://placehold.co/210x70/667eea/ffffff?text=LOGO";
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 const AdminLogin = () => {
   const navigate = useNavigate();
-  const { login, isAuthenticated } = useAdmin();
+  const { login, isAuthenticated, isLoading: adminLoading } = useAdmin();
   const { isDarkMode } = useTheme();
 
   const [formData, setFormData] = useState({
@@ -29,41 +30,70 @@ const AdminLogin = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
-
-  // Redirect if already logged in
-  React.useEffect(() => {
-    if (isAuthenticated) {
-      navigate("/admin/dashboard");
-    }
-  }, [isAuthenticated, navigate]);
+  const [fieldErrors, setFieldErrors] = useState({});
 
   const handleChange = (e) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value,
-    });
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+    // Clear the server error and this field's inline error as the user types.
     setError("");
+    setFieldErrors((prev) => ({ ...prev, [name]: "" }));
+  };
+
+  // Basic client-side validation: required fields + a sane email format, so
+  // obvious mistakes are caught before we hit the API.
+  const validate = () => {
+    const next = {};
+    const email = formData.email.trim();
+    if (!email) next.email = "Email is required";
+    else if (!EMAIL_RE.test(email)) next.email = "Enter a valid email address";
+    if (!formData.password) next.password = "Password is required";
+    setFieldErrors(next);
+    return Object.keys(next).length === 0;
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setIsLoading(true);
     setError("");
+    if (!validate()) return;
 
-    const result = await login(formData);
+    setIsLoading(true);
+    const result = await login({ ...formData, email: formData.email.trim() });
 
     if (result.success) {
-      navigate("/admin/dashboard");
+      navigate("/admin/dashboard", { replace: true });
     } else {
       setError(result.error || "Invalid credentials");
+      setIsLoading(false);
     }
-
-    setIsLoading(false);
   };
 
   const bgGradient = isDarkMode
     ? "linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f0f23 100%)"
     : "linear-gradient(135deg, #667eea 0%, #764ba2 50%, #6B8DD6 100%)";
+
+  // Wait for the sessionStorage restore before deciding what to render, so an
+  // already-authenticated admin never sees a flash of the login form.
+  if (adminLoading) {
+    return (
+      <Box
+        sx={{
+          minHeight: "100vh",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          background: bgGradient,
+        }}
+      >
+        <CircularProgress sx={{ color: "#fff" }} />
+      </Box>
+    );
+  }
+
+  // Already authenticated → go straight to the dashboard.
+  if (isAuthenticated) {
+    return <Navigate to="/admin/dashboard" replace />;
+  }
 
   return (
     <Box
@@ -121,16 +151,18 @@ const AdminLogin = () => {
           )}
 
           {/* Login Form */}
-          <form onSubmit={handleSubmit}>
+          <form onSubmit={handleSubmit} noValidate>
             <TextField
               fullWidth
               label="Email Address"
               name="email"
               type="email"
+              autoComplete="username"
               value={formData.email}
               onChange={handleChange}
-              required
-              sx={{ mb: 2 }}
+              error={Boolean(fieldErrors.email)}
+              helperText={fieldErrors.email || " "}
+              sx={{ mb: 1 }}
               InputProps={{
                 startAdornment: (
                   <InputAdornment position="start">
@@ -145,10 +177,12 @@ const AdminLogin = () => {
               label="Password"
               name="password"
               type={showPassword ? "text" : "password"}
+              autoComplete="current-password"
               value={formData.password}
               onChange={handleChange}
-              required
-              sx={{ mb: 3 }}
+              error={Boolean(fieldErrors.password)}
+              helperText={fieldErrors.password || " "}
+              sx={{ mb: 2 }}
               InputProps={{
                 startAdornment: (
                   <InputAdornment position="start">
@@ -160,6 +194,7 @@ const AdminLogin = () => {
                     <IconButton
                       onClick={() => setShowPassword(!showPassword)}
                       edge="end"
+                      aria-label={showPassword ? "Hide password" : "Show password"}
                     >
                       <Icon
                         icon={

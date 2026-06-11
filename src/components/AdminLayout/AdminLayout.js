@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { useNavigate, useLocation, Outlet, Navigate } from "react-router-dom";
 import {
   Box,
@@ -32,6 +32,7 @@ import { Icon } from "@iconify/react";
 import { useAdmin } from "../../context/AdminContext";
 import { useThemeContext } from "../../context/ThemeContext";
 import apiService from "../../services/api";
+import Swal from "sweetalert2";
 
 const LOGO = "https://placehold.co/160x40/667eea/ffffff?text=LOGO";
 
@@ -137,19 +138,25 @@ const AdminLayout = () => {
   );
   const panelNotifications = visibleNotifications.slice(0, 5);
 
-  // Fetch notifications (new orders and leads)
+  // Track mount state so async notification fetches never setState after the
+  // layout unmounts (e.g. logout → redirect mid-poll). Avoids React warnings.
+  const isMountedRef = useRef(true);
   useEffect(() => {
-    if (isAuthenticated) {
-      loadNotifications();
-      // Refresh notifications every 30 seconds
-      const interval = setInterval(loadNotifications, 30000);
-      return () => clearInterval(interval);
-    }
-  }, [isAuthenticated]);
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
 
-  const loadNotifications = async () => {
+  // Close the temporary drawer when growing to a desktop width, so a drawer
+  // left open on mobile can't leave a stuck backdrop / scroll-lock after resize.
+  useEffect(() => {
+    if (!isMobile && mobileOpen) setMobileOpen(false);
+  }, [isMobile, mobileOpen]);
+
+  const loadNotifications = useCallback(async () => {
     try {
-      setNotificationLoading(true);
+      if (isMountedRef.current) setNotificationLoading(true);
       const notificationItems = [];
 
       // Fetch new/pending orders
@@ -162,7 +169,7 @@ const AdminLayout = () => {
             order.status === "pending" ||
             order.status === "processing"
         );
-        newOrders.slice(0, 5).forEach((order) => {
+        newOrders.forEach((order) => {
           notificationItems.push({
             id: `order-${order.id}`,
             type: "order",
@@ -181,7 +188,7 @@ const AdminLayout = () => {
       try {
         const leads = await apiService.admin.getLeads();
         const newLeads = leads.filter((lead) => lead.status === "new");
-        newLeads.slice(0, 5).forEach((lead) => {
+        newLeads.forEach((lead) => {
           notificationItems.push({
             id: `lead-${lead.id}`,
             type: "lead",
@@ -198,13 +205,21 @@ const AdminLayout = () => {
 
       // Sort by time (most recent first)
       notificationItems.sort((a, b) => new Date(b.time) - new Date(a.time));
-      setNotifications(notificationItems);
+      if (isMountedRef.current) setNotifications(notificationItems);
     } catch (error) {
       console.error("Error loading notifications:", error);
     } finally {
-      setNotificationLoading(false);
+      if (isMountedRef.current) setNotificationLoading(false);
     }
-  };
+  }, []);
+
+  // Fetch notifications (new orders + leads), then poll every 30s while authed.
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    loadNotifications();
+    const interval = setInterval(loadNotifications, 30000);
+    return () => clearInterval(interval);
+  }, [isAuthenticated, loadNotifications]);
 
   const handleNotificationClick = (event) => {
     setNotificationAnchor(event.currentTarget);
@@ -275,8 +290,19 @@ const AdminLayout = () => {
     setAnchorEl(null);
   };
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
     handleMenuClose();
+    // Confirm first so logging out isn't a one-click accident.
+    const result = await Swal.fire({
+      title: "Log out?",
+      text: "You'll need to sign in again to access the admin panel.",
+      icon: "question",
+      showCancelButton: true,
+      confirmButtonColor: "#ef4444",
+      confirmButtonText: "Log Out",
+      cancelButtonText: "Stay Signed In",
+    });
+    if (!result.isConfirmed) return;
     logout();
     navigate("/admin");
   };
@@ -333,6 +359,8 @@ const AdminLayout = () => {
           return (
             <ListItem key={item.path} disablePadding sx={{ mb: 0.25 }}>
               <ListItemButton
+                selected={isActive}
+                aria-current={isActive ? "page" : undefined}
                 onClick={() => {
                   navigate(item.path);
                   if (isMobile) setMobileOpen(false);
@@ -432,7 +460,11 @@ const AdminLayout = () => {
 
           {/* Theme Toggle */}
           <Tooltip title={mode === "dark" ? "Light Mode" : "Dark Mode"}>
-            <IconButton onClick={toggleTheme} sx={{ color: "text.primary" }}>
+            <IconButton
+              onClick={toggleTheme}
+              aria-label={mode === "dark" ? "Switch to light mode" : "Switch to dark mode"}
+              sx={{ color: "text.primary" }}
+            >
               <Icon
                 icon={
                   mode === "dark" ? "mdi:weather-sunny" : "mdi:weather-night"
@@ -444,6 +476,7 @@ const AdminLayout = () => {
           {/* Notifications */}
           <Tooltip title="Notifications">
             <IconButton
+              aria-label="Notifications"
               sx={{ color: "text.primary", ml: 1 }}
               onClick={handleNotificationClick}
             >
@@ -860,7 +893,7 @@ const AdminLayout = () => {
           </Dialog>
 
           {/* User Menu */}
-          <IconButton onClick={handleMenuClick} sx={{ ml: 2 }}>
+          <IconButton onClick={handleMenuClick} aria-label="Account menu" sx={{ ml: 2 }}>
             <Avatar
               sx={{
                 width: 36,
@@ -953,7 +986,14 @@ const AdminLayout = () => {
         component="main"
         sx={{
           flexGrow: 1,
-          width: { md: `calc(100% - ${drawerWidth}px)` },
+          // Without minWidth:0 a flex item defaults to min-width:auto, so wide
+          // content (dashboard cards, tables) blows the item past the viewport
+          // and creates page-wide horizontal scroll. Pin it to the available
+          // track and let inner content wrap/scroll within instead.
+          minWidth: 0,
+          width: { xs: "100%", md: `calc(100% - ${drawerWidth}px)` },
+          maxWidth: "100%",
+          overflowX: "hidden",
           minHeight: "100vh",
           bgcolor: theme.palette.mode === "dark" ? "#0f0f23" : "#f5f7fa",
         }}

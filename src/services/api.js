@@ -660,7 +660,12 @@ const apiService = {
       try {
         if (IS_MOCK_API) {
           const response = await api.get("/admins", { params: { email: credentials.email, password: credentials.password } });
-          return response.data[0] || null;
+          const admin = response.data[0] || null;
+          if (!admin) return null;
+          // Never let the db.json password reach component state / sessionStorage
+          // (mirrors auth.login). AdminContext persists exactly what we return.
+          const { password, ...safeAdmin } = admin;
+          return safeAdmin;
         }
         const response = await api.post("/admin/auth/login", credentials);
         const data = extractData(response);
