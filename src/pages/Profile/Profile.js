@@ -62,7 +62,7 @@ const TabIcon = ({ icon }) => {
 const Profile = () => {
   const navigate = useNavigate();
   const { isDarkMode } = useTheme();
-  const { user, isAuthenticated, logout, updateUser } = useAuth();
+  const { user, isAuthenticated, isLoading: authLoading, logout, updateUser } = useAuth();
 
   const [activeTab, setActiveTab] = useState("profile");
   const [loading, setLoading] = useState(false);
@@ -118,12 +118,13 @@ const Profile = () => {
     }
   }, [user]);
 
-  // Redirect if not authenticated
+  // Redirect if not authenticated — but only after the session restore has
+  // finished, or a page reload would bounce logged-in users back to home.
   useEffect(() => {
-    if (!isAuthenticated) {
+    if (!authLoading && !isAuthenticated) {
       navigate("/");
     }
-  }, [isAuthenticated, navigate]);
+  }, [authLoading, isAuthenticated, navigate]);
 
   // Clear feedback after 4 seconds
   useEffect(() => {

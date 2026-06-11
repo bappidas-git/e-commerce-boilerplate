@@ -47,12 +47,17 @@
       "updatedAt": "2025-02-01T09:00:00.000Z"
     },
     {
-      "firstName": "Bappi",
-      "lastName": "Das",
+      "id": 3,
       "email": "mail4bappidas@gmail.com",
       "password": "Bappi@12345",
-      "confirmPassword": "Bappi@12345",
-      "id": 3
+      "firstName": "Bappi",
+      "lastName": "Das",
+      "phone": "",
+      "avatar": null,
+      "addresses": [],
+      "isActive": true,
+      "createdAt": "2025-06-01T10:00:00.000Z",
+      "updatedAt": "2025-06-01T10:00:00.000Z"
     }
   ],
   "admins": [

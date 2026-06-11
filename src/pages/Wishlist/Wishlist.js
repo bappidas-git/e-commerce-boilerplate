@@ -47,7 +47,7 @@ const Wishlist = () => {
   const { isDarkMode } = useTheme();
   const { wishlistItems, isLoading, removeFromWishlist, clearWishlist } = useWishlist();
   const { addToCart } = useCart();
-  const { user, openAuthModal } = useAuth();
+  const { user, isLoading: authLoading, openAuthModal } = useAuth();
 
   const [sortBy, setSortBy] = useState("dateDesc");
   const [removingId, setRemovingId] = useState(null);
@@ -114,7 +114,8 @@ const Wishlist = () => {
   // open access as the heart toggles on cards/PDP. This banner is the single
   // login entry point and opens the global AuthModal (there is no /login
   // route); on login the local items merge into the account's wishlist.
-  const guestBanner = !user && (
+  // Hidden while the session restore is pending so it doesn't flash on reload.
+  const guestBanner = !user && !authLoading && (
     <motion.div
       className={styles.guestBanner}
       initial={{ opacity: 0, y: -8 }}
