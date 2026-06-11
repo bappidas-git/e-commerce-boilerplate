@@ -155,10 +155,21 @@ export const AuthProvider = ({ children }) => {
     });
   };
 
-  const updateUser = (updates) => {
+  const updateUser = async (updates) => {
+    // Persist to the backend first so a failure surfaces to the caller (which
+    // shows an error toast) instead of leaving the UI claiming a save that
+    // never happened. Mock branch PATCHes /users/:id (db.json); Laravel branch
+    // hits PUT /auth/user. Throws on failure.
+    await apiService.auth.updateUser(updates);
+
+    // Merge the *updates* (never the API response — on JSON Server that still
+    // carries the password) into the current safe user, then mirror to storage.
+    // setUser makes the Header name/initials/avatar reflect the change with no
+    // reload; the storage write means a reload keeps it too (session persistence).
     const updatedUser = { ...user, ...updates };
     setUser(updatedUser);
     authStorage.update("user", JSON.stringify(updatedUser));
+    return updatedUser;
   };
 
   const value = {
