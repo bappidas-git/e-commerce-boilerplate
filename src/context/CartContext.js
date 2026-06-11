@@ -318,15 +318,18 @@ export const CartProvider = ({ children }) => {
     [removeFromCart]
   );
 
-  const clearCart = useCallback(() => {
+  const clearCart = useCallback((options = {}) => {
     // Empties local state; the sync effect mirrors the empty cart to the server
-    // for logged-in users.
+    // for logged-in users. `silent` skips the toast for flows where emptying is
+    // a side effect of something bigger (e.g. an order was just placed).
     setCartItems([]);
-    cartToast({
-      icon: "info",
-      title: "Cart Cleared",
-      text: "Your cart has been emptied",
-    });
+    if (!options.silent) {
+      cartToast({
+        icon: "info",
+        title: "Cart Cleared",
+        text: "Your cart has been emptied",
+      });
+    }
   }, []);
 
   const getCartTotal = useCallback(

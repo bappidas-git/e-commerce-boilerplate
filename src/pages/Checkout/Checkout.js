@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { useTheme } from "../../context/ThemeContext";
@@ -6,11 +6,31 @@ import { useCart } from "../../hooks/useCart";
 import { useAuth } from "../../hooks/useAuth";
 import { useOrder } from "../../context/OrderContext";
 import apiService from "../../services/api";
-import { formatCurrency, isEmailValid } from "../../utils/helpers";
-import { PAYMENT_METHODS } from "../../utils/constants";
+import { formatCurrency } from "../../utils/helpers";
 import styles from "./Checkout.module.css";
 
-const STEPS = ["Cart Review", "Shipping", "Payment", "Confirmation"];
+const STEPS = ["Cart", "Shipping", "Payment", "Review"];
+
+const PAYMENT_OPTIONS = [
+  { id: "card", label: "Credit / Debit Card", icon: "💳", desc: "Visa, Mastercard, RuPay" },
+  { id: "upi", label: "UPI", icon: "📱", desc: "Google Pay, PhonePe, Paytm" },
+  { id: "net_banking", label: "Net Banking", icon: "🏦", desc: "All major banks supported" },
+  { id: "wallet", label: "Wallet", icon: "👛", desc: "Paytm, PhonePe, Amazon Pay" },
+  { id: "cod", label: "Cash on Delivery", icon: "💵", desc: "Pay when you receive" },
+];
+
+// Discount for an applied coupon at the current subtotal. Derived (never
+// stored), so qty changes can't leave a stale amount and re-applying a coupon
+// can't stack. `capped` flags when maxDiscount limited the raw value.
+const couponDiscountFor = (coupon, amount) => {
+  if (!coupon) return { discount: 0, capped: false };
+  const raw =
+    coupon.type === "percentage"
+      ? Math.round((amount * coupon.value) / 100)
+      : coupon.value;
+  const cap = coupon.maxDiscount || Infinity;
+  return { discount: Math.max(0, Math.min(raw, cap, amount)), capped: raw > cap };
+};
 
 const Checkout = () => {
   const { isDarkMode } = useTheme();
@@ -21,11 +41,12 @@ const Checkout = () => {
 
   const [step, setStep] = useState(0);
   const [couponCode, setCouponCode] = useState("");
-  const [couponDiscount, setCouponDiscount] = useState(0);
   const [couponError, setCouponError] = useState("");
   const [couponApplied, setCouponApplied] = useState(null);
   const [shippingMethods, setShippingMethods] = useState([]);
   const [selectedShipping, setSelectedShipping] = useState(null);
+  const [shippingError, setShippingError] = useState("");
+  const [storeSettings, setStoreSettings] = useState(null);
   const [paymentMethod, setPaymentMethod] = useState("card");
   const [isProcessing, setIsProcessing] = useState(false);
   const [orderPlaced, setOrderPlaced] = useState(null);
@@ -47,7 +68,14 @@ const Checkout = () => {
         if (active.length > 0) setSelectedShipping(active[0]);
       } catch (e) { console.error("Load shipping methods error:", e); }
     };
+    const loadSettings = async () => {
+      try {
+        const settings = await apiService.settings.get();
+        setStoreSettings(settings);
+      } catch (e) { console.error("Load store settings error:", e); }
+    };
     loadShipping();
+    loadSettings();
   }, []);
 
   useEffect(() => {
@@ -65,37 +93,61 @@ const Checkout = () => {
     }
   }, [user]);
 
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }, [step]);
+
+  // ── Order math ────────────────────────────────────────────────────────────
+  // total = subtotal − discount + shipping + tax, with tax on the discounted
+  // subtotal. The same rounded figures are stored on the order so Confirmation,
+  // Order History and Admin all display exactly what was charged.
   const subtotal = getCartTotal();
+  const { discount: couponDiscount, capped: couponCapped } = couponDiscountFor(couponApplied, subtotal);
   const shippingCost = selectedShipping
     ? selectedShipping.rateType === "free" || (selectedShipping.freeAbove && subtotal >= selectedShipping.freeAbove) ? 0 : selectedShipping.flatRate
     : 0;
-  const taxRate = 0.18;
-  const taxAmount = Math.round((subtotal - couponDiscount) * taxRate);
+  const taxRatePct = storeSettings?.store?.taxRate ?? 18;
+  const taxAmount = Math.round(Math.max(0, subtotal - couponDiscount) * (taxRatePct / 100));
   const total = subtotal - couponDiscount + shippingCost + taxAmount;
+
+  // COD availability comes from store settings, bounded by the payable total.
+  const paymentCfg = storeSettings?.payment;
+  const codEnabled = paymentCfg?.codEnabled !== false;
+  const codMinOrder = paymentCfg?.codMinOrder ?? 0;
+  const codMaxOrder = paymentCfg?.codMaxOrder ?? null;
+  const codAvailable = codEnabled && total >= codMinOrder && (codMaxOrder == null || total <= codMaxOrder);
+
+  // If totals shift (qty/coupon/shipping) and COD falls out of range, move the
+  // selection back to card rather than letting an invalid method be submitted.
+  useEffect(() => {
+    if (paymentMethod === "cod" && !codAvailable) setPaymentMethod("card");
+  }, [paymentMethod, codAvailable]);
+
+  // A coupon only stays applied while the cart still meets its minimum.
+  useEffect(() => {
+    if (couponApplied && subtotal < (couponApplied.minOrderAmount || 0)) {
+      setCouponApplied(null);
+      setCouponCode("");
+      setCouponError(
+        `${couponApplied.code} was removed — it needs a minimum order of ${formatCurrency(couponApplied.minOrderAmount)}.`
+      );
+    }
+  }, [subtotal, couponApplied]);
 
   const applyCoupon = async () => {
     setCouponError("");
     if (!couponCode.trim()) { setCouponError("Enter a coupon code"); return; }
     try {
       const coupon = await apiService.coupons.validate(couponCode.trim(), subtotal);
-      let discount = 0;
-      if (coupon.type === "percentage") {
-        discount = Math.min(Math.round(subtotal * coupon.value / 100), coupon.maxDiscount || Infinity);
-      } else {
-        discount = Math.min(coupon.value, coupon.maxDiscount || Infinity);
-      }
-      setCouponDiscount(discount);
       setCouponApplied(coupon);
     } catch (e) {
       setCouponError(e.message || "Invalid coupon");
-      setCouponDiscount(0);
       setCouponApplied(null);
     }
   };
 
   const removeCoupon = () => {
     setCouponCode("");
-    setCouponDiscount(0);
     setCouponApplied(null);
     setCouponError("");
   };
@@ -117,12 +169,16 @@ const Checkout = () => {
   const handleNext = () => {
     if (step === 0) {
       if (cartItems.length === 0) return;
-      if (!isAuthenticated) return;
+      if (!isAuthenticated) { openAuthModal("login"); return; }
       setStep(1);
     } else if (step === 1) {
       if (!validateAddress()) return;
+      if (!selectedShipping) { setShippingError("Please select a shipping method."); return; }
+      setShippingError("");
       setStep(2);
     } else if (step === 2) {
+      setStep(3);
+    } else {
       placeOrder();
     }
   };
@@ -157,7 +213,7 @@ const Checkout = () => {
       const result = await createOrder(orderData);
       if (result.success) {
         setOrderPlaced(result.order);
-        clearCart();
+        clearCart({ silent: true });
         const orderNum = result.order.orderNumber || result.order.id;
         navigate(`/order-confirmation/${orderNum}`);
       }
@@ -186,6 +242,9 @@ const Checkout = () => {
       </div>
     );
   }
+
+  const reviewAddress = useExistingAddress || shippingAddress;
+  const selectedPaymentOption = PAYMENT_OPTIONS.find((pm) => pm.id === paymentMethod);
 
   return (
     <div className={`${styles.container} ${isDarkMode ? styles.dark : ""}`}>
@@ -220,12 +279,12 @@ const Checkout = () => {
                         <p className={styles.itemPrice}>{formatCurrency(item.price)}</p>
                       </div>
                       <div className={styles.quantityControls}>
-                        <button onClick={() => updateQuantity(item.id, item.quantity - 1)}>-</button>
+                        <button onClick={() => updateQuantity(item.id, item.quantity - 1)} aria-label={`Decrease quantity of ${item.name}`}>-</button>
                         <span>{item.quantity}</span>
-                        <button onClick={() => updateQuantity(item.id, item.quantity + 1)}>+</button>
+                        <button onClick={() => updateQuantity(item.id, item.quantity + 1)} aria-label={`Increase quantity of ${item.name}`}>+</button>
                       </div>
                       <div className={styles.itemSubtotal}>{formatCurrency(item.price * item.quantity)}</div>
-                      <button className={styles.removeBtn} onClick={() => removeFromCart(item.id)}>&times;</button>
+                      <button className={styles.removeBtn} onClick={() => removeFromCart(item.id)} aria-label={`Remove ${item.name} from cart`}>&times;</button>
                     </div>
                   ))}
                 </div>
@@ -235,7 +294,12 @@ const Checkout = () => {
                   <h3>Have a Coupon?</h3>
                   {couponApplied ? (
                     <div className={styles.couponApplied}>
-                      <span>&#10003; {couponApplied.code} applied (-{formatCurrency(couponDiscount)})</span>
+                      <span>
+                        &#10003; {couponApplied.code} applied (-{formatCurrency(couponDiscount)})
+                        {couponCapped && (
+                          <em className={styles.couponCapNote}> &middot; capped at max discount {formatCurrency(couponApplied.maxDiscount)}</em>
+                        )}
+                      </span>
                       <button onClick={removeCoupon}>Remove</button>
                     </div>
                   ) : (
@@ -333,7 +397,7 @@ const Checkout = () => {
                       </div>
                       <div className={styles.formGroup}>
                         <label>Country</label>
-                        <input type="text" value="India" readOnly className={styles.readOnly} />
+                        <input type="text" value={shippingAddress.country} readOnly className={styles.readOnly} />
                       </div>
                     </div>
                   </div>
@@ -346,7 +410,7 @@ const Checkout = () => {
                     const isFree = method.rateType === "free" || (method.freeAbove && subtotal >= method.freeAbove);
                     return (
                       <label key={method.id} className={`${styles.shippingOption} ${selectedShipping?.id === method.id ? styles.selectedShipping : ""}`}>
-                        <input type="radio" name="shipping" checked={selectedShipping?.id === method.id} onChange={() => setSelectedShipping(method)} />
+                        <input type="radio" name="shipping" checked={selectedShipping?.id === method.id} onChange={() => { setSelectedShipping(method); setShippingError(""); }} />
                         <div>
                           <strong>{method.name}</strong>
                           <p>{method.description}</p>
@@ -355,7 +419,11 @@ const Checkout = () => {
                       </label>
                     );
                   })}
+                  {shippingMethods.length === 0 && (
+                    <p className={styles.shippingEmpty}>No shipping methods available right now. Please try again later.</p>
+                  )}
                 </div>
+                {shippingError && <p className={styles.fieldError}>{shippingError}</p>}
               </motion.div>
             )}
 
@@ -364,22 +432,23 @@ const Checkout = () => {
               <motion.div key="payment" initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }}>
                 <h2 className={styles.sectionTitle}>Payment Method</h2>
                 <div className={styles.paymentMethods}>
-                  {[
-                    { id: "card", label: "Credit / Debit Card", icon: "💳", desc: "Visa, Mastercard, RuPay" },
-                    { id: "upi", label: "UPI", icon: "📱", desc: "Google Pay, PhonePe, Paytm" },
-                    { id: "net_banking", label: "Net Banking", icon: "🏦", desc: "All major banks supported" },
-                    { id: "wallet", label: "Wallet", icon: "👛", desc: "Paytm, PhonePe, Amazon Pay" },
-                    { id: "cod", label: "Cash on Delivery", icon: "💵", desc: "Pay when you receive" },
-                  ].map((pm) => (
-                    <label key={pm.id} className={`${styles.paymentOption} ${paymentMethod === pm.id ? styles.selectedPayment : ""}`}>
-                      <input type="radio" name="payment" value={pm.id} checked={paymentMethod === pm.id} onChange={() => setPaymentMethod(pm.id)} />
-                      <span className={styles.paymentIcon}>{pm.icon}</span>
-                      <div>
-                        <strong>{pm.label}</strong>
-                        <p>{pm.desc}</p>
-                      </div>
-                    </label>
-                  ))}
+                  {PAYMENT_OPTIONS.map((pm) => {
+                    const isCod = pm.id === "cod";
+                    const isDisabled = isCod && !codAvailable;
+                    const codHint = !codEnabled
+                      ? "Currently unavailable"
+                      : `Available for orders ${codMinOrder > 0 ? `from ${formatCurrency(codMinOrder)} ` : ""}up to ${formatCurrency(codMaxOrder ?? 0)}`;
+                    return (
+                      <label key={pm.id} className={`${styles.paymentOption} ${paymentMethod === pm.id ? styles.selectedPayment : ""} ${isDisabled ? styles.disabledPayment : ""}`}>
+                        <input type="radio" name="payment" value={pm.id} checked={paymentMethod === pm.id} disabled={isDisabled} onChange={() => setPaymentMethod(pm.id)} />
+                        <span className={styles.paymentIcon}>{pm.icon}</span>
+                        <div>
+                          <strong>{pm.label}</strong>
+                          <p>{isDisabled ? codHint : pm.desc}</p>
+                        </div>
+                      </label>
+                    );
+                  })}
                 </div>
 
                 {paymentMethod === "card" && (
@@ -420,22 +489,84 @@ const Checkout = () => {
 
                 {paymentMethod === "cod" && (
                   <div className={styles.codInfo}>
-                    <p>&#9432; Pay with cash when your order is delivered. Available for orders up to ₹50,000.</p>
+                    <p>
+                      &#9432; Pay with cash when your order is delivered. Available for orders
+                      {codMinOrder > 0 ? ` from ${formatCurrency(codMinOrder)}` : ""}
+                      {codMaxOrder != null ? ` up to ${formatCurrency(codMaxOrder)}` : ""}.
+                    </p>
                   </div>
                 )}
+              </motion.div>
+            )}
+
+            {/* Step 4: Review & Confirm */}
+            {step === 3 && (
+              <motion.div key="review" initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }}>
+                <h2 className={styles.sectionTitle}>Review &amp; Confirm</h2>
+
+                <div className={styles.reviewItems}>
+                  {cartItems.map((item) => (
+                    <div key={item.id} className={styles.reviewItem}>
+                      <img src={item.image || `https://placehold.co/80x80/e2e8f0/475569?text=Product`} alt={item.name} className={styles.reviewItemImage} />
+                      <div className={styles.reviewItemInfo}>
+                        <h4>{item.name}</h4>
+                        {item.variantName && <p className={styles.variant}>{item.variantName}</p>}
+                        <p className={styles.reviewItemQty}>Qty: {item.quantity} &times; {formatCurrency(item.price)}</p>
+                      </div>
+                      <div className={styles.itemSubtotal}>{formatCurrency(item.price * item.quantity)}</div>
+                    </div>
+                  ))}
+                </div>
+
+                <div className={styles.reviewGrid}>
+                  <div className={styles.reviewBlock}>
+                    <div className={styles.reviewBlockHeader}>
+                      <h3>Deliver To</h3>
+                      <button type="button" onClick={() => setStep(1)}>Edit</button>
+                    </div>
+                    <p className={styles.reviewName}>{reviewAddress.firstName} {reviewAddress.lastName}</p>
+                    <p>{reviewAddress.addressLine1}{reviewAddress.addressLine2 ? `, ${reviewAddress.addressLine2}` : ""}</p>
+                    <p>{reviewAddress.city}, {reviewAddress.state} - {reviewAddress.postalCode}</p>
+                    <p>{reviewAddress.country}</p>
+                    <p>{reviewAddress.phone}</p>
+                  </div>
+
+                  <div className={styles.reviewBlock}>
+                    <div className={styles.reviewBlockHeader}>
+                      <h3>Shipping Method</h3>
+                      <button type="button" onClick={() => setStep(1)}>Edit</button>
+                    </div>
+                    <p className={styles.reviewName}>{selectedShipping?.name}</p>
+                    <p>{selectedShipping?.description}</p>
+                    <p className={styles.reviewShippingCost}>{shippingCost === 0 ? "FREE" : formatCurrency(shippingCost)}</p>
+                  </div>
+
+                  <div className={styles.reviewBlock}>
+                    <div className={styles.reviewBlockHeader}>
+                      <h3>Payment</h3>
+                      <button type="button" onClick={() => setStep(2)}>Edit</button>
+                    </div>
+                    <p className={styles.reviewName}>{selectedPaymentOption?.icon} {selectedPaymentOption?.label}</p>
+                    {paymentMethod === "cod" ? (
+                      <p>Pay {formatCurrency(total)} in cash on delivery.</p>
+                    ) : (
+                      <p>You will be charged {formatCurrency(total)}.</p>
+                    )}
+                  </div>
+                </div>
               </motion.div>
             )}
           </AnimatePresence>
 
           {/* Navigation Buttons */}
           <div className={styles.navButtons}>
-            {step > 0 && <button className={styles.backBtn} onClick={() => setStep(step - 1)}>&#8592; Back</button>}
+            {step > 0 && <button className={styles.backBtn} onClick={() => setStep(step - 1)} disabled={isProcessing}>&#8592; Back</button>}
             <button
               className={styles.primaryBtn}
               onClick={handleNext}
-              disabled={isProcessing || (step === 0 && (!isAuthenticated || cartItems.length === 0))}
+              disabled={isProcessing || cartItems.length === 0}
             >
-              {isProcessing ? "Processing..." : step === 2 ? `Place Order - ${formatCurrency(total)}` : step === 0 && !isAuthenticated ? "Login to Continue" : "Continue"}
+              {isProcessing ? "Processing..." : step === 3 ? `Place Order - ${formatCurrency(total)}` : step === 0 && !isAuthenticated ? "Login to Continue" : "Continue"}
             </button>
           </div>
         </div>
@@ -455,9 +586,9 @@ const Checkout = () => {
             </div>
             <div className={styles.summaryDivider} />
             <div className={styles.summaryRow}><span>Subtotal</span><span>{formatCurrency(subtotal)}</span></div>
-            {couponDiscount > 0 && <div className={`${styles.summaryRow} ${styles.discount}`}><span>Discount</span><span>-{formatCurrency(couponDiscount)}</span></div>}
+            {couponDiscount > 0 && <div className={`${styles.summaryRow} ${styles.discount}`}><span>Discount ({couponApplied.code})</span><span>-{formatCurrency(couponDiscount)}</span></div>}
             <div className={styles.summaryRow}><span>Shipping</span><span>{shippingCost === 0 ? "FREE" : formatCurrency(shippingCost)}</span></div>
-            <div className={styles.summaryRow}><span>Tax (18% GST)</span><span>{formatCurrency(taxAmount)}</span></div>
+            <div className={styles.summaryRow}><span>Tax ({taxRatePct}% GST)</span><span>{formatCurrency(taxAmount)}</span></div>
             <div className={styles.summaryDivider} />
             <div className={`${styles.summaryRow} ${styles.totalRow}`}><span>Total</span><span>{formatCurrency(total)}</span></div>
           </div>

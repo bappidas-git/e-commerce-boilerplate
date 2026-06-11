@@ -50,11 +50,17 @@ export const OrderProvider = ({ children }) => {
     try {
       setIsLoading(true);
 
+      // Orders carry the three status dimensions the rest of the app (Admin,
+      // Order History, dashboards) reads — never a single legacy `status`.
       const order = {
         ...orderData,
-        userId: user?.id || null,
+        userId: user?.id ?? null,
         orderNumber: generateOrderNumber(),
-        status: "completed", // For demo, orders are instantly completed
+        paymentStatus: orderData.paymentStatus || "pending",
+        fulfillmentStatus: orderData.fulfillmentStatus || "unfulfilled",
+        shippingStatus: orderData.shippingStatus || "pending",
+        trackingNumber: orderData.trackingNumber ?? null,
+        shiprocketOrderId: orderData.shiprocketOrderId ?? null,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       };

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useParams, useNavigate, Link } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { useTheme } from "../../context/ThemeContext";
 import apiService from "../../services/api";
@@ -30,9 +30,9 @@ const OrderConfirmation = () => {
   const fetchOrder = async () => {
     setLoading(true);
     try {
-      const response = await apiService.getOrder(orderNumber);
+      const response = await apiService.orders.getByOrderNumber(orderNumber);
       const data = response?.data || response?.order || response;
-      setOrder(data);
+      setOrder(data || null);
     } catch (err) {
       console.error("Failed to fetch order:", err);
       setOrder(null);
@@ -111,6 +111,12 @@ const OrderConfirmation = () => {
   }
 
   const orderItems = order.items || [];
+  // Orders store taxAmount/shippingAmount/discountAmount (the canonical shape
+  // checkout writes); older field names are kept as fallbacks.
+  const taxAmount = order.taxAmount ?? order.tax ?? 0;
+  const shippingAmount = order.shippingAmount ?? order.shipping ?? 0;
+  const discountAmount = order.discountAmount ?? 0;
+  const isPaymentPending = order.paymentStatus === "pending";
 
   return (
     <div className={`${styles.page} ${isDarkMode ? styles.dark : ""}`}>
@@ -139,7 +145,9 @@ const OrderConfirmation = () => {
           </div>
           <h1 className={styles.successTitle}>Order Confirmed!</h1>
           <p className={styles.successSubtext}>
-            Your payment was successful and your order is being processed.
+            {isPaymentPending
+              ? "Your order has been placed. Pay when it arrives at your door."
+              : "Your payment was successful and your order is being processed."}
           </p>
         </motion.div>
 
@@ -253,16 +261,20 @@ const OrderConfirmation = () => {
                     <span>Subtotal</span>
                     <span>{formatCurrency(order.subtotal)}</span>
                   </div>
-                  <div className={styles.totalsRow}>
-                    <span>Tax</span>
-                    <span>{formatCurrency(order.tax)}</span>
-                  </div>
-                  {order.shipping > 0 && (
+                  {discountAmount > 0 && (
                     <div className={styles.totalsRow}>
-                      <span>Shipping</span>
-                      <span>{formatCurrency(order.shipping)}</span>
+                      <span>Discount{order.couponCode ? ` (${order.couponCode})` : ""}</span>
+                      <span>-{formatCurrency(discountAmount)}</span>
                     </div>
                   )}
+                  <div className={styles.totalsRow}>
+                    <span>Shipping</span>
+                    <span>{shippingAmount > 0 ? formatCurrency(shippingAmount) : "FREE"}</span>
+                  </div>
+                  <div className={styles.totalsRow}>
+                    <span>Tax</span>
+                    <span>{formatCurrency(taxAmount)}</span>
+                  </div>
                   <div className={`${styles.totalsRow} ${styles.totalsRowFinal}`}>
                     <span>Total</span>
                     <span>{formatCurrency(order.total)}</span>
@@ -291,10 +303,13 @@ const OrderConfirmation = () => {
                 {order.shippingAddress ? (
                   <div className={styles.addressBlock}>
                     <p className={styles.addressName}>
-                      {order.shippingAddress.name || `${order.contactFirstName || ""} ${order.contactLastName || ""}`.trim()}
+                      {order.shippingAddress.name ||
+                        `${order.shippingAddress.firstName || ""} ${order.shippingAddress.lastName || ""}`.trim()}
                     </p>
-                    <p>{order.shippingAddress.street || order.shippingAddress.line1 || order.shippingAddress.address}</p>
-                    {order.shippingAddress.line2 && <p>{order.shippingAddress.line2}</p>}
+                    <p>{order.shippingAddress.addressLine1 || order.shippingAddress.street || order.shippingAddress.line1 || order.shippingAddress.address}</p>
+                    {(order.shippingAddress.addressLine2 || order.shippingAddress.line2) && (
+                      <p>{order.shippingAddress.addressLine2 || order.shippingAddress.line2}</p>
+                    )}
                     <p>
                       {order.shippingAddress.city}
                       {order.shippingAddress.state ? `, ${order.shippingAddress.state}` : ""}
@@ -303,9 +318,9 @@ const OrderConfirmation = () => {
                         : ""}
                     </p>
                     {order.shippingAddress.country && <p>{order.shippingAddress.country}</p>}
-                    {(order.contactPhone || order.shippingAddress.phone) && (
+                    {order.shippingAddress.phone && (
                       <p className={styles.addressPhone}>
-                        Phone: {order.contactPhone || order.shippingAddress.phone}
+                        Phone: {order.shippingAddress.phone}
                       </p>
                     )}
                   </div>
@@ -336,11 +351,11 @@ const OrderConfirmation = () => {
               </div>
               <div className={styles.cardBody}>
                 <div className={styles.paymentBadge}>
-                  {order.paymentMethod ? order.paymentMethod.toUpperCase() : "N/A"}
+                  {order.paymentMethod ? order.paymentMethod.replace(/_/g, " ").toUpperCase() : "N/A"}
                 </div>
-                <div className={styles.paymentStatus}>
+                <div className={`${styles.paymentStatus} ${isPaymentPending ? styles.paymentStatusPending : ""}`}>
                   <span className={styles.paymentStatusDot} />
-                  Payment Successful
+                  {isPaymentPending ? "Payment Pending — Pay on Delivery" : "Payment Successful"}
                 </div>
               </div>
             </motion.div>

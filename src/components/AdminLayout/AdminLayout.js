@@ -155,17 +155,21 @@ const AdminLayout = () => {
       // Fetch new/pending orders
       try {
         const orders = await apiService.admin.getOrders();
+        // Orders awaiting fulfillment (legacy `status` kept as a fallback).
         const newOrders = orders.filter(
-          (order) => order.status === "pending" || order.status === "processing"
+          (order) =>
+            order.fulfillmentStatus === "unfulfilled" ||
+            order.status === "pending" ||
+            order.status === "processing"
         );
         newOrders.slice(0, 5).forEach((order) => {
           notificationItems.push({
             id: `order-${order.id}`,
             type: "order",
             title: "New Order",
-            message: `Order #${order.orderNumber?.slice(-8) || order.id} - ${order.contactInfo?.firstName || "Customer"}`,
+            message: `Order #${order.orderNumber?.slice(-8) || order.id} - ${order.shippingAddress?.firstName || order.contactInfo?.firstName || "Customer"}`,
             time: order.createdAt,
-            status: order.status,
+            status: order.fulfillmentStatus || order.status,
             link: "/admin/orders",
           });
         });
