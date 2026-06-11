@@ -460,19 +460,33 @@ const apiService = {
   // ===========================================================================
   coupons: {
     validate: async (code, orderAmount) => {
+      const reject = (message) => {
+        const err = new Error(message);
+        err.code = "COUPON_INVALID";
+        return err;
+      };
       try {
         if (IS_MOCK_API) {
           const response = await api.get("/coupons", { params: { code, isActive: true } });
           const coupon = Array.isArray(response.data) ? response.data[0] : response.data;
-          if (!coupon) throw new Error("Invalid coupon code");
-          if (coupon.expiresAt && new Date(coupon.expiresAt) < new Date()) throw new Error("Coupon has expired");
-          if (coupon.usageLimit && coupon.usedCount >= coupon.usageLimit) throw new Error("Coupon usage limit reached");
-          if (orderAmount < coupon.minOrderAmount) throw new Error(`Minimum order amount is ₹${coupon.minOrderAmount}`);
+          if (!coupon) throw reject("Invalid coupon code");
+          if (coupon.expiresAt && new Date(coupon.expiresAt) < new Date()) throw reject("Coupon has expired");
+          if (coupon.usageLimit && coupon.usedCount >= coupon.usageLimit) throw reject("Coupon usage limit reached");
+          if (orderAmount < coupon.minOrderAmount) throw reject(`Minimum order amount is ₹${coupon.minOrderAmount}`);
           return coupon;
         }
         const response = await api.post("/coupons/validate", { code, orderAmount });
         return extractData(response);
-      } catch (error) { console.error("Validate coupon error:", error); throw error; }
+      } catch (error) {
+        // Rejected coupons (unknown/expired/below minimum — or a 4xx from the
+        // Laravel validator) are expected outcomes, not faults: keep the
+        // console clean and let the caller show the message.
+        const isRejection =
+          error.code === "COUPON_INVALID" ||
+          [400, 404, 422].includes(error.response?.status);
+        if (!isRejection) console.error("Validate coupon error:", error);
+        throw error;
+      }
     },
   },
 
@@ -519,6 +533,20 @@ const apiService = {
         const response = await api.get("/shipping/methods");
         return extractData(response);
       } catch (error) { console.error("Get shipping methods error:", error); throw error; }
+    },
+  },
+
+  // ===========================================================================
+  // Settings (Storefront)
+  // ===========================================================================
+  settings: {
+    // Public store settings (tax rate, COD limits, store info) used by the
+    // storefront — distinct from admin.getSettings, which needs an admin token.
+    get: async () => {
+      try {
+        const response = await api.get("/settings");
+        return IS_MOCK_API ? response.data : extractData(response);
+      } catch (error) { console.error("Get settings error:", error); throw error; }
     },
   },
 

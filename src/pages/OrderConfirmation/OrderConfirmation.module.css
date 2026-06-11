@@ -583,6 +583,14 @@
   animation: pulse 2s infinite;
 }
 
+.paymentStatusPending {
+  color: #d69e2e;
+}
+
+.paymentStatusPending .paymentStatusDot {
+  background: #d69e2e;
+}
+
 @keyframes pulse {
   0%, 100% { opacity: 1; }
   50% { opacity: 0.5; }

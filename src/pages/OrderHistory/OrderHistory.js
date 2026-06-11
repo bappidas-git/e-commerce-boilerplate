@@ -21,6 +21,26 @@ const STATUS_CONFIG = {
 const FILTER_OPTIONS = ["All", "Processing", "Shipped", "Delivered", "Cancelled"];
 const ORDERS_PER_PAGE = 5;
 
+// Orders carry paymentStatus / fulfillmentStatus / shippingStatus (the shape
+// checkout writes and Admin manages) — collapse those into the single display
+// status this page badges and filters by. A legacy `status` field is only
+// honoured when none of the canonical fields exist.
+const deriveOrderStatus = (order) => {
+  if (order.paymentStatus || order.fulfillmentStatus || order.shippingStatus) {
+    if (
+      order.fulfillmentStatus === "cancelled" ||
+      order.paymentStatus === "failed" ||
+      order.paymentStatus === "refunded"
+    ) {
+      return "cancelled";
+    }
+    if (order.shippingStatus === "delivered") return "delivered";
+    if (order.shippingStatus === "shipped") return "shipped";
+    return "processing";
+  }
+  return order.status || "processing";
+};
+
 const OrderHistory = () => {
   const navigate = useNavigate();
   const { isDarkMode } = useTheme();
@@ -92,7 +112,7 @@ const OrderHistory = () => {
   };
 
   const filteredOrders = orders.filter((order) => {
-    const statusInfo = getStatusInfo(order.status);
+    const statusInfo = getStatusInfo(deriveOrderStatus(order));
     const matchesFilter =
       activeFilter === "All" ||
       statusInfo.label.toLowerCase() === activeFilter.toLowerCase();
@@ -282,7 +302,7 @@ const OrderHistory = () => {
           <div className={styles.ordersList}>
             <AnimatePresence>
               {paginatedOrders.map((order, index) => {
-                const statusInfo = getStatusInfo(order.status);
+                const statusInfo = getStatusInfo(deriveOrderStatus(order));
                 const orderItems = order.items || [];
                 const visibleItems = orderItems.slice(0, 3);
                 const remainingCount = orderItems.length - 3;
@@ -497,9 +517,11 @@ const OrderHistory = () => {
                               <div className={styles.detailContent}>
                                 {order.shippingAddress ? (
                                   <>
-                                    <p>{order.shippingAddress.name || `${order.contactFirstName || ""} ${order.contactLastName || ""}`.trim()}</p>
-                                    <p>{order.shippingAddress.street || order.shippingAddress.line1 || order.shippingAddress.address}</p>
-                                    {order.shippingAddress.line2 && <p>{order.shippingAddress.line2}</p>}
+                                    <p>{order.shippingAddress.name || `${order.shippingAddress.firstName || ""} ${order.shippingAddress.lastName || ""}`.trim()}</p>
+                                    <p>{order.shippingAddress.addressLine1 || order.shippingAddress.street || order.shippingAddress.line1 || order.shippingAddress.address}</p>
+                                    {(order.shippingAddress.addressLine2 || order.shippingAddress.line2) && (
+                                      <p>{order.shippingAddress.addressLine2 || order.shippingAddress.line2}</p>
+                                    )}
                                     <p>
                                       {order.shippingAddress.city}
                                       {order.shippingAddress.state ? `, ${order.shippingAddress.state}` : ""}
@@ -531,16 +553,24 @@ const OrderHistory = () => {
                                   <span>Subtotal</span>
                                   <span>{formatCurrency(order.subtotal)}</span>
                                 </div>
-                                <div className={styles.summaryRow}>
-                                  <span>Tax</span>
-                                  <span>{formatCurrency(order.tax)}</span>
-                                </div>
-                                {order.shipping !== undefined && order.shipping > 0 && (
+                                {(order.discountAmount ?? 0) > 0 && (
                                   <div className={styles.summaryRow}>
-                                    <span>Shipping</span>
-                                    <span>{formatCurrency(order.shipping)}</span>
+                                    <span>Discount{order.couponCode ? ` (${order.couponCode})` : ""}</span>
+                                    <span>-{formatCurrency(order.discountAmount)}</span>
                                   </div>
                                 )}
+                                <div className={styles.summaryRow}>
+                                  <span>Shipping</span>
+                                  <span>
+                                    {(order.shippingAmount ?? order.shipping ?? 0) > 0
+                                      ? formatCurrency(order.shippingAmount ?? order.shipping)
+                                      : "FREE"}
+                                  </span>
+                                </div>
+                                <div className={styles.summaryRow}>
+                                  <span>Tax</span>
+                                  <span>{formatCurrency(order.taxAmount ?? order.tax ?? 0)}</span>
+                                </div>
                                 <div className={`${styles.summaryRow} ${styles.summaryRowTotal}`}>
                                   <span>Total</span>
                                   <span>{formatCurrency(order.total)}</span>
