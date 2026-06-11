@@ -696,7 +696,11 @@ const apiService = {
           ]);
           const totalRevenue = orders.data.reduce((sum, o) => sum + (o.total || 0), 0);
           const pendingOrders = orders.data.filter((o) => o.fulfillmentStatus === "unfulfilled" || o.paymentStatus === "pending").length;
-          const pendingReturns = returns.data.filter((r) => r.status === "requested").length;
+          // "Pending" = open returns still awaiting admin action: not yet closed
+          // (rejected/refunded) and the refund has not already been processed.
+          const pendingReturns = returns.data.filter(
+            (r) => !["rejected", "refunded"].includes(r.status) && !["processed", "completed"].includes(r.refundStatus || "")
+          ).length;
           const lowStockProducts = products.data.filter((p) => p.stock <= (p.lowStockThreshold || 10)).length;
           return {
             totalProducts: products.data.length,

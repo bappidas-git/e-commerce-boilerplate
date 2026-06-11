@@ -2,12 +2,27 @@ import React, { useState, useEffect } from "react";
 import {
   Box, Grid, Paper, Typography, Table, TableBody, TableCell,
   TableContainer, TableHead, TableRow, Chip, Avatar, Skeleton,
-  useTheme, Button,
+  Button,
 } from "@mui/material";
 import { Icon } from "@iconify/react";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import apiService from "../../services/api";
+
+// Keep status chip labels/colors identical to the Orders page (src/pages/Admin/AdminOrders.js)
+const FULFILLMENT_STATUS = {
+  unfulfilled: { label: "Unfulfilled", color: "warning" },
+  partially_fulfilled: { label: "Partial", color: "info" },
+  fulfilled: { label: "Fulfilled", color: "success" },
+  returned: { label: "Returned", color: "secondary" },
+};
+const PAYMENT_STATUS = {
+  pending: { label: "Pending", color: "warning" },
+  paid: { label: "Paid", color: "success" },
+  partially_paid: { label: "Partial", color: "info" },
+  refunded: { label: "Refunded", color: "secondary" },
+  voided: { label: "Voided", color: "default" },
+};
 
 const StatCard = ({ title, value, icon, color, subtitle, onClick }) => (
   <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }}>
@@ -38,7 +53,6 @@ const StatCard = ({ title, value, icon, color, subtitle, onClick }) => (
 );
 
 const AdminDashboard = () => {
-  const theme = useTheme();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({
@@ -59,8 +73,15 @@ const AdminDashboard = () => {
         apiService.admin.getProducts(),
       ]);
       setStats(dashStats);
-      setRecentOrders(orders.slice(-5).reverse());
-      setLowStockProducts(products.filter((p) => p.stock !== undefined && p.stock <= (p.lowStockThreshold || 10)).slice(0, 5));
+      // Sort by recency so newly placed orders surface first regardless of source ordering.
+      const sortedOrders = [...orders].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+      setRecentOrders(sortedOrders.slice(0, 5));
+      setLowStockProducts(
+        products
+          .filter((p) => p.stock !== undefined && p.stock <= (p.lowStockThreshold || 10))
+          .sort((a, b) => a.stock - b.stock)
+          .slice(0, 5)
+      );
     } catch (error) {
       console.error("Dashboard load error:", error);
     } finally {
@@ -68,19 +89,24 @@ const AdminDashboard = () => {
     }
   };
 
-  const fc = (n) => new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", minimumFractionDigits: 0 }).format(n);
+  // Matches the currency style used across the admin pages (Orders, Payments, Users…).
+  const fc = (n) => `₹${Number(n || 0).toLocaleString("en-IN")}`;
 
-  const getStatusColor = (status) => {
-    const map = { fulfilled: "success", unfulfilled: "warning", paid: "success", pending: "warning", cancelled: "error", returned: "secondary" };
-    return map[status] || "default";
-  };
-
-  const formatDate = (d) => d ? new Date(d).toLocaleDateString("en-IN", { day: "2-digit", month: "short" }) : "—";
+  const formatDate = (d) => d ? new Date(d).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "2-digit" }) : "—";
 
   if (loading) return (
     <Box>
+      <Typography variant="h5" fontWeight="bold" gutterBottom>Dashboard</Typography>
+      <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>Welcome back! Here's your store overview.</Typography>
       <Grid container spacing={3}>
-        {[1,2,3,4,5,6,7,8].map((i) => (<Grid item xs={12} sm={6} lg={3} key={i}><Skeleton variant="rounded" height={130} sx={{ borderRadius: 3 }} /></Grid>))}
+        {[1,2,3,4].map((i) => (<Grid item xs={12} sm={6} lg={3} key={i}><Skeleton variant="rounded" height={130} sx={{ borderRadius: 3 }} /></Grid>))}
+      </Grid>
+      <Grid container spacing={3} sx={{ mt: 0 }}>
+        {[1,2,3,4].map((i) => (<Grid item xs={6} sm={3} key={i}><Skeleton variant="rounded" height={72} sx={{ borderRadius: 3 }} /></Grid>))}
+      </Grid>
+      <Grid container spacing={3} sx={{ mt: 0 }}>
+        <Grid item xs={12} lg={7}><Skeleton variant="rounded" height={320} sx={{ borderRadius: 3 }} /></Grid>
+        <Grid item xs={12} lg={5}><Skeleton variant="rounded" height={320} sx={{ borderRadius: 3 }} /></Grid>
       </Grid>
     </Box>
   );
@@ -157,6 +183,7 @@ const AdminDashboard = () => {
                   <TableRow>
                     <TableCell>Order</TableCell>
                     <TableCell>Customer</TableCell>
+                    <TableCell align="center">Items</TableCell>
                     <TableCell>Total</TableCell>
                     <TableCell>Payment</TableCell>
                     <TableCell>Fulfillment</TableCell>
@@ -164,21 +191,26 @@ const AdminDashboard = () => {
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                  {recentOrders.map((order) => (
+                  {recentOrders.map((order) => {
+                    const psc = PAYMENT_STATUS[order.paymentStatus] || { label: order.paymentStatus, color: "default" };
+                    const fsc = FULFILLMENT_STATUS[order.fulfillmentStatus] || { label: order.fulfillmentStatus, color: "default" };
+                    return (
                     <TableRow key={order.id} hover sx={{ cursor: "pointer" }} onClick={() => navigate("/admin/orders")}>
-                      <TableCell><Typography variant="body2" fontWeight={500}>#{order.orderNumber?.slice(-8)}</Typography></TableCell>
+                      <TableCell><Typography variant="body2" fontWeight={600} noWrap>{order.orderNumber}</Typography></TableCell>
                       <TableCell>
-                        <Typography variant="body2">{order.billingAddress?.firstName} {order.billingAddress?.lastName}</Typography>
-                        <Typography variant="caption" color="text.secondary">{order.items?.length} item(s)</Typography>
+                        <Typography variant="body2" noWrap>{order.billingAddress?.firstName} {order.billingAddress?.lastName}</Typography>
+                        {order.billingAddress?.city && <Typography variant="caption" color="text.secondary">{order.billingAddress.city}</Typography>}
                       </TableCell>
-                      <TableCell><Typography variant="body2" fontWeight={500}>{fc(order.total || 0)}</Typography></TableCell>
-                      <TableCell><Chip label={order.paymentStatus} size="small" color={getStatusColor(order.paymentStatus)} sx={{ textTransform: "capitalize", height: 22, fontSize: "0.7rem" }} /></TableCell>
-                      <TableCell><Chip label={order.fulfillmentStatus} size="small" color={getStatusColor(order.fulfillmentStatus)} sx={{ textTransform: "capitalize", height: 22, fontSize: "0.7rem" }} /></TableCell>
-                      <TableCell><Typography variant="caption">{formatDate(order.createdAt)}</Typography></TableCell>
+                      <TableCell align="center"><Typography variant="body2">{order.items?.length || 0}</Typography></TableCell>
+                      <TableCell><Typography variant="body2" fontWeight={500}>{fc(order.total)}</Typography></TableCell>
+                      <TableCell><Chip label={psc.label} size="small" color={psc.color} sx={{ height: 22, fontSize: "0.7rem" }} /></TableCell>
+                      <TableCell><Chip label={fsc.label} size="small" color={fsc.color} sx={{ height: 22, fontSize: "0.7rem" }} /></TableCell>
+                      <TableCell><Typography variant="caption" noWrap>{formatDate(order.createdAt)}</Typography></TableCell>
                     </TableRow>
-                  ))}
+                    );
+                  })}
                   {recentOrders.length === 0 && (
-                    <TableRow><TableCell colSpan={6} align="center" sx={{ py: 4 }}><Typography color="text.secondary">No orders yet</Typography></TableCell></TableRow>
+                    <TableRow><TableCell colSpan={7} align="center" sx={{ py: 4 }}><Typography color="text.secondary">No orders yet</Typography></TableCell></TableRow>
                   )}
                 </TableBody>
               </Table>
