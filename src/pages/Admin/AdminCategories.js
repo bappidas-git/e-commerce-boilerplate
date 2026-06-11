@@ -1,23 +1,47 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import {
   Box, Paper, Typography, Button, Table, TableBody, TableCell,
   TableContainer, TableHead, TableRow, IconButton, Chip, Avatar,
   Dialog, DialogTitle, DialogContent, DialogActions, TextField,
-  FormControlLabel, Switch, Skeleton, Tooltip, InputAdornment,
+  FormControlLabel, Switch, Skeleton, Tooltip, InputAdornment, MenuItem,
 } from "@mui/material";
 import { Icon } from "@iconify/react";
 import Swal from "sweetalert2";
 import apiService from "../../services/api";
+
+// Ids that sit *below* a category in the tree (children, grandchildren…). A
+// category may never be parented to itself or any of these, or the hierarchy
+// would form a cycle (A → B → A).
+const getDescendantIds = (rootId, cats) => {
+  const ids = new Set();
+  const stack = [rootId];
+  while (stack.length) {
+    const current = stack.pop();
+    cats.forEach((c) => {
+      if (String(c.parentId) === String(current) && !ids.has(c.id)) {
+        ids.add(c.id);
+        stack.push(c.id);
+      }
+    });
+  }
+  return ids;
+};
+
+const slugify = (name) =>
+  name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
+
+const emptyForm = {
+  name: "", slug: "", description: "", image: "", parentId: null, isActive: true, sortOrder: 0,
+};
 
 const AdminCategories = () => {
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingCategory, setEditingCategory] = useState(null);
+  const [saving, setSaving] = useState(false);
   const [search, setSearch] = useState("");
-  const [form, setForm] = useState({
-    name: "", slug: "", description: "", image: "", parentId: null, isActive: true, sortOrder: 0,
-  });
+  const [form, setForm] = useState(emptyForm);
 
   useEffect(() => { loadCategories(); }, []);
 
@@ -25,7 +49,7 @@ const AdminCategories = () => {
     try {
       setLoading(true);
       const data = await apiService.admin.getCategories();
-      setCategories(data || []);
+      setCategories(Array.isArray(data) ? data : []);
     } catch (e) {
       console.error(e);
     } finally {
@@ -35,38 +59,74 @@ const AdminCategories = () => {
 
   const openCreate = () => {
     setEditingCategory(null);
-    setForm({ name: "", slug: "", description: "", image: "", parentId: null, isActive: true, sortOrder: categories.length + 1 });
+    const maxSort = categories.reduce((m, c) => Math.max(m, c.sortOrder || 0), 0);
+    setForm({ ...emptyForm, sortOrder: maxSort + 1 });
     setDialogOpen(true);
   };
 
   const openEdit = (cat) => {
     setEditingCategory(cat);
-    setForm({ name: cat.name, slug: cat.slug, description: cat.description || "", image: cat.image || "", parentId: cat.parentId || null, isActive: cat.isActive, sortOrder: cat.sortOrder || 0 });
+    setForm({
+      name: cat.name || "",
+      slug: cat.slug || "",
+      description: cat.description || "",
+      image: cat.image || "",
+      parentId: cat.parentId ?? null,
+      isActive: cat.isActive !== false,
+      sortOrder: cat.sortOrder || 0,
+    });
     setDialogOpen(true);
-  };
-
-  const handleSlugify = (name) => {
-    return name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
   };
 
   const handleNameChange = (e) => {
     const name = e.target.value;
-    setForm((f) => ({ ...f, name, slug: !editingCategory ? handleSlugify(name) : f.slug }));
+    // Auto-slug only while creating, so an edited slug isn't clobbered.
+    setForm((f) => ({ ...f, name, slug: !editingCategory ? slugify(name) : f.slug }));
   };
 
   const handleSave = async () => {
-    if (!form.name.trim()) { Swal.fire({ icon: "warning", title: "Name is required", toast: true, position: "bottom-end", showConfirmButton: false, timer: 2500 }); return; }
+    if (!form.name.trim()) {
+      Swal.fire({ icon: "warning", title: "Name is required", toast: true, position: "bottom-end", showConfirmButton: false, timer: 2500 });
+      return;
+    }
+
+    const parentId = form.parentId ? Number(form.parentId) : null;
+
+    // Guard against cycles even if a stale selection slips through the dropdown.
+    if (editingCategory && parentId) {
+      const blocked = getDescendantIds(editingCategory.id, categories);
+      const isCycle =
+        String(parentId) === String(editingCategory.id) ||
+        [...blocked].some((id) => String(id) === String(parentId));
+      if (isCycle) {
+        Swal.fire({ icon: "warning", title: "Invalid parent", text: "A category can't be its own parent or descendant.", toast: true, position: "bottom-end", showConfirmButton: false, timer: 3000 });
+        return;
+      }
+    }
+
+    const payload = {
+      ...form,
+      slug: form.slug.trim() || slugify(form.name),
+      sortOrder: Number(form.sortOrder) || 0,
+      parentId,
+    };
+
     try {
+      setSaving(true);
       if (editingCategory) {
-        await apiService.admin.updateCategory(editingCategory.id, form);
+        // Spread the original first so fields the form doesn't manage
+        // (createdAt, any legacy icon) survive the PUT full-replace.
+        await apiService.admin.updateCategory(editingCategory.id, { ...editingCategory, ...payload });
       } else {
-        await apiService.admin.createCategory(form);
+        await apiService.admin.createCategory(payload);
       }
       setDialogOpen(false);
       Swal.fire({ icon: "success", title: editingCategory ? "Category updated" : "Category created", toast: true, position: "bottom-end", showConfirmButton: false, timer: 2500 });
       loadCategories();
     } catch (e) {
       Swal.fire({ icon: "error", title: "Error", text: e.message, toast: true, position: "bottom-end", showConfirmButton: false, timer: 3000 });
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -82,16 +142,29 @@ const AdminCategories = () => {
     }
   };
 
-  const filtered = categories.filter((c) =>
-    c.name.toLowerCase().includes(search.toLowerCase()) ||
-    c.slug.toLowerCase().includes(search.toLowerCase())
-  );
+  const categoryName = (id) => categories.find((c) => String(c.id) === String(id))?.name;
 
-  const parentCategories = categories.filter((c) => !c.parentId);
+  // Display order mirrors the storefront: by sortOrder, then name. Search
+  // matches name or slug.
+  const filtered = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    return [...categories]
+      .filter((c) => !q || c.name.toLowerCase().includes(q) || c.slug.toLowerCase().includes(q))
+      .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0) || a.name.localeCompare(b.name));
+  }, [categories, search]);
+
+  // Parent options exclude the category itself and its descendants.
+  const eligibleParents = useMemo(() => {
+    const blocked = editingCategory ? getDescendantIds(editingCategory.id, categories) : new Set();
+    if (editingCategory) blocked.add(editingCategory.id);
+    return categories
+      .filter((c) => !blocked.has(c.id))
+      .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0) || a.name.localeCompare(b.name));
+  }, [categories, editingCategory]);
 
   return (
     <Box>
-      <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 3 }}>
+      <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 3, flexWrap: "wrap", gap: 2 }}>
         <Box>
           <Typography variant="h5" fontWeight="bold">Categories</Typography>
           <Typography variant="body2" color="text.secondary">Manage product categories and subcategories</Typography>
@@ -108,13 +181,13 @@ const AdminCategories = () => {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             size="small"
-            sx={{ width: 280 }}
+            sx={{ width: { xs: "100%", sm: 280 } }}
             InputProps={{ startAdornment: <InputAdornment position="start"><Icon icon="mdi:magnify" /></InputAdornment> }}
           />
         </Box>
 
         <TableContainer>
-          <Table>
+          <Table sx={{ minWidth: 720 }}>
             <TableHead>
               <TableRow>
                 <TableCell>Category</TableCell>
@@ -137,26 +210,26 @@ const AdminCategories = () => {
                   <TableRow key={cat.id} hover>
                     <TableCell>
                       <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
-                        <Avatar src={cat.image} variant="rounded" sx={{ width: 44, height: 44, bgcolor: "primary.light" }}>
-                          <Icon icon="mdi:shape" style={{ fontSize: 20 }} />
+                        <Avatar src={cat.image || undefined} variant="rounded" sx={{ width: 44, height: 44, bgcolor: "primary.light" }}>
+                          <Icon icon={cat.icon || "mdi:shape"} style={{ fontSize: 20 }} />
                         </Avatar>
-                        <Box>
+                        <Box sx={{ minWidth: 0 }}>
                           <Typography variant="body2" fontWeight={500}>{cat.name}</Typography>
-                          {cat.description && <Typography variant="caption" color="text.secondary" sx={{ display: "block", maxWidth: 200, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{cat.description}</Typography>}
+                          {cat.description && <Typography variant="caption" color="text.secondary" sx={{ display: "block", maxWidth: 220, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{cat.description}</Typography>}
                         </Box>
                       </Box>
                     </TableCell>
                     <TableCell><Typography variant="body2" color="text.secondary" sx={{ fontFamily: "monospace" }}>{cat.slug}</Typography></TableCell>
                     <TableCell>
                       {cat.parentId ? (
-                        <Chip label={categories.find((c) => c.id === cat.parentId)?.name || `#${cat.parentId}`} size="small" variant="outlined" />
+                        <Chip label={categoryName(cat.parentId) || `#${cat.parentId}`} size="small" variant="outlined" />
                       ) : (
                         <Typography variant="caption" color="text.disabled">—</Typography>
                       )}
                     </TableCell>
                     <TableCell>{cat.sortOrder || 0}</TableCell>
                     <TableCell>
-                      <Chip label={cat.isActive ? "Active" : "Inactive"} size="small" color={cat.isActive ? "success" : "default"} />
+                      <Chip label={cat.isActive !== false ? "Active" : "Inactive"} size="small" color={cat.isActive !== false ? "success" : "default"} />
                     </TableCell>
                     <TableCell align="right">
                       <Tooltip title="Edit"><IconButton size="small" onClick={() => openEdit(cat)}><Icon icon="mdi:pencil-outline" /></IconButton></Tooltip>
@@ -171,7 +244,7 @@ const AdminCategories = () => {
       </Paper>
 
       {/* Create / Edit Dialog */}
-      <Dialog open={dialogOpen} onClose={() => setDialogOpen(false)} maxWidth="sm" fullWidth PaperProps={{ sx: { borderRadius: 3 } }}>
+      <Dialog open={dialogOpen} onClose={() => !saving && setDialogOpen(false)} maxWidth="sm" fullWidth PaperProps={{ sx: { borderRadius: 3 } }}>
         <DialogTitle sx={{ fontWeight: "bold" }}>{editingCategory ? "Edit Category" : "New Category"}</DialogTitle>
         <DialogContent dividers>
           <Box sx={{ display: "flex", flexDirection: "column", gap: 2, pt: 1 }}>
@@ -180,23 +253,24 @@ const AdminCategories = () => {
             <TextField label="Description" value={form.description} onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))} fullWidth size="small" multiline rows={2} />
             <TextField label="Image URL" value={form.image} onChange={(e) => setForm((f) => ({ ...f, image: e.target.value }))} fullWidth size="small" placeholder="https://..." />
             <TextField
-              select label="Parent Category" value={form.parentId || ""}
-              onChange={(e) => setForm((f) => ({ ...f, parentId: e.target.value || null }))}
-              fullWidth size="small" SelectProps={{ native: true }}
+              select label="Parent Category" value={form.parentId ?? ""}
+              onChange={(e) => setForm((f) => ({ ...f, parentId: e.target.value === "" ? null : Number(e.target.value) }))}
+              fullWidth size="small"
+              helperText="A category can't be its own parent or descendant"
             >
-              <option value="">None (Top-level)</option>
-              {parentCategories.filter((c) => !editingCategory || c.id !== editingCategory.id).map((c) => (
-                <option key={c.id} value={c.id}>{c.name}</option>
+              <MenuItem value="">None (Top-level)</MenuItem>
+              {eligibleParents.map((c) => (
+                <MenuItem key={c.id} value={c.id}>{c.name}</MenuItem>
               ))}
             </TextField>
-            <TextField label="Sort Order" type="number" value={form.sortOrder} onChange={(e) => setForm((f) => ({ ...f, sortOrder: parseInt(e.target.value) || 0 }))} size="small" sx={{ width: 140 }} />
+            <TextField label="Sort Order" type="number" value={form.sortOrder} onChange={(e) => setForm((f) => ({ ...f, sortOrder: parseInt(e.target.value, 10) || 0 }))} size="small" sx={{ width: 140 }} />
             <FormControlLabel control={<Switch checked={form.isActive} onChange={(e) => setForm((f) => ({ ...f, isActive: e.target.checked }))} />} label="Active" />
           </Box>
         </DialogContent>
         <DialogActions sx={{ p: 2, gap: 1 }}>
-          <Button onClick={() => setDialogOpen(false)}>Cancel</Button>
-          <Button variant="contained" onClick={handleSave} sx={{ borderRadius: 2 }}>
-            {editingCategory ? "Save Changes" : "Create Category"}
+          <Button onClick={() => setDialogOpen(false)} disabled={saving}>Cancel</Button>
+          <Button variant="contained" onClick={handleSave} disabled={saving} sx={{ borderRadius: 2 }}>
+            {saving ? "Saving..." : editingCategory ? "Save Changes" : "Create Category"}
           </Button>
         </DialogActions>
       </Dialog>

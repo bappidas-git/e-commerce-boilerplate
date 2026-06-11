@@ -294,10 +294,18 @@ const apiService = {
   // Categories
   // ===========================================================================
   categories: {
+    // Storefront category list (Header, Shop-by-Category, Products filter,
+    // search…). Hides inactive categories and honours the admin-defined
+    // sortOrder so what the Categories manager sets is what shoppers see.
+    // Admin screens use admin.getCategories(), which returns everything.
     getAll: async () => {
       try {
         const response = await api.get("/categories");
-        return extractData(response);
+        const data = extractData(response);
+        if (!Array.isArray(data)) return data;
+        return data
+          .filter((c) => c.isActive !== false)
+          .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
       } catch (error) { console.error("Get categories error:", error); throw error; }
     },
 
