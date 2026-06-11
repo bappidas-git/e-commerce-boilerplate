@@ -1,12 +1,16 @@
-import React, { useState, useEffect } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { useTheme } from "../../context/ThemeContext";
 import { useWishlist } from "../../context/WishlistContext";
 import { useCart } from "../../hooks/useCart";
 import { useAuth } from "../../hooks/useAuth";
-import apiService from "../../services/api";
-import { formatCurrency, getProductMinPrice, getDefaultCartVariant } from "../../utils/helpers";
+import {
+  formatCurrency,
+  getProductMinPrice,
+  getDefaultCartVariant,
+  buildCartItem,
+} from "../../utils/helpers";
 import styles from "./Wishlist.module.css";
 
 const SORT_OPTIONS = [
@@ -82,25 +86,10 @@ const Wishlist = () => {
 
   const handleAddToCart = (e, item) => {
     e.stopPropagation();
-    const { sellingPrice, originalPrice } = getProductMinPrice(item);
-    // Use the same default (cheapest) variant + id scheme as the product page
-    // and cards so a wishlist add merges with those instead of duplicating.
-    const variant = getDefaultCartVariant(item);
-    const stock = variant ? variant.stock : item.stock;
-    addToCart(
-      {
-        productId: item.productId,
-        variantId: variant?.id || null,
-        variantName: variant?.name || null,
-        name: item.name,
-        image: item.image,
-        price: variant ? parseFloat(variant.price) || sellingPrice : sellingPrice,
-        comparePrice: originalPrice,
-        currency: "INR",
-        ...(stock != null && stock !== "" ? { stock: Number(stock) } : {}),
-      },
-      1
-    );
+    // Same normalized line shape as card/PDP quick-adds (same default variant
+    // and id scheme) so a wishlist add merges into the existing cart line. The
+    // wishlist row's product id lives in `productId`, not `id`.
+    addToCart(buildCartItem({ ...item, id: item.productId }), 1);
   };
 
   const handleMoveToCart = async (e, item) => {
@@ -108,7 +97,9 @@ const Wishlist = () => {
     handleAddToCart(e, item);
     setRemovingId(item.productId);
     setTimeout(() => {
-      removeFromWishlist(item.productId);
+      // Silent: keeps the "Added to Cart" toast on screen instead of
+      // replacing it with a "Removed" toast mid-move.
+      removeFromWishlist(item.productId, { silent: true });
       setRemovingId(null);
     }, 300);
   };
@@ -119,38 +110,32 @@ const Wishlist = () => {
 
   const sortedItems = getSortedItems();
 
-  // Not authenticated
-  if (!user) {
-    return (
-      <div className={`${styles.page} ${isDarkMode ? styles.dark : ""}`}>
-        <div className={styles.container}>
-          <motion.div
-            className={styles.loginPrompt}
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
-          >
-            <div className={styles.loginIcon}>
-              <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-                <circle cx="12" cy="7" r="4" />
-              </svg>
-            </div>
-            <h2 className={styles.loginTitle}>Please log in to view your wishlist</h2>
-            <p className={styles.loginSubtext}>
-              Sign in to save and manage your favourite items across devices.
-            </p>
-            <button
-              className={styles.loginButton}
-              onClick={() => openAuthModal("login")}
-            >
-              Log In
-            </button>
-          </motion.div>
-        </div>
-      </div>
-    );
-  }
+  // Guests keep a fully working wishlist (saved on this device) — the same
+  // open access as the heart toggles on cards/PDP. This banner is the single
+  // login entry point and opens the global AuthModal (there is no /login
+  // route); on login the local items merge into the account's wishlist.
+  const guestBanner = !user && (
+    <motion.div
+      className={styles.guestBanner}
+      initial={{ opacity: 0, y: -8 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.35 }}
+    >
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+        <circle cx="12" cy="7" r="4" />
+      </svg>
+      <p className={styles.guestBannerText}>
+        Your wishlist is saved on this device. Log in to sync it across devices.
+      </p>
+      <button
+        className={styles.guestBannerBtn}
+        onClick={() => openAuthModal("login")}
+      >
+        Log In
+      </button>
+    </motion.div>
+  );
 
   // Loading state
   if (isLoading) {
@@ -183,9 +168,12 @@ const Wishlist = () => {
     return (
       <div className={`${styles.page} ${isDarkMode ? styles.dark : ""}`}>
         <div className={styles.container}>
+          {guestBanner}
           <div className={styles.header}>
-            <h1 className={styles.title}>My Wishlist</h1>
-            <span className={styles.itemCount}>(0 items)</span>
+            <div className={styles.headerLeft}>
+              <h1 className={styles.title}>My Wishlist</h1>
+              <span className={styles.itemCount}>(0 items)</span>
+            </div>
           </div>
           <motion.div
             className={styles.emptyState}
@@ -218,6 +206,7 @@ const Wishlist = () => {
   return (
     <div className={`${styles.page} ${isDarkMode ? styles.dark : ""}`}>
       <div className={styles.container}>
+        {guestBanner}
         {/* Header */}
         <motion.div
           className={styles.header}
@@ -270,7 +259,13 @@ const Wishlist = () => {
             {sortedItems.map((item, index) => {
               const priceInfo = getProductMinPrice(item);
               const hasDiscount = priceInfo.discount > 0;
-              const inStock = item.stock !== 0; // treat undefined as in-stock
+              // Stock of what "Add to Cart" would add: the default (cheapest)
+              // variant when the product has variants, else the product itself.
+              // Unknown stock (older saved rows) is treated as in-stock.
+              const defaultVariant = getDefaultCartVariant(item);
+              const stockValue = defaultVariant ? defaultVariant.stock : item.stock;
+              const inStock =
+                stockValue == null || stockValue === "" || Number(stockValue) > 0;
 
               return (
                 <motion.div

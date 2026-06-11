@@ -1,4 +1,11 @@
-import React, { createContext, useState, useContext, useEffect } from "react";
+import React, {
+  createContext,
+  useState,
+  useContext,
+  useEffect,
+  useRef,
+  useCallback,
+} from "react";
 import { useAuth } from "./AuthContext";
 import apiService from "../services/api";
 import Swal from "sweetalert2";
@@ -13,223 +20,359 @@ export const useWishlist = () => {
   return context;
 };
 
+// Shared SweetAlert toast config so every wishlist toast is positioned alike
+// (and alike to the cart's toasts).
+const wishlistToast = (options) =>
+  Swal.fire({
+    toast: true,
+    position: "bottom-end",
+    showConfirmButton: false,
+    timer: 2000,
+    timerProgressBar: true,
+    ...options,
+  });
+
+// Ids for rows that only exist locally (guest rows, or rows whose API save is
+// still in flight). They are never sent to the API as a row id.
+const localId = () => `local-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+const isLocalId = (id) => String(id).startsWith("local-");
+
+// Flat product snapshot stored per wishlist row. The same shape is rendered by
+// the Wishlist page and POSTed to the API (minus the local row id).
+const buildWishlistItem = (product) => ({
+  productId: product.id,
+  name: product.name,
+  image: product.images?.[0] || product.image,
+  brand: product.brand,
+  category: product.category,
+  price: product.price,
+  comparePrice: product.comparePrice,
+  rating: product.rating,
+  totalReviews: product.totalReviews,
+  shortDescription: product.shortDescription,
+  variants: product.variants,
+  stock: product.stock,
+  trending: product.trending,
+  hot: product.hot,
+  addedAt: new Date().toISOString(),
+});
+
+// Normalize an API row to the flat shape the UI renders. The Laravel branch
+// returns the product snapshot nested under `product`; JSON Server rows (and
+// local rows) are already flat.
+const normalizeWishlistItem = (item) => {
+  if (item.product) {
+    return {
+      id: item.id,
+      productId: item.productId || item.product.id,
+      name: item.product.name,
+      image: item.product.images?.[0] || item.product.image,
+      brand: item.product.brand,
+      category: item.product.category,
+      price: item.product.price,
+      comparePrice: item.product.comparePrice,
+      rating: item.product.rating,
+      totalReviews: item.product.totalReviews,
+      shortDescription: item.product.shortDescription,
+      variants: item.product.variants,
+      stock: item.product.stock,
+      trending: item.product.trending,
+      hot: item.product.hot,
+      addedAt: item.createdAt || item.addedAt || new Date().toISOString(),
+    };
+  }
+  return item;
+};
+
 export const WishlistProvider = ({ children }) => {
   const { user } = useAuth();
   const [wishlistItems, setWishlistItems] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
 
-  // Load wishlist from localStorage on mount
+  // Skips the very first "save" so the initial empty state can't overwrite the
+  // persisted wishlist before the "load" effect has hydrated it.
+  const firstSaveRef = useRef(true);
+  // Tracks the previous auth value so we only clear the list on a real logout
+  // transition (user → null), not on the initial null render — which would
+  // wipe a guest's wishlist on every reload.
+  const prevUserRef = useRef(undefined);
+  // Mirror of the latest committed list so stable callbacks can read current
+  // rows without re-subscribing.
+  const wishlistItemsRef = useRef(wishlistItems);
   useEffect(() => {
-    const savedWishlist = localStorage.getItem("wishlist");
-    if (savedWishlist) {
-      try {
-        setWishlistItems(JSON.parse(savedWishlist));
-      } catch (error) {
-        console.error("Error loading wishlist:", error);
-        localStorage.removeItem("wishlist");
-      }
-    }
-  }, []);
-
-  // Save wishlist to localStorage whenever it changes
-  useEffect(() => {
-    localStorage.setItem("wishlist", JSON.stringify(wishlistItems));
+    wishlistItemsRef.current = wishlistItems;
   }, [wishlistItems]);
 
-  // Load user's wishlist from API if logged in, or clear wishlist on logout
+  // ── Persistence: load once on mount ──────────────────────────────────────
   useEffect(() => {
-    if (user) {
-      loadUserWishlist();
-    } else {
-      // Clear wishlist when user logs out
-      setWishlistItems([]);
-      localStorage.removeItem("wishlist");
-    }
-  }, [user]);
-
-  const loadUserWishlist = async () => {
-    if (!user) return;
-
     try {
-      setIsLoading(true);
-      const wishlist = await apiService.wishlist.get(user.id);
-      if (wishlist && wishlist.length > 0) {
-        // Transform nested product structure to flat structure expected by UI
-        const transformedWishlist = wishlist.map((item) => {
-          // If the item has a nested product object, flatten it
-          if (item.product) {
-            return {
-              id: item.id,
-              productId: item.productId || item.product.id,
-              name: item.product.name,
-              image: item.product.images?.[0] || item.product.image,
-              brand: item.product.brand,
-              category: item.product.category,
-              price: item.product.price,
-              comparePrice: item.product.comparePrice,
-              rating: item.product.rating,
-              totalReviews: item.product.totalReviews,
-              shortDescription: item.product.shortDescription,
-              variants: item.product.variants,
-              trending: item.product.trending,
-              hot: item.product.hot,
-              addedAt: item.createdAt || item.addedAt || new Date().toISOString(),
-            };
-          }
-          // If already flat structure, return as-is
-          return item;
-        });
-        setWishlistItems(transformedWishlist);
+      const saved = localStorage.getItem("wishlist");
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) setWishlistItems(parsed);
       }
     } catch (error) {
       console.error("Error loading wishlist:", error);
-    } finally {
-      setIsLoading(false);
+      localStorage.removeItem("wishlist");
     }
-  };
+  }, []);
 
-  const addToWishlist = async (product) => {
-    try {
-      // Check if item already exists
-      const existingItem = wishlistItems.find((item) => item.productId === product.id);
+  // ── Persistence: save on every change (skipping the initial commit) ──────
+  useEffect(() => {
+    if (firstSaveRef.current) {
+      firstSaveRef.current = false;
+      return;
+    }
+    localStorage.setItem("wishlist", JSON.stringify(wishlistItems));
+  }, [wishlistItems]);
 
-      if (existingItem) {
-        Swal.fire({
+  // ── Load + merge the user's wishlist on login; clear it on logout ────────
+  useEffect(() => {
+    const prevUser = prevUserRef.current;
+    prevUserRef.current = user;
+
+    if (!user) {
+      // Only a genuine logout (had a user, now null) clears the list — not the
+      // initial null render or a browsing guest.
+      if (prevUser) {
+        setWishlistItems([]);
+        localStorage.removeItem("wishlist");
+      }
+      // The server wishlist is left intact so logging back in restores it.
+      return;
+    }
+
+    // Login (or already-logged-in on reload): load the server wishlist, keep
+    // server rows for products saved in both places, and upload guest-only
+    // items so they follow the account.
+    let cancelled = false;
+    (async () => {
+      try {
+        setIsLoading(true);
+        const serverRows = (await apiService.wishlist.get(user.id)) || [];
+        const serverItems = serverRows.map(normalizeWishlistItem);
+        if (cancelled) return;
+
+        const onServer = new Set(serverItems.map((item) => item.productId));
+        const guestOnly = wishlistItemsRef.current.filter(
+          (item) => !onServer.has(item.productId)
+        );
+        const uploaded = await Promise.all(
+          guestOnly.map(async (item) => {
+            try {
+              const { id, ...payload } = item;
+              const apiItem = await apiService.wishlist.add({
+                ...payload,
+                userId: user.id,
+              });
+              return { ...item, id: apiItem?.id ?? id };
+            } catch (error) {
+              // Keep it locally with its local id; the upload is retried on
+              // the next login/reload.
+              console.error("Error syncing wishlist item:", error);
+              return item;
+            }
+          })
+        );
+        if (cancelled) return;
+        setWishlistItems([...serverItems, ...uploaded]);
+      } catch (error) {
+        // Leave whatever is stored locally rather than wiping the list.
+        console.error("Error loading wishlist:", error);
+      } finally {
+        if (!cancelled) setIsLoading(false);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [user]);
+
+  // ── Mutations ─────────────────────────────────────────────────────────────
+  const addToWishlist = useCallback(
+    async (product) => {
+      if (wishlistItemsRef.current.some((item) => item.productId === product.id)) {
+        wishlistToast({
           icon: "info",
           title: "Already in Wishlist",
           text: `${product.name} is already in your wishlist`,
-          toast: true,
-          position: "bottom-end",
-          showConfirmButton: false,
-          timer: 2000,
-          timerProgressBar: true,
         });
         return;
       }
 
-      // Create wishlist item
-      const newItem = {
-        id: Date.now(), // Temporary ID
-        productId: product.id,
-        name: product.name,
-        image: product.images?.[0] || product.image,
-        brand: product.brand,
-        category: product.category,
-        price: product.price,
-        comparePrice: product.comparePrice,
-        rating: product.rating,
-        totalReviews: product.totalReviews,
-        shortDescription: product.shortDescription,
-        variants: product.variants,
-        trending: product.trending,
-        hot: product.hot,
-        addedAt: new Date().toISOString(),
-      };
+      const newItem = { id: localId(), ...buildWishlistItem(product) };
+      setWishlistItems((prev) =>
+        prev.some((item) => item.productId === product.id)
+          ? prev
+          : [...prev, newItem]
+      );
 
-      setWishlistItems([...wishlistItems, newItem]);
-
-      // Add to API if user is logged in
       if (user) {
-        const apiItem = await apiService.wishlist.add({
-          userId: user.id,
-          productId: product.id,
-          ...newItem,
-        });
-
-        // Update with API ID
-        setWishlistItems((prev) =>
-          prev.map((item) =>
-            item.productId === product.id
-              ? { ...item, id: apiItem.id || item.id }
-              : item
-          )
-        );
+        try {
+          const { id, ...payload } = newItem;
+          const apiItem = await apiService.wishlist.add({
+            ...payload,
+            userId: user.id,
+          });
+          const stillSaved = wishlistItemsRef.current.some(
+            (item) => item.productId === product.id
+          );
+          if (!stillSaved) {
+            // Removed while the save was in flight — undo the server row so it
+            // doesn't resurrect on the next reload.
+            if (apiItem?.id != null) {
+              apiService.wishlist.remove(apiItem.id).catch(() => undefined);
+            }
+            return;
+          }
+          if (apiItem?.id != null) {
+            setWishlistItems((prev) =>
+              prev.map((item) =>
+                item.productId === product.id ? { ...item, id: apiItem.id } : item
+              )
+            );
+          }
+        } catch (error) {
+          // Roll back the optimistic add — otherwise the heart reads as saved
+          // but the item would vanish on the next reload.
+          console.error("Error adding to wishlist:", error);
+          setWishlistItems((prev) =>
+            prev.filter((item) => item.productId !== product.id)
+          );
+          wishlistToast({
+            icon: "error",
+            title: "Couldn't Save",
+            text: `Failed to add ${product.name} to your wishlist. Please try again.`,
+            timer: 2500,
+          });
+          return;
+        }
       }
 
-      Swal.fire({
+      wishlistToast({
         icon: "success",
         title: "Added to Wishlist",
         text: `${product.name} has been added to your wishlist`,
-        toast: true,
-        position: "bottom-end",
-        showConfirmButton: false,
-        timer: 2000,
-        timerProgressBar: true,
       });
-    } catch (error) {
-      console.error("Error adding to wishlist:", error);
+    },
+    [user]
+  );
 
-      Swal.fire({
-        icon: "error",
-        title: "Error",
-        text: "Failed to add item to wishlist",
-        toast: true,
-        position: "bottom-end",
-        showConfirmButton: false,
-        timer: 2000,
-      });
-    }
-  };
+  const removeFromWishlist = useCallback(
+    // `silent` skips the "Removed" toast (errors still surface) — used by
+    // Move-to-Cart so its "Added to Cart" toast isn't immediately replaced.
+    async (productId, { silent = false } = {}) => {
+      const item = wishlistItemsRef.current.find(
+        (row) => row.productId === productId
+      );
+      if (!item) return;
 
-  const removeFromWishlist = async (productId) => {
-    try {
-      const item = wishlistItems.find((item) => item.productId === productId);
+      // Optimistic remove; restored below if the API delete fails.
+      setWishlistItems((prev) =>
+        prev.filter((row) => row.productId !== productId)
+      );
 
-      setWishlistItems(wishlistItems.filter((item) => item.productId !== productId));
-
-      // Remove from API if user is logged in
-      if (user && item) {
-        await apiService.wishlist.remove(item.id);
+      if (user && item.id != null && !isLocalId(item.id)) {
+        try {
+          await apiService.wishlist.remove(item.id);
+        } catch (error) {
+          console.error("Error removing from wishlist:", error);
+          setWishlistItems((prev) =>
+            prev.some((row) => row.productId === productId)
+              ? prev
+              : [...prev, item]
+          );
+          wishlistToast({
+            icon: "error",
+            title: "Couldn't Remove",
+            text: `Failed to remove ${item.name} from your wishlist. Please try again.`,
+            timer: 2500,
+          });
+          return;
+        }
       }
 
-      Swal.fire({
-        icon: "info",
-        title: "Removed",
-        text: "Item removed from wishlist",
-        toast: true,
-        position: "bottom-end",
-        showConfirmButton: false,
-        timer: 1500,
-        timerProgressBar: true,
-      });
-    } catch (error) {
-      console.error("Error removing from wishlist:", error);
-    }
-  };
+      if (!silent) {
+        wishlistToast({
+          icon: "info",
+          title: "Removed",
+          text: "Item removed from wishlist",
+          timer: 1500,
+        });
+      }
+    },
+    [user]
+  );
 
-  const toggleWishlist = async (product) => {
-    const isInWishlist = wishlistItems.some((item) => item.productId === product.id);
+  const toggleWishlist = useCallback(
+    async (product) => {
+      const exists = wishlistItemsRef.current.some(
+        (item) => item.productId === product.id
+      );
+      if (exists) {
+        await removeFromWishlist(product.id);
+      } else {
+        await addToWishlist(product);
+      }
+    },
+    [addToWishlist, removeFromWishlist]
+  );
 
-    if (isInWishlist) {
-      await removeFromWishlist(product.id);
-    } else {
-      await addToWishlist(product);
-    }
-  };
+  const clearWishlist = useCallback(async () => {
+    const items = wishlistItemsRef.current;
+    if (items.length === 0) return;
 
-  const isInWishlist = (productId) => {
-    return wishlistItems.some((item) => item.productId === productId);
-  };
+    const result = await Swal.fire({
+      title: "Clear wishlist?",
+      text: `All ${items.length} saved item${items.length === 1 ? "" : "s"} will be removed.`,
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#d32f2f",
+      confirmButtonText: "Clear All",
+      cancelButtonText: "Keep Items",
+    });
+    if (!result.isConfirmed) return;
 
-  const clearWishlist = () => {
     setWishlistItems([]);
     localStorage.removeItem("wishlist");
 
-    Swal.fire({
+    if (user) {
+      const serverIds = items
+        .map((item) => item.id)
+        .filter((id) => id != null && !isLocalId(id));
+      const results = await Promise.allSettled(
+        serverIds.map((id) => apiService.wishlist.remove(id))
+      );
+      if (results.some((r) => r.status === "rejected")) {
+        // Reload what the server still has so the UI and the account agree.
+        try {
+          const rows = (await apiService.wishlist.get(user.id)) || [];
+          setWishlistItems(rows.map(normalizeWishlistItem));
+        } catch (reloadError) {
+          console.error("Error reloading wishlist:", reloadError);
+        }
+        wishlistToast({
+          icon: "error",
+          title: "Couldn't Clear Wishlist",
+          text: "Some items could not be removed. Please try again.",
+          timer: 2500,
+        });
+        return;
+      }
+    }
+
+    wishlistToast({
       icon: "info",
       title: "Wishlist Cleared",
       text: "Your wishlist has been emptied",
-      toast: true,
-      position: "bottom-end",
-      showConfirmButton: false,
-      timer: 2000,
-      timerProgressBar: true,
     });
-  };
+  }, [user]);
 
-  const getWishlistCount = () => {
-    return wishlistItems.length;
-  };
+  const isInWishlist = (productId) =>
+    wishlistItems.some((item) => item.productId === productId);
+
+  const getWishlistCount = () => wishlistItems.length;
 
   const value = {
     wishlistItems,

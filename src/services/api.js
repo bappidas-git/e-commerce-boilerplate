@@ -93,7 +93,12 @@ const apiService = {
       try {
         if (IS_MOCK_API) {
           const response = await api.get("/users", { params: { email: credentials.email, password: credentials.password } });
-          return response.data[0] || null;
+          const user = response.data[0] || null;
+          // Store a session token like the Laravel branch does — AuthContext
+          // only restores a session on reload when BOTH user and token exist,
+          // so without this a mock-mode login is lost on every refresh.
+          if (user) sessionStorage.setItem("token", `mock-token-${user.id}-${Date.now()}`);
+          return user;
         }
         const response = await api.post("/auth/login", credentials);
         const data = extractData(response);
