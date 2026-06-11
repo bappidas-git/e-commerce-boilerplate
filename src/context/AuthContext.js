@@ -1,5 +1,6 @@
 import React, { createContext, useState, useContext, useEffect } from "react";
-import apiService from "../services/api";
+import apiService, { getErrorMessage } from "../services/api";
+import authStorage from "../utils/authStorage";
 import Swal from "sweetalert2";
 
 const AuthContext = createContext();
@@ -28,16 +29,20 @@ export const AuthProvider = ({ children }) => {
   const closeAuthModal = () => setAuthModalOpen(false);
 
   useEffect(() => {
-    // Check for existing session on mount
-    const storedUser = sessionStorage.getItem("user");
-    const token = sessionStorage.getItem("token");
+    // Restore an existing session on mount. authStorage checks sessionStorage
+    // (default, per-tab) then localStorage ("Remember me" logins) — both the
+    // mock and Laravel login paths store a token, so requiring user + token
+    // works in either mode.
+    const storedUser = authStorage.get("user");
+    const token = authStorage.get("token");
 
     if (storedUser && token) {
       try {
         setUser(JSON.parse(storedUser));
       } catch (error) {
         console.error("Error parsing stored user:", error);
-        sessionStorage.clear();
+        authStorage.remove("user");
+        authStorage.remove("token");
       }
     }
     setIsLoading(false);
@@ -49,7 +54,7 @@ export const AuthProvider = ({ children }) => {
       const userData = await apiService.auth.login(credentials);
 
       if (userData) {
-        sessionStorage.setItem("user", JSON.stringify(userData));
+        authStorage.set("user", JSON.stringify(userData), !!credentials.remember);
         setUser(userData);
 
         Swal.fire({
@@ -75,16 +80,12 @@ export const AuthProvider = ({ children }) => {
           timer: 3000,
         });
 
-        return { success: false, error: "Invalid credentials" };
+        return { success: false, error: "Invalid email or password" };
       }
     } catch (error) {
       console.error("Login error:", error);
 
-      // Extract error message from API response
-      let errorMessage = "An error occurred during login. Please try again.";
-      if (error.response && error.response.data && error.response.data.message) {
-        errorMessage = error.response.data.message;
-      }
+      const errorMessage = getErrorMessage(error) || "An error occurred during login. Please try again.";
 
       Swal.fire({
         icon: "error",
@@ -106,27 +107,40 @@ export const AuthProvider = ({ children }) => {
 
       Swal.fire({
         icon: "success",
-        title: "Registration Successful",
-        text: "Your account has been created. Please log in.",
-        confirmButtonText: "OK",
+        title: "Account created",
+        text: "Please log in with your new credentials",
+        toast: true,
+        position: "bottom-end",
+        showConfirmButton: false,
+        timer: 3000,
+        timerProgressBar: true,
       });
 
       return { success: true, user: newUser };
     } catch (error) {
-      console.error("Registration error:", error);
+      if (error.code !== "EMAIL_TAKEN") console.error("Registration error:", error);
+
+      const errorMessage = getErrorMessage(error) || "An error occurred during registration. Please try again.";
 
       Swal.fire({
         icon: "error",
         title: "Registration Failed",
-        text: "An error occurred during registration. Please try again.",
+        text: errorMessage,
+        toast: true,
+        position: "bottom-end",
+        showConfirmButton: false,
+        timer: 3500,
       });
 
-      return { success: false, error: error.message };
+      return { success: false, error: errorMessage };
     }
   };
 
   const logout = () => {
-    sessionStorage.clear();
+    // Removes user/token from both storages and, on the Laravel branch,
+    // revokes the token server-side. Never sessionStorage.clear() — that
+    // would also wipe an admin session open in the same tab.
+    apiService.auth.logout().catch(() => {});
     setUser(null);
 
     Swal.fire({
@@ -144,7 +158,7 @@ export const AuthProvider = ({ children }) => {
   const updateUser = (updates) => {
     const updatedUser = { ...user, ...updates };
     setUser(updatedUser);
-    sessionStorage.setItem("user", JSON.stringify(updatedUser));
+    authStorage.update("user", JSON.stringify(updatedUser));
   };
 
   const value = {

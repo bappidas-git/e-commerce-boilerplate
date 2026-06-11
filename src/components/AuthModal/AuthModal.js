@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "../../hooks/useAuth";
 import { useTheme } from "../../context/ThemeContext";
@@ -140,7 +141,7 @@ const tabContentVariants = {
 
 const AuthModal = ({ open, onClose, defaultTab = "login" }) => {
   const { login, register, isLoading: authLoading } = useAuth();
-  const { theme } = useTheme();
+  const { isDarkMode } = useTheme();
 
   const [activeTab, setActiveTab] = useState(defaultTab);
   const [direction, setDirection] = useState(0);
@@ -167,6 +168,7 @@ const AuthModal = ({ open, onClose, defaultTab = "login" }) => {
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [successMessage, setSuccessMessage] = useState("");
+  const [infoMessage, setInfoMessage] = useState("");
 
   // Detect mobile
   const [isMobile, setIsMobile] = useState(false);
@@ -188,6 +190,7 @@ const AuthModal = ({ open, onClose, defaultTab = "login" }) => {
     if (open) {
       setErrors({});
       setSuccessMessage("");
+      setInfoMessage("");
     }
   }, [open]);
 
@@ -220,6 +223,14 @@ const AuthModal = ({ open, onClose, defaultTab = "login" }) => {
     setActiveTab(tab);
     setErrors({});
     setSuccessMessage("");
+    setInfoMessage("");
+  };
+
+  // Self-service password reset isn't built yet — say so instead of doing
+  // nothing, and point at the support page (the manual path that exists).
+  const handleForgotPassword = () => {
+    setErrors({});
+    setInfoMessage("Password reset isn't available yet. Our support team can help you regain access.");
   };
 
   /* ---- Handlers: Login ---- */
@@ -250,8 +261,19 @@ const AuthModal = ({ open, onClose, defaultTab = "login" }) => {
 
     setIsSubmitting(true);
     setErrors({});
+    setInfoMessage("");
     try {
-      await login({ email: loginData.email, password: loginData.password });
+      // login() resolves with { success, error } instead of throwing — check
+      // it, or failed logins would show the success state and close the modal.
+      const result = await login({
+        email: loginData.email,
+        password: loginData.password,
+        remember: rememberMe,
+      });
+      if (!result.success) {
+        setErrors({ general: result.error || "Login failed. Please try again." });
+        return;
+      }
       setSuccessMessage("Welcome back! Signing you in...");
       setTimeout(() => {
         onClose();
@@ -309,7 +331,9 @@ const AuthModal = ({ open, onClose, defaultTab = "login" }) => {
     setIsSubmitting(true);
     setErrors({});
     try {
-      await register({
+      // register() resolves with { success, error } instead of throwing —
+      // see handleLoginSubmit.
+      const result = await register({
         firstName: signupData.firstName,
         lastName: signupData.lastName,
         email: signupData.email,
@@ -317,10 +341,16 @@ const AuthModal = ({ open, onClose, defaultTab = "login" }) => {
         password: signupData.password,
         confirmPassword: signupData.confirmPassword,
       });
+      if (!result.success) {
+        setErrors({ general: result.error || "Registration failed. Please try again." });
+        return;
+      }
       setSuccessMessage("Account created! Redirecting to login...");
+      const registeredEmail = signupData.email;
       setTimeout(() => {
         switchTab("login");
         setSuccessMessage("");
+        setLoginData({ email: registeredEmail, password: "" });
         setSignupData({ firstName: "", lastName: "", email: "", phone: "", password: "", confirmPassword: "" });
         setAgreeTerms(false);
       }, 1800);
@@ -344,7 +374,7 @@ const AuthModal = ({ open, onClose, defaultTab = "login" }) => {
   /* ---- Derived ---- */
 
   const loading = isSubmitting || authLoading;
-  const darkMode = theme === "dark";
+  const darkMode = isDarkMode;
 
   /* ---- Render ---- */
 
@@ -444,6 +474,23 @@ const AuthModal = ({ open, onClose, defaultTab = "login" }) => {
               )}
             </AnimatePresence>
 
+            {/* ---- Info banner ---- */}
+            <AnimatePresence>
+              {infoMessage && (
+                <motion.div
+                  className={styles.infoBanner}
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: "auto" }}
+                  exit={{ opacity: 0, height: 0 }}
+                >
+                  {infoMessage}{" "}
+                  <Link to="/support" className={styles.infoBannerLink} onClick={onClose}>
+                    Contact support
+                  </Link>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
             {/* ---- Form content ---- */}
             <div className={styles.formWrapper}>
               <AnimatePresence custom={direction} mode="wait">
@@ -518,7 +565,7 @@ const AuthModal = ({ open, onClose, defaultTab = "login" }) => {
                         <span className={styles.checkMark} />
                         Remember me
                       </label>
-                      <button type="button" className={styles.linkBtn}>
+                      <button type="button" className={styles.linkBtn} onClick={handleForgotPassword}>
                         Forgot password?
                       </button>
                     </div>
@@ -539,15 +586,28 @@ const AuthModal = ({ open, onClose, defaultTab = "login" }) => {
                       <span className={styles.dividerLine} />
                     </div>
 
-                    {/* Social buttons */}
+                    {/* Social buttons — providers not configured yet, so they
+                        are disabled and badged instead of silently dead */}
                     <div className={styles.socialRow}>
-                      <button type="button" className={styles.socialBtn}>
+                      <button
+                        type="button"
+                        className={`${styles.socialBtn} ${styles.socialBtnDisabled}`}
+                        disabled
+                        title="Google sign-in is coming soon"
+                      >
                         <GoogleIcon />
                         <span>Google</span>
+                        <span className={styles.soonBadge}>Soon</span>
                       </button>
-                      <button type="button" className={styles.socialBtn}>
+                      <button
+                        type="button"
+                        className={`${styles.socialBtn} ${styles.socialBtnDisabled}`}
+                        disabled
+                        title="Facebook sign-in is coming soon"
+                      >
                         <FacebookIcon />
                         <span>Facebook</span>
+                        <span className={styles.soonBadge}>Soon</span>
                       </button>
                     </div>
 
@@ -744,10 +804,26 @@ const AuthModal = ({ open, onClose, defaultTab = "login" }) => {
                           className={styles.checkbox}
                         />
                         <span className={styles.checkMark} />
-                        I agree to the{" "}
-                        <button type="button" className={styles.linkBtn}>Terms &amp; Conditions</button>{" "}
-                        and{" "}
-                        <button type="button" className={styles.linkBtn}>Privacy Policy</button>
+                        <span>
+                          I agree to the{" "}
+                          <Link
+                            to="/terms"
+                            target="_blank"
+                            className={styles.linkBtn}
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            Terms &amp; Conditions
+                          </Link>{" "}
+                          and{" "}
+                          <Link
+                            to="/privacy"
+                            target="_blank"
+                            className={styles.linkBtn}
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            Privacy Policy
+                          </Link>
+                        </span>
                       </label>
                       {errors.terms && <span className={styles.fieldError}>{errors.terms}</span>}
                     </div>

@@ -58,6 +58,10 @@
 
 .loginPrompt { text-align: center; padding: 20px; border-radius: 10px; background: #fef3c7; color: #92400e; }
 .dark .loginPrompt { background: #78350f; color: #fde68a; }
+.loginPrompt p { margin: 0 0 12px; }
+.loginPromptBtn { padding: 10px 24px; border: none; border-radius: 8px; background: #92400e; color: #fff; font-size: 0.875rem; font-weight: 600; cursor: pointer; font-family: inherit; transition: opacity 0.2s; }
+.loginPromptBtn:hover { opacity: 0.88; }
+.dark .loginPromptBtn { background: #fde68a; color: #78350f; }
 
 /* Address */
 .savedAddresses { margin-bottom: 20px; }

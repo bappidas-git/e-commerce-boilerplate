@@ -241,6 +241,34 @@
 }
 
 /* ================================================================== */
+/*  Info banner (e.g. password reset not available yet)                */
+/* ================================================================== */
+
+.infoBanner {
+  background: var(--auth-accent-light);
+  color: var(--auth-text-secondary);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  text-align: center;
+  padding: 10px 16px;
+  border-radius: 10px;
+  margin-bottom: 16px;
+  overflow: hidden;
+}
+
+.infoBannerLink {
+  color: var(--auth-accent);
+  font-weight: 700;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.infoBannerLink:hover {
+  color: var(--auth-accent-hover);
+  text-decoration: underline;
+}
+
+/* ================================================================== */
 /*  Success toast                                                      */
 /* ================================================================== */
 
@@ -472,8 +500,12 @@
 }
 
 .termsLabel {
-  flex-wrap: wrap;
+  align-items: flex-start;
   line-height: 1.6;
+}
+
+.termsLabel .checkMark {
+  margin-top: 2px;
 }
 
 /* ================================================================== */
@@ -490,6 +522,7 @@
   cursor: pointer;
   transition: color 0.15s;
   font-family: inherit;
+  text-decoration: none; /* also used on <a> (terms/privacy links) */
 }
 
 .linkBtn:hover {
@@ -601,9 +634,29 @@
   font-family: inherit;
 }
 
-.socialBtn:hover {
+.socialBtn:hover:not(:disabled) {
   background: var(--auth-social-hover);
   border-color: var(--auth-text-muted);
+}
+
+/* Social providers aren't wired up yet — shown disabled with a badge so
+   they read as "on the roadmap" rather than silently dead. */
+.socialBtnDisabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.soonBadge {
+  font-size: 0.5625rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--auth-text-muted);
+  background: var(--auth-tab-bg);
+  border: 1px solid var(--auth-border);
+  border-radius: 999px;
+  padding: 2px 7px;
+  line-height: 1.4;
 }
 
 /* ================================================================== */
@@ -640,7 +693,9 @@
 
 .nameRow {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  /* minmax(0,…) lets the columns shrink below the inputs' intrinsic width —
+     plain 1fr floors at min-content and overflows the 440px dialog */
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   gap: 12px;
 }
 

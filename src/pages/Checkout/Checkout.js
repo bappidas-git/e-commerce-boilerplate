@@ -16,7 +16,7 @@ const Checkout = () => {
   const { isDarkMode } = useTheme();
   const navigate = useNavigate();
   const { cartItems, getCartTotal, getCartItemCount, updateQuantity, removeFromCart, clearCart } = useCart();
-  const { user, isAuthenticated } = useAuth();
+  const { user, isAuthenticated, openAuthModal } = useAuth();
   const { createOrder } = useOrder();
 
   const [step, setStep] = useState(0);
@@ -250,6 +250,13 @@ const Checkout = () => {
                 {!isAuthenticated && (
                   <div className={styles.loginPrompt}>
                     <p>Please log in to continue with checkout.</p>
+                    <button
+                      type="button"
+                      className={styles.loginPromptBtn}
+                      onClick={() => openAuthModal("login")}
+                    >
+                      Log In / Sign Up
+                    </button>
                   </div>
                 )}
               </motion.div>

@@ -24,7 +24,7 @@ const ORDERS_PER_PAGE = 5;
 const OrderHistory = () => {
   const navigate = useNavigate();
   const { isDarkMode } = useTheme();
-  const { isAuthenticated, openAuthModal } = useAuth();
+  const { user, isAuthenticated, isLoading: authLoading, openAuthModal } = useAuth();
 
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -36,17 +36,19 @@ const OrderHistory = () => {
   const [currentPage, setCurrentPage] = useState(1);
 
   useEffect(() => {
+    if (authLoading) return; // session restore in progress — keep the loader up
     if (isAuthenticated) {
       fetchOrders();
     } else {
       setLoading(false);
     }
-  }, [isAuthenticated]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isAuthenticated, authLoading]);
 
   const fetchOrders = async () => {
     setLoading(true);
     try {
-      const response = await apiService.getOrders();
+      const response = await apiService.orders.getByUserId(user?.id);
       const data = Array.isArray(response) ? response : response?.data || response?.orders || [];
       const sorted = data.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
       setOrders(sorted);
@@ -113,8 +115,9 @@ const OrderHistory = () => {
     setCurrentPage(1);
   }, [searchQuery, activeFilter]);
 
-  // Not authenticated - show login prompt
-  if (!isAuthenticated) {
+  // Not authenticated - show login prompt (only once the session restore has
+  // settled, so a reload while logged in doesn't flash this screen)
+  if (!authLoading && !isAuthenticated) {
     return (
       <div className={`${styles.page} ${isDarkMode ? styles.dark : ""}`}>
         <div className={styles.container}>

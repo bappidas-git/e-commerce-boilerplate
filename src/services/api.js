@@ -1,5 +1,6 @@
 import axios from "axios";
 import BASE_URL, { IS_MOCK_API } from "./baseURL";
+import authStorage from "../utils/authStorage";
 
 // =============================================================================
 // API Service
@@ -25,7 +26,7 @@ api.interceptors.request.use(
     const isAdminRequest = config.url && config.url.includes("/admin/");
     const token = isAdminRequest
       ? sessionStorage.getItem("adminToken")
-      : sessionStorage.getItem("token");
+      : authStorage.get("token");
     if (token) config.headers.Authorization = `Bearer ${token}`;
     return config;
   },
@@ -39,10 +40,18 @@ api.interceptors.response.use(
     if (error.response) {
       const { status } = error.response;
       if (status === 401) {
-        sessionStorage.removeItem("user");
-        sessionStorage.removeItem("token");
-        sessionStorage.removeItem("admin");
-        sessionStorage.removeItem("adminToken");
+        // Drop only the session the expired/invalid token belongs to, and not
+        // on failed login attempts (a wrong password must not log anyone out).
+        const url = error.config?.url || "";
+        if (!url.includes("/auth/login")) {
+          if (url.includes("/admin/")) {
+            sessionStorage.removeItem("admin");
+            sessionStorage.removeItem("adminToken");
+          } else {
+            authStorage.remove("user");
+            authStorage.remove("token");
+          }
+        }
       }
       if (status >= 500) console.error("[API] Server error:", error.response.data);
     }
@@ -91,47 +100,71 @@ const apiService = {
   auth: {
     login: async (credentials) => {
       try {
+        const { remember = false, ...creds } = credentials;
         if (IS_MOCK_API) {
-          const response = await api.get("/users", { params: { email: credentials.email, password: credentials.password } });
+          const response = await api.get("/users", { params: { email: creds.email, password: creds.password } });
           const user = response.data[0] || null;
-          // Store a session token like the Laravel branch does — AuthContext
-          // only restores a session on reload when BOTH user and token exist,
-          // so without this a mock-mode login is lost on every refresh.
-          if (user) sessionStorage.setItem("token", `mock-token-${user.id}-${Date.now()}`);
-          return user;
+          if (!user) return null;
+          // Store a token like the Laravel branch does — AuthContext only
+          // restores a session on reload when BOTH user and token exist, so
+          // without this a mock-mode login is lost on every refresh.
+          authStorage.set("token", `mock-token-${user.id}-${Date.now()}`, remember);
+          // Never let the db.json password reach component state / storage.
+          const { password, confirmPassword, ...safeUser } = user;
+          return safeUser;
         }
-        const response = await api.post("/auth/login", credentials);
+        const response = await api.post("/auth/login", { ...creds, remember });
         const data = extractData(response);
-        if (data?.token) sessionStorage.setItem("token", data.token);
+        if (data?.token) authStorage.set("token", data.token, remember);
         return data?.user || null;
       } catch (error) { console.error("Login error:", error); throw error; }
     },
 
     register: async (userData) => {
       try {
-        if (IS_MOCK_API) {
-          const response = await api.post("/users", userData);
-          return response.data;
-        }
         const { confirmPassword, ...rest } = userData;
+        if (IS_MOCK_API) {
+          // JSON Server has no unique-email rule; mirror Laravel's 422 here.
+          const existing = await api.get("/users", { params: { email: rest.email } });
+          if (existing.data.length > 0) {
+            const err = new Error("An account with this email already exists. Please log in instead.");
+            err.code = "EMAIL_TAKEN";
+            throw err;
+          }
+          const now = new Date().toISOString();
+          const response = await api.post("/users", {
+            ...rest,
+            avatar: null,
+            addresses: [],
+            isActive: true,
+            createdAt: now,
+            updatedAt: now,
+          });
+          const { password, ...safeUser } = response.data;
+          return safeUser;
+        }
         const response = await api.post("/auth/register", { ...rest, password_confirmation: confirmPassword });
         return extractData(response);
-      } catch (error) { console.error("Register error:", error); throw error; }
+      } catch (error) {
+        // Expected validation outcome, not a fault — keep the console clean.
+        if (error.code !== "EMAIL_TAKEN") console.error("Register error:", error);
+        throw error;
+      }
     },
 
     logout: async () => {
       try {
         if (!IS_MOCK_API) await api.post("/auth/logout");
       } finally {
-        sessionStorage.removeItem("user");
-        sessionStorage.removeItem("token");
+        authStorage.remove("user");
+        authStorage.remove("token");
       }
     },
 
     getUser: async () => {
       try {
         if (IS_MOCK_API) {
-          const stored = sessionStorage.getItem("user");
+          const stored = authStorage.get("user");
           return stored ? JSON.parse(stored) : null;
         }
         const response = await api.get("/auth/user");
@@ -142,7 +175,7 @@ const apiService = {
     updateUser: async (updates) => {
       try {
         if (IS_MOCK_API) {
-          const stored = sessionStorage.getItem("user");
+          const stored = authStorage.get("user");
           if (!stored) return null;
           const user = JSON.parse(stored);
           const response = await api.patch(`/users/${user.id}`, updates);
@@ -337,7 +370,7 @@ const apiService = {
     clearCart: async () => {
       try {
         if (IS_MOCK_API) {
-          const stored = sessionStorage.getItem("user");
+          const stored = authStorage.get("user");
           if (stored) {
             const user = JSON.parse(stored);
             const cartResponse = await api.get("/cart", { params: { userId: user.id } });
