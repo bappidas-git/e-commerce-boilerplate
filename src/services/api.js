@@ -89,6 +89,40 @@ export const getErrorMessage = (error) => {
   return error.message || "An error occurred";
 };
 
+// When a return refund is processed in mock mode, cascade the outcome onto the
+// linked order and payment so every surface stays consistent: Admin Orders
+// (chips), Admin Payments, and the customer's Order History (which derives a
+// "cancelled" badge from paymentStatus === "refunded"). Best-effort — a missing
+// order or payment must never fail the return update. In production the Laravel
+// branch performs this cascade server-side on the same updateReturn call, so the
+// client behaviour is identical across both branches.
+const reflectReturnRefund = async (ret) => {
+  if (!ret) return;
+  const stamp = new Date().toISOString();
+  try {
+    if (ret.orderId != null) {
+      await api.patch(`/orders/${ret.orderId}`, {
+        paymentStatus: "refunded",
+        fulfillmentStatus: "returned",
+        updatedAt: stamp,
+      });
+    }
+    const params = ret.orderId != null ? { orderId: ret.orderId } : { orderNumber: ret.orderNumber };
+    const payRes = await api.get("/payments", { params });
+    const payment = Array.isArray(payRes.data) ? payRes.data[0] : payRes.data;
+    if (payment && payment.id != null) {
+      await api.patch(`/payments/${payment.id}`, {
+        status: "refunded",
+        refundAmount: ret.refundAmount ?? payment.refundAmount ?? null,
+        refundReason: ret.returnNumber ? `Return ${ret.returnNumber}` : "Return refund",
+        updatedAt: stamp,
+      });
+    }
+  } catch (e) {
+    console.error("Reflect return refund error:", e);
+  }
+};
+
 // =============================================================================
 // API Service Object
 // =============================================================================
@@ -829,8 +863,26 @@ const apiService = {
     getOrders: async (params = {}) => {
       try {
         if (IS_MOCK_API) {
-          const response = await api.get("/orders", { params });
-          return response.data;
+          // Orders persist only the shipping/billing address — not the account
+          // email. Join the users store so Admin can search by customer email
+          // and show who placed each order. The Laravel branch returns this via
+          // an eager-loaded `user` relation, so callers read the same fields
+          // (customerEmail / customerName) regardless of branch.
+          const [ordersRes, usersRes] = await Promise.all([
+            api.get("/orders", { params }),
+            api.get("/users").catch(() => ({ data: [] })),
+          ]);
+          const usersById = {};
+          (usersRes.data || []).forEach((u) => { usersById[u.id] = u; });
+          return (ordersRes.data || []).map((o) => {
+            const u = usersById[o.userId];
+            const name = u ? `${u.firstName || ""} ${u.lastName || ""}`.trim() : "";
+            return {
+              ...o,
+              customerEmail: o.customerEmail || u?.email || null,
+              customerName: o.customerName || name || null,
+            };
+          });
         }
         const response = await api.get("/admin/orders", { params });
         return extractData(response);
@@ -897,7 +949,12 @@ const apiService = {
             ...updates,
             updatedAt: new Date().toISOString(),
           });
-          return response.data;
+          const ret = response.data;
+          // A processed refund must show up on the linked order/payment too.
+          if (ret && (ret.status === "refunded" || updates.refundStatus === "processed")) {
+            await reflectReturnRefund(ret);
+          }
+          return ret;
         }
         const response = await api.patch(`/admin/returns/${id}`, updates);
         return extractData(response);
