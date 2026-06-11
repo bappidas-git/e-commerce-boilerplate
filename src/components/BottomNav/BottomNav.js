@@ -52,7 +52,7 @@ const BottomNav = () => {
     if (path === "/") return "home";
     if (path === "/products" || path.startsWith("/products/") || path === "/categories") return "categories";
     if (path === "/wishlist") return "wishlist";
-    if (path === "/profile" || path === "/account" || path === "/login") return "account";
+    if (path === "/profile" || path === "/account") return "account";
     return "";
   };
 
