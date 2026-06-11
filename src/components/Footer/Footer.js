@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { useTheme } from "../../context/ThemeContext";
 import apiService from "../../services/api";
 import { APP_NAME, SUPPORT_EMAIL, SUPPORT_PHONE } from "../../utils/constants";
+import { isEmailValid } from "../../utils/helpers";
 import styles from "./Footer.module.css";
 
 const Footer = () => {
@@ -10,23 +11,35 @@ const Footer = () => {
   const [email, setEmail] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [subscribeStatus, setSubscribeStatus] = useState("idle"); // idle | success | error
+  const [errorMsg, setErrorMsg] = useState("");
 
   const handleSubscribe = async (e) => {
     e.preventDefault();
-    if (!email.trim() || isSubmitting) return;
+    if (isSubmitting) return;
+
+    const trimmed = email.trim();
+    if (!isEmailValid(trimmed)) {
+      setSubscribeStatus("error");
+      setErrorMsg("Please enter a valid email address.");
+      return;
+    }
 
     setIsSubmitting(true);
     try {
-      await apiService.leads.createNewsletter(email.trim());
+      await apiService.leads.createNewsletter(trimmed);
       setSubscribeStatus("success");
       setEmail("");
+      // Reset back to the input after a few seconds so visitors can add another.
+      setTimeout(() => setSubscribeStatus("idle"), 4000);
     } catch {
-      // Show success regardless to prevent email enumeration
-      setSubscribeStatus("success");
-      setEmail("");
+      // Surface genuine failures instead of a fake "success". We still don't
+      // reveal whether this address was already subscribed — the API returns a
+      // uniform response for that — but a network/5xx error must not look like
+      // a win, otherwise real failures stay invisible and nothing is recorded.
+      setSubscribeStatus("error");
+      setErrorMsg("Something went wrong. Please try again.");
     } finally {
       setIsSubmitting(false);
-      setTimeout(() => setSubscribeStatus("idle"), 4000);
     }
   };
 
@@ -66,7 +79,7 @@ const Footer = () => {
                 delivered to your inbox.
               </p>
             </div>
-            <form onSubmit={handleSubscribe} className={styles.newsletterForm}>
+            <form onSubmit={handleSubscribe} className={styles.newsletterForm} noValidate>
               <div className={styles.inputGroup}>
                 <input
                   type="email"
@@ -76,11 +89,16 @@ const Footer = () => {
                       : "Enter your email address"
                   }
                   value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className={styles.emailInput}
+                  onChange={(e) => {
+                    setEmail(e.target.value);
+                    if (subscribeStatus === "error") setSubscribeStatus("idle");
+                  }}
+                  className={`${styles.emailInput} ${
+                    subscribeStatus === "error" ? styles.emailInputError : ""
+                  }`}
                   disabled={isSubmitting || subscribeStatus === "success"}
-                  required
                   aria-label="Email address"
+                  aria-invalid={subscribeStatus === "error"}
                 />
                 <button
                   type="submit"
@@ -94,6 +112,16 @@ const Footer = () => {
                     : "Subscribe"}
                 </button>
               </div>
+              {subscribeStatus === "error" && (
+                <p className={styles.newsletterError} role="alert">
+                  {errorMsg}
+                </p>
+              )}
+              {subscribeStatus === "success" && (
+                <p className={styles.newsletterSuccess} role="status">
+                  Thanks for subscribing! Check your inbox for exclusive deals.
+                </p>
+              )}
             </form>
           </div>
         </div>

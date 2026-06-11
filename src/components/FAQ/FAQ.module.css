@@ -3,13 +3,27 @@
 .container { max-width: 800px; margin: 0 auto; }
 .container h2 { font-size: 1.5rem; font-weight: 700; margin-bottom: 24px; text-align: center; }
 .list { display: flex; flex-direction: column; gap: 8px; }
-.item { border-radius: 10px; border: 1px solid #e2e8f0; overflow: hidden; }
+.item { border-radius: 10px; border: 1px solid #e2e8f0; overflow: hidden; transition: border-color 0.2s; }
 .dark .item { border-color: #334155; }
-.question { width: 100%; padding: 16px 20px; background: #fff; border: none; cursor: pointer; display: flex; justify-content: space-between; align-items: center; font-size: 1rem; font-weight: 500; text-align: left; font-family: inherit; color: inherit; }
+.item.open { border-color: #667eea; }
+.question { width: 100%; padding: 16px 20px; background: #fff; border: none; cursor: pointer; display: flex; justify-content: space-between; align-items: center; gap: 16px; font-size: 1rem; font-weight: 500; text-align: left; font-family: inherit; color: inherit; }
 .dark .question { background: #1e293b; color: #e2e8f0; }
 .question:hover { background: #f8fafc; }
 .dark .question:hover { background: #273349; }
-.toggle { font-size: 1.25rem; color: #667eea; font-weight: 700; }
-.answer { padding: 0 20px 16px; }
-.answer p { color: #475569; line-height: 1.6; }
-.dark .answer p { color: #94a3b8; }
+
+/* Plus icon drawn with pseudo-elements so it can rotate into a cross. */
+.toggle { position: relative; flex: 0 0 auto; width: 18px; height: 18px; }
+.toggle::before, .toggle::after { content: ""; position: absolute; top: 50%; left: 50%; width: 14px; height: 2px; border-radius: 2px; background: #667eea; transform: translate(-50%, -50%); transition: transform 0.28s ease; }
+.toggle::after { transform: translate(-50%, -50%) rotate(90deg); }
+.item.open .toggle::after { transform: translate(-50%, -50%) rotate(180deg); }
+
+/* Smooth height animation via animatable grid-template-rows (0fr -> 1fr). */
+.answer { display: grid; grid-template-rows: 0fr; transition: grid-template-rows 0.28s ease; }
+.item.open .answer { grid-template-rows: 1fr; }
+.answerInner { overflow: hidden; min-height: 0; }
+.answerInner p { padding: 0 20px 16px; margin: 0; color: #475569; line-height: 1.6; }
+.dark .answerInner p { color: #94a3b8; }
+
+@media (prefers-reduced-motion: reduce) {
+  .answer, .toggle::before, .toggle::after { transition: none; }
+}

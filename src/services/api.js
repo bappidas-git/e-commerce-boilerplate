@@ -625,7 +625,15 @@ const apiService = {
         if (IS_MOCK_API) {
           const response = await api.post("/leads", {
             type: "newsletter",
+            // Keep the record shape aligned with contact leads / seed data so
+            // the Admin table and detail view render consistently.
+            name: null,
             email,
+            phone: null,
+            orderNumber: null,
+            category: null,
+            subject: null,
+            message: null,
             status: "subscribed",
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString(),

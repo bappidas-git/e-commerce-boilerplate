@@ -129,6 +129,33 @@
   cursor: not-allowed;
 }
 
+.emailInputError {
+  border-color: #ef4444;
+}
+
+.newsletterError,
+.newsletterSuccess {
+  margin: 10px 0 0;
+  font-size: 0.85rem;
+  line-height: 1.4;
+}
+
+.newsletterError {
+  color: #fecaca;
+}
+
+.footer[data-theme="light"] .newsletterError {
+  color: #b91c1c;
+}
+
+.newsletterSuccess {
+  color: #bbf7d0;
+}
+
+.footer[data-theme="light"] .newsletterSuccess {
+  color: #15803d;
+}
+
 /* ========== MAIN FOOTER ========== */
 
 .mainFooter {
