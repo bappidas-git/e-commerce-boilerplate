@@ -2,7 +2,7 @@ import React from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { useTheme } from "../../context/ThemeContext";
-import { APP_NAME, SUPPORT_EMAIL } from "../../utils/constants";
+import { SUPPORT_EMAIL, POLICY_LAST_UPDATED } from "../../utils/constants";
 import styles from "./RefundPolicy.module.css";
 
 const RefundPolicy = () => {
@@ -35,7 +35,7 @@ const RefundPolicy = () => {
       <div className={styles.breadcrumb}><Link to="/">Home</Link> <span>/</span> <span>Refund Policy</span></div>
       <motion.div initial={{ y: -20, opacity: 0 }} animate={{ y: 0, opacity: 1 }}>
         <h1 className={styles.title}>Return & Refund Policy</h1>
-        <p className={styles.subtitle}>Last updated: March 2026</p>
+        <p className={styles.subtitle}>Last updated: {POLICY_LAST_UPDATED}</p>
         <div className={styles.highlight}>
           We offer a <strong>7-day hassle-free return policy</strong> on most products. Your satisfaction is our priority.
         </div>

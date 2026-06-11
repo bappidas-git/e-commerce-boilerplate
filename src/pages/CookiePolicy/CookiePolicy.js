@@ -2,7 +2,7 @@ import React from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { useTheme } from "../../context/ThemeContext";
-import { APP_NAME, SUPPORT_EMAIL } from "../../utils/constants";
+import { APP_NAME, SUPPORT_EMAIL, POLICY_LAST_UPDATED } from "../../utils/constants";
 import styles from "./CookiePolicy.module.css";
 
 const CookiePolicy = () => {
@@ -20,7 +20,7 @@ const CookiePolicy = () => {
       <div className={styles.breadcrumb}><Link to="/">Home</Link> <span>/</span> <span>Cookie Policy</span></div>
       <motion.div initial={{ y: -20, opacity: 0 }} animate={{ y: 0, opacity: 1 }}>
         <h1 className={styles.title}>Cookie Policy</h1>
-        <p className={styles.subtitle}>Last updated: March 2026</p>
+        <p className={styles.subtitle}>Last updated: {POLICY_LAST_UPDATED}</p>
         <p className={styles.intro}>{APP_NAME} uses cookies and similar technologies to improve your browsing experience, analyze site traffic, and personalize content.</p>
       </motion.div>
 

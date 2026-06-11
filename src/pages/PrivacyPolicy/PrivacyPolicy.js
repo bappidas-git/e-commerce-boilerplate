@@ -2,7 +2,7 @@ import React from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { useTheme } from "../../context/ThemeContext";
-import { APP_NAME, SUPPORT_EMAIL } from "../../utils/constants";
+import { APP_NAME, SUPPORT_EMAIL, POLICY_LAST_UPDATED } from "../../utils/constants";
 import styles from "./PrivacyPolicy.module.css";
 
 const PrivacyPolicy = () => {
@@ -24,7 +24,7 @@ const PrivacyPolicy = () => {
       <div className={styles.breadcrumb}><Link to="/">Home</Link> <span>/</span> <span>Privacy Policy</span></div>
       <motion.div initial={{ y: -20, opacity: 0 }} animate={{ y: 0, opacity: 1 }}>
         <h1 className={styles.title}>Privacy Policy</h1>
-        <p className={styles.subtitle}>Last updated: March 2026</p>
+        <p className={styles.subtitle}>Last updated: {POLICY_LAST_UPDATED}</p>
         <p className={styles.intro}>At {APP_NAME}, we take your privacy seriously. This policy describes how we collect, use, and protect your personal information.</p>
       </motion.div>
       <div className={styles.sections}>

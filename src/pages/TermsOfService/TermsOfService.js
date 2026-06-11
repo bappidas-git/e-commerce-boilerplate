@@ -2,7 +2,7 @@ import React from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { useTheme } from "../../context/ThemeContext";
-import { APP_NAME, SUPPORT_EMAIL } from "../../utils/constants";
+import { APP_NAME, SUPPORT_EMAIL, POLICY_LAST_UPDATED } from "../../utils/constants";
 import styles from "./TermsOfService.module.css";
 
 const TermsOfService = () => {
@@ -25,7 +25,7 @@ const TermsOfService = () => {
       <div className={styles.breadcrumb}><Link to="/">Home</Link> <span>/</span> <span>Terms of Service</span></div>
       <motion.div initial={{ y: -20, opacity: 0 }} animate={{ y: 0, opacity: 1 }}>
         <h1 className={styles.title}>Terms of Service</h1>
-        <p className={styles.subtitle}>Last updated: March 2026</p>
+        <p className={styles.subtitle}>Last updated: {POLICY_LAST_UPDATED}</p>
         <p className={styles.intro}>Please read these terms carefully before using {APP_NAME}.</p>
       </motion.div>
       <div className={styles.sections}>
