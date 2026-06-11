@@ -188,8 +188,18 @@ const apiService = {
 
     changePassword: async (passwordData) => {
       try {
+        // Caller passes a single object: { currentPassword, newPassword, confirmPassword }.
+        const { currentPassword, newPassword, confirmPassword } = passwordData || {};
+        // JSON Server has no auth/password endpoint — mirror the Laravel success
+        // shape so the UI flow can be exercised. (Mock = no real persistence.)
         if (IS_MOCK_API) return { success: true };
-        const response = await api.put("/auth/password", passwordData);
+        // Laravel expects snake_case, same convention as register's
+        // password_confirmation. Map here so callers keep the camelCase shape.
+        const response = await api.put("/auth/password", {
+          current_password: currentPassword,
+          password: newPassword,
+          password_confirmation: confirmPassword,
+        });
         return extractData(response);
       } catch (error) { console.error("Change password error:", error); throw error; }
     },

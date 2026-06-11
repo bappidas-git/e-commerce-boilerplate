@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
+import Swal from "sweetalert2";
 import { useTheme } from "../../context/ThemeContext";
 import { useAuth } from "../../hooks/useAuth";
 import apiService from "../../services/api";
-import { formatDate, getInitials, isEmailValid } from "../../utils/helpers";
+import { formatDate, getInitials, generateId, isValidPhone } from "../../utils/helpers";
 import styles from "./Profile.module.css";
 
 const TABS = [
@@ -93,14 +94,16 @@ const Profile = () => {
   const [showAddressForm, setShowAddressForm] = useState(false);
   const [editingAddressIndex, setEditingAddressIndex] = useState(null);
   const [addressForm, setAddressForm] = useState({
+    id: null,
     label: "Home",
-    fullName: "",
+    firstName: "",
+    lastName: "",
     phone: "",
     addressLine1: "",
     addressLine2: "",
     city: "",
     state: "",
-    zipCode: "",
+    postalCode: "",
     country: "India",
     isDefault: false,
   });
@@ -167,8 +170,8 @@ const Profile = () => {
       showFeedback("error", "First name and last name are required.");
       return;
     }
-    if (profileForm.phone && !/^\+?[\d\s-]{7,15}$/.test(profileForm.phone)) {
-      showFeedback("error", "Please enter a valid phone number.");
+    if (profileForm.phone && !isValidPhone(profileForm.phone)) {
+      showFeedback("error", "Please enter a valid 10-digit Indian mobile number.");
       return;
     }
 
@@ -243,14 +246,16 @@ const Profile = () => {
   // ---- Address handlers ----
   const resetAddressForm = () => {
     setAddressForm({
+      id: null,
       label: "Home",
-      fullName: "",
+      firstName: "",
+      lastName: "",
       phone: "",
       addressLine1: "",
       addressLine2: "",
       city: "",
       state: "",
-      zipCode: "",
+      postalCode: "",
       country: "India",
       isDefault: false,
     });
@@ -268,32 +273,52 @@ const Profile = () => {
 
   const handleAddressSave = async () => {
     if (
-      !addressForm.fullName.trim() ||
-      !addressForm.phone.trim() ||
+      !addressForm.firstName.trim() ||
+      !addressForm.lastName.trim() ||
       !addressForm.addressLine1.trim() ||
       !addressForm.city.trim() ||
       !addressForm.state.trim() ||
-      !addressForm.zipCode.trim()
+      !addressForm.postalCode.trim()
     ) {
       showFeedback("error", "Please fill in all required address fields.");
+      return;
+    }
+    if (!isValidPhone(addressForm.phone)) {
+      showFeedback("error", "Please enter a valid 10-digit Indian mobile number.");
       return;
     }
 
     setLoading(true);
     try {
-      let updatedAddresses = [...addresses];
+      // Persist the canonical shape (firstName/lastName/postalCode + a stable
+      // id) so the row round-trips with Checkout, Orders and db.json. New rows
+      // get an id; edited rows keep theirs.
+      const isFirst = addresses.length === 0;
+      const entry = {
+        ...addressForm,
+        id: addressForm.id || generateId(),
+        firstName: addressForm.firstName.trim(),
+        lastName: addressForm.lastName.trim(),
+        phone: addressForm.phone.trim(),
+        country: addressForm.country || "India",
+        // The first address is always the default; otherwise honour the box.
+        isDefault: isFirst ? true : addressForm.isDefault,
+      };
 
-      if (addressForm.isDefault) {
+      let updatedAddresses = [...addresses];
+      // "Default" is exclusive — clear it everywhere else before applying.
+      if (entry.isDefault) {
         updatedAddresses = updatedAddresses.map((a) => ({ ...a, isDefault: false }));
       }
-
       if (editingAddressIndex !== null) {
-        updatedAddresses[editingAddressIndex] = { ...addressForm };
+        updatedAddresses[editingAddressIndex] = entry;
       } else {
-        if (updatedAddresses.length === 0) {
-          addressForm.isDefault = true;
-        }
-        updatedAddresses.push({ ...addressForm });
+        updatedAddresses.push(entry);
+      }
+      // Guard against zero defaults (e.g. un-checking default on the only row):
+      // there must always be exactly one when addresses exist.
+      if (updatedAddresses.length > 0 && !updatedAddresses.some((a) => a.isDefault)) {
+        updatedAddresses[0] = { ...updatedAddresses[0], isDefault: true };
       }
 
       await updateUser({ addresses: updatedAddresses });
@@ -311,20 +336,53 @@ const Profile = () => {
   };
 
   const handleAddressEdit = (index) => {
-    setAddressForm({ ...addresses[index] });
+    const a = addresses[index] || {};
+    // Normalise any legacy row (single fullName / zipCode) into the canonical
+    // form shape so an edit always writes firstName/lastName/postalCode back.
+    const [firstFromFull, ...restFromFull] = (a.fullName || "").trim().split(/\s+/);
+    setAddressForm({
+      id: a.id || null,
+      label: a.label || "Home",
+      firstName: a.firstName || firstFromFull || "",
+      lastName: a.lastName || restFromFull.join(" ") || "",
+      phone: a.phone || "",
+      addressLine1: a.addressLine1 || "",
+      addressLine2: a.addressLine2 || "",
+      city: a.city || "",
+      state: a.state || "",
+      postalCode: a.postalCode || a.zipCode || "",
+      country: a.country || "India",
+      isDefault: !!a.isDefault,
+    });
     setEditingAddressIndex(index);
     setShowAddressForm(true);
   };
 
   const handleAddressDelete = async (index) => {
+    const result = await Swal.fire({
+      title: "Delete this address?",
+      text: "This address will be removed from your account.",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#ef4444",
+      confirmButtonText: "Delete",
+      cancelButtonText: "Keep",
+    });
+    if (!result.isConfirmed) return;
+
     setLoading(true);
     try {
-      const updatedAddresses = addresses.filter((_, i) => i !== index);
-      if (addresses[index].isDefault && updatedAddresses.length > 0) {
-        updatedAddresses[0].isDefault = true;
+      const removedDefault = addresses[index]?.isDefault;
+      let updatedAddresses = addresses.filter((_, i) => i !== index);
+      // Deleting the default promotes the next remaining address (immutably —
+      // never mutate the shared objects still referenced by state).
+      if (removedDefault && updatedAddresses.length > 0) {
+        updatedAddresses = updatedAddresses.map((a, i) => ({ ...a, isDefault: i === 0 }));
       }
       await updateUser({ addresses: updatedAddresses });
       setAddresses(updatedAddresses);
+      // If we were editing the row we just deleted, drop the open form.
+      if (editingAddressIndex === index) resetAddressForm();
       showFeedback("success", "Address deleted successfully.");
     } catch (err) {
       showFeedback("error", "Failed to delete address. Please try again.");
@@ -352,6 +410,18 @@ const Profile = () => {
 
   // ---- Logout handler ----
   const handleLogout = async () => {
+    // Confirm first so logging out isn't a one-click accident.
+    const result = await Swal.fire({
+      title: "Log out?",
+      text: "You'll need to sign in again to access your account.",
+      icon: "question",
+      showCancelButton: true,
+      confirmButtonColor: "#ef4444",
+      confirmButtonText: "Log Out",
+      cancelButtonText: "Stay Signed In",
+    });
+    if (!result.isConfirmed) return;
+
     try {
       await logout();
       navigate("/");
@@ -502,17 +572,28 @@ const Profile = () => {
 
           <div className={styles.formGrid}>
             <div className={styles.formGroup}>
-              <label className={styles.formLabel}>Full Name *</label>
+              <label className={styles.formLabel}>First Name *</label>
               <input
                 type="text"
-                name="fullName"
-                value={addressForm.fullName}
+                name="firstName"
+                value={addressForm.firstName}
                 onChange={handleAddressChange}
                 className={styles.formInput}
-                placeholder="Enter full name"
+                placeholder="Enter first name"
               />
             </div>
             <div className={styles.formGroup}>
+              <label className={styles.formLabel}>Last Name *</label>
+              <input
+                type="text"
+                name="lastName"
+                value={addressForm.lastName}
+                onChange={handleAddressChange}
+                className={styles.formInput}
+                placeholder="Enter last name"
+              />
+            </div>
+            <div className={`${styles.formGroup} ${styles.fullWidth}`}>
               <label className={styles.formLabel}>Phone Number *</label>
               <input
                 type="tel"
@@ -520,7 +601,7 @@ const Profile = () => {
                 value={addressForm.phone}
                 onChange={handleAddressChange}
                 className={styles.formInput}
-                placeholder="Enter phone number"
+                placeholder="10-digit mobile number"
               />
             </div>
             <div className={`${styles.formGroup} ${styles.fullWidth}`}>
@@ -568,14 +649,14 @@ const Profile = () => {
               />
             </div>
             <div className={styles.formGroup}>
-              <label className={styles.formLabel}>ZIP Code *</label>
+              <label className={styles.formLabel}>Postal Code *</label>
               <input
                 type="text"
-                name="zipCode"
-                value={addressForm.zipCode}
+                name="postalCode"
+                value={addressForm.postalCode}
                 onChange={handleAddressChange}
                 className={styles.formInput}
-                placeholder="Enter ZIP code"
+                placeholder="Enter postal code"
               />
             </div>
             <div className={styles.formGroup}>
@@ -584,9 +665,10 @@ const Profile = () => {
                 type="text"
                 name="country"
                 value={addressForm.country}
-                onChange={handleAddressChange}
-                className={styles.formInput}
+                className={`${styles.formInput} ${styles.readOnly}`}
+                readOnly
               />
+              <span className={styles.fieldHint}>Currently shipping within India only</span>
             </div>
           </div>
 
@@ -679,13 +761,17 @@ const Profile = () => {
                 </div>
               </div>
               <div className={styles.addressCardBody}>
-                <p className={styles.addressName}>{addr.fullName}</p>
+                <p className={styles.addressName}>
+                  {[addr.firstName, addr.lastName].filter(Boolean).join(" ") ||
+                    addr.fullName ||
+                    ""}
+                </p>
                 <p className={styles.addressText}>
                   {addr.addressLine1}
                   {addr.addressLine2 ? `, ${addr.addressLine2}` : ""}
                 </p>
                 <p className={styles.addressText}>
-                  {addr.city}, {addr.state} {addr.zipCode}
+                  {addr.city}, {addr.state} {addr.postalCode || addr.zipCode || ""}
                 </p>
                 <p className={styles.addressText}>{addr.country}</p>
                 <p className={styles.addressPhone}>Phone: {addr.phone}</p>
@@ -905,20 +991,23 @@ const Profile = () => {
           </p>
         </motion.div>
 
-        {/* Feedback toast */}
+        {/* Feedback toast (fixed-position; see .feedback in the stylesheet) */}
         {feedback.message && (
           <motion.div
             className={`${styles.feedback} ${styles[`feedback_${feedback.type}`]}`}
-            initial={{ opacity: 0, y: -10 }}
+            role="status"
+            aria-live="polite"
+            initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
+            exit={{ opacity: 0, y: 20 }}
           >
             <span>{feedback.message}</span>
             <button
               className={styles.feedbackClose}
               onClick={() => setFeedback({ type: "", message: "" })}
+              aria-label="Dismiss"
             >
-              x
+              ×
             </button>
           </motion.div>
         )}

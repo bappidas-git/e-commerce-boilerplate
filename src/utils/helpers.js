@@ -166,6 +166,16 @@ export const isPasswordStrong = (password) => {
   return password.length >= 6;
 };
 
+// Validate an Indian mobile number. Accepts an optional +91 / 0 prefix and a
+// 10-digit number starting 6–9, ignoring spaces, dashes and parentheses (so
+// the stored "+91 9876543210" style still passes). Rejects the previously
+// permissive "any 7–15 spaced digits" that let junk like "12 34 56 7" through.
+export const isValidPhone = (phone) => {
+  if (!phone) return false;
+  const cleaned = String(phone).replace(/[\s\-()]/g, "");
+  return /^(\+91|0)?[6-9]\d{9}$/.test(cleaned);
+};
+
 export const getInitials = (firstName, lastName) => {
   const first = firstName ? firstName.charAt(0).toUpperCase() : "";
   const last = lastName ? lastName.charAt(0).toUpperCase() : "";
