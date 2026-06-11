@@ -54,19 +54,32 @@ const HelpCenter = () => {
           {filteredFaqs.length === 0 ? (
             <p className={styles.noResults}>No FAQs match your search. <Link to="/support">Contact us</Link> for help.</p>
           ) : (
-            filteredFaqs.map((faq) => (
-              <div key={faq.id} className={`${styles.faqItem} ${openFaq === faq.id ? styles.open : ""}`}>
-                <button className={styles.faqQuestion} onClick={() => setOpenFaq(openFaq === faq.id ? null : faq.id)}>
-                  <span>{faq.question}</span>
-                  <span className={styles.faqToggle}>{openFaq === faq.id ? "−" : "+"}</span>
-                </button>
-                {openFaq === faq.id && (
-                  <motion.div className={styles.faqAnswer} initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} transition={{ duration: 0.2 }}>
-                    <p>{faq.answer}</p>
-                  </motion.div>
-                )}
-              </div>
-            ))
+            filteredFaqs.map((faq) => {
+              const isOpen = openFaq === faq.id;
+              return (
+                <div key={faq.id} className={`${styles.faqItem} ${isOpen ? styles.open : ""}`}>
+                  <button
+                    className={styles.faqQuestion}
+                    onClick={() => setOpenFaq(isOpen ? null : faq.id)}
+                    aria-expanded={isOpen}
+                    aria-controls={`help-faq-answer-${faq.id}`}
+                    id={`help-faq-question-${faq.id}`}
+                  >
+                    <span>{faq.question}</span>
+                    <span className={styles.faqToggle} aria-hidden="true" />
+                  </button>
+                  <div
+                    className={styles.faqAnswer}
+                    id={`help-faq-answer-${faq.id}`}
+                    role="region"
+                    aria-labelledby={`help-faq-question-${faq.id}`}
+                    aria-hidden={!isOpen}
+                  >
+                    <div className={styles.faqAnswerInner}><p>{faq.answer}</p></div>
+                  </div>
+                </div>
+              );
+            })
           )}
         </div>
       </motion.section>
@@ -74,6 +87,11 @@ const HelpCenter = () => {
       <div className={styles.contactBanner}>
         <h3>Still need help?</h3>
         <p>Our support team is available Mon-Sat, 9am-8pm IST</p>
+        <div className={styles.contactMeta}>
+          <a href={`mailto:${SUPPORT_EMAIL}`}>{SUPPORT_EMAIL}</a>
+          <span aria-hidden="true">•</span>
+          <a href={`tel:${SUPPORT_PHONE.replace(/\s/g, "")}`}>{SUPPORT_PHONE}</a>
+        </div>
         <div className={styles.contactActions}>
           <Link to="/support" className={styles.primaryBtn}>Contact Support</Link>
           <a href={`mailto:${SUPPORT_EMAIL}`} className={styles.secondaryBtn}>Email Us</a>

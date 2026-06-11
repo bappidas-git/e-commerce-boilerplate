@@ -1,14 +1,16 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { useTheme } from "../../context/ThemeContext";
+import { useAuth } from "../../context/AuthContext";
 import apiService from "../../services/api";
-import { APP_NAME, SUPPORT_EMAIL, SUPPORT_PHONE } from "../../utils/constants";
-import { isEmailValid } from "../../utils/helpers";
+import { SUPPORT_EMAIL, SUPPORT_PHONE } from "../../utils/constants";
+import { isEmailValid, isValidPhone } from "../../utils/helpers";
 import styles from "./Support.module.css";
 
 const Support = () => {
   const { isDarkMode } = useTheme();
+  const { user } = useAuth();
   const [formData, setFormData] = useState({
     name: "", email: "", phone: "", orderNumber: "",
     category: "general", subject: "", message: "",
@@ -16,6 +18,14 @@ const Support = () => {
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
+
+  // Pre-fill the email for logged-in users once the auth context resolves,
+  // without clobbering anything they may have already typed.
+  useEffect(() => {
+    if (user?.email) {
+      setFormData((prev) => (prev.email ? prev : { ...prev, email: user.email }));
+    }
+  }, [user]);
 
   const categories = [
     { value: "general", label: "General Inquiry" },
@@ -39,6 +49,8 @@ const Support = () => {
     if (!formData.name.trim()) newErrors.name = "Name is required";
     if (!formData.email.trim()) newErrors.email = "Email is required";
     else if (!isEmailValid(formData.email)) newErrors.email = "Invalid email";
+    if (formData.phone.trim() && !isValidPhone(formData.phone))
+      newErrors.phone = "Enter a valid 10-digit mobile number";
     if (!formData.subject.trim()) newErrors.subject = "Subject is required";
     if (!formData.message.trim()) newErrors.message = "Message is required";
     else if (formData.message.trim().length < 20) newErrors.message = "At least 20 characters";
@@ -103,7 +115,11 @@ const Support = () => {
             </div>
           </div>
           <div className={styles.formRow}>
-            <div className={styles.formGroup}><label>Phone</label><input type="tel" name="phone" value={formData.phone} onChange={handleChange} placeholder="+91 9876543210" /></div>
+            <div className={styles.formGroup}>
+              <label>Phone</label>
+              <input type="tel" name="phone" value={formData.phone} onChange={handleChange} placeholder="+91 9876543210" className={errors.phone ? styles.inputError : ""} />
+              {errors.phone && <span className={styles.error}>{errors.phone}</span>}
+            </div>
             <div className={styles.formGroup}><label>Order Number</label><input type="text" name="orderNumber" value={formData.orderNumber} onChange={handleChange} placeholder="ORD-XXXXXX" /></div>
           </div>
           <div className={styles.formGroup}>
