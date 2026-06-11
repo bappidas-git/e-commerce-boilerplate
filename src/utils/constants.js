@@ -105,18 +105,28 @@ export const DEFAULT_CURRENCY = CURRENCIES.INR;
 // shared by the Header banner and the CartDrawer progress bar.
 export const FREE_SHIPPING_THRESHOLD = 999;
 
-// Social links (update per project)
+// Social links (sensible defaults — update per project). The Footer renders an
+// icon only for entries with a non-empty URL, so blanking one here hides it
+// instead of leaving a dead link.
 export const SOCIAL_LINKS = {
-  FACEBOOK: "",
-  TWITTER: "",
-  INSTAGRAM: "",
-  YOUTUBE: "",
+  FACEBOOK: "https://facebook.com/mystore",
+  TWITTER: "https://twitter.com/mystore",
+  INSTAGRAM: "https://instagram.com/mystore",
+  YOUTUBE: "https://youtube.com/@mystore",
   WHATSAPP: "",
 };
 
-// Support
+// Store contact (sensible defaults — update per project). Single source so the
+// Header top bar, Footer, Help Center and Support page all stay in sync.
 export const SUPPORT_EMAIL = "support@mystore.com";
-export const SUPPORT_PHONE = "+91 9999999999";
+export const SUPPORT_PHONE = "+91 1800 102 5555";
+export const SUPPORT_ADDRESS =
+  "123 Commerce Street, Andheri East, Mumbai, Maharashtra 400069";
+export const SUPPORT_HOURS = "Mon – Sat: 9:00 AM – 8:00 PM IST";
+
+// Date the legal/policy pages were last reviewed. Single source so the Privacy,
+// Terms, Cookie and Refund pages never show contradictory "last updated" dates.
+export const POLICY_LAST_UPDATED = "June 1, 2026";
 
 // FAQs
 export const FAQ_ITEMS = [

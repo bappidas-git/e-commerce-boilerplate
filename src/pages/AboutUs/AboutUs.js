@@ -1,8 +1,9 @@
 import React from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
+import { Icon } from "@iconify/react";
 import { useTheme } from "../../context/ThemeContext";
-import { APP_NAME, WHY_CHOOSE_US, SUPPORT_EMAIL } from "../../utils/constants";
+import { APP_NAME, APP_TAGLINE, WHY_CHOOSE_US } from "../../utils/constants";
 import styles from "./AboutUs.module.css";
 
 const AboutUs = () => {
@@ -20,6 +21,7 @@ const AboutUs = () => {
       <div className={styles.breadcrumb}><Link to="/">Home</Link> <span>/</span> <span>About Us</span></div>
 
       <motion.section className={styles.hero} initial={{ y: -20, opacity: 0 }} animate={{ y: 0, opacity: 1 }}>
+        <span className={styles.heroEyebrow}>{APP_TAGLINE}</span>
         <h1>About {APP_NAME}</h1>
         <p>We're building the future of online shopping — one great experience at a time.</p>
       </motion.section>
@@ -44,6 +46,9 @@ const AboutUs = () => {
         <div className={styles.valuesGrid}>
           {WHY_CHOOSE_US.map((item) => (
             <div key={item.id} className={styles.valueCard}>
+              <span className={styles.valueIcon} aria-hidden="true">
+                <Icon icon={item.icon} />
+              </span>
               <h3>{item.title}</h3>
               <p>{item.description}</p>
             </div>
