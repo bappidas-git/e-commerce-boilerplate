@@ -201,6 +201,7 @@ const Products = () => {
   const [allProducts, setAllProducts] = useState([]);
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [fetchError, setFetchError] = useState(false);
 
   // ---- UI state ----
   const [viewMode, setViewMode] = useState("grid"); // grid | list
@@ -235,27 +236,32 @@ const Products = () => {
     PER_PAGE_OPTIONS.includes(urlPerPage) ? urlPerPage : 12
   );
 
-  // ---- Fetch data on mount ----
-  useEffect(() => {
-    const fetchData = async () => {
-      setLoading(true);
-      try {
-        const [productsData, categoriesData] = await Promise.all([
-          apiService.products.getAll(),
-          apiService.categories.getAll(),
-        ]);
-        setAllProducts(Array.isArray(productsData) ? productsData : []);
-        setCategories(Array.isArray(categoriesData) ? categoriesData : []);
-      } catch (error) {
-        console.error("Error fetching data:", error);
-        setAllProducts([]);
-        setCategories([]);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchData();
+  // ---- Fetch data on mount (retryable from the error state) ----
+  const fetchCatalog = useCallback(async () => {
+    setLoading(true);
+    setFetchError(false);
+    try {
+      const [productsData, categoriesData] = await Promise.all([
+        apiService.products.getAll(),
+        apiService.categories.getAll(),
+      ]);
+      setAllProducts(Array.isArray(productsData) ? productsData : []);
+      setCategories(Array.isArray(categoriesData) ? categoriesData : []);
+    } catch (error) {
+      console.error("Error fetching data:", error);
+      setAllProducts([]);
+      setCategories([]);
+      // Distinguish "couldn't load" from "no matches" — the grid renders a
+      // retryable error panel instead of the misleading empty state.
+      setFetchError(true);
+    } finally {
+      setLoading(false);
+    }
   }, []);
+
+  useEffect(() => {
+    fetchCatalog();
+  }, [fetchCatalog]);
 
   // Category links arrive as either an id (Home cards / header) or a slug
   // (hero category bar). Once categories load, normalize the selection to slugs
@@ -976,6 +982,8 @@ const Products = () => {
               <span className={styles.resultsCount}>
                 {loading ? (
                   "Loading products…"
+                ) : fetchError ? (
+                  "Couldn't load products"
                 ) : filteredProducts.length === 0 ? (
                   "No products found"
                 ) : filteredProducts.length > perPage ? (
@@ -1037,6 +1045,25 @@ const Products = () => {
               {Array.from({ length: perPage }).map((_, i) => (
                 <SkeletonCard key={i} />
               ))}
+            </div>
+          ) : fetchError ? (
+            /* Fetch failed — never masquerade as "No products found" */
+            <div className={styles.emptyState}>
+              <div className={styles.errorIcon}>
+                <svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <circle cx="12" cy="12" r="10" />
+                  <line x1="12" y1="8" x2="12" y2="12" />
+                  <line x1="12" y1="16" x2="12.01" y2="16" />
+                </svg>
+              </div>
+              <h3 className={styles.emptyTitle}>Couldn't load products</h3>
+              <p className={styles.emptyText}>
+                Something went wrong while fetching the catalogue. Please check
+                your connection and try again.
+              </p>
+              <button className={styles.emptyBtn} onClick={fetchCatalog}>
+                Try Again
+              </button>
             </div>
           ) : paginatedProducts.length > 0 ? (
             <div className={`${styles.grid} ${viewMode === "list" ? styles.gridList : ""}`}>

@@ -32,24 +32,24 @@ const couponHeadline = (c) => (c.type === "percentage" ? `${c.value}%` : rupees(
 
 // ── Countdown Timer Hook ─────────────────────────────────────────────────────
 
+const getEndOfDay = () => {
+  const now = new Date();
+  const end = new Date(now);
+  end.setHours(23, 59, 59, 999);
+  return end;
+};
+
+const calcTimeLeft = () => {
+  const diff = getEndOfDay() - new Date();
+  if (diff <= 0) return { hours: 0, minutes: 0, seconds: 0 };
+  return {
+    hours: Math.floor(diff / (1000 * 60 * 60)),
+    minutes: Math.floor((diff / (1000 * 60)) % 60),
+    seconds: Math.floor((diff / 1000) % 60),
+  };
+};
+
 const useCountdown = () => {
-  const getEndOfDay = () => {
-    const now = new Date();
-    const end = new Date(now);
-    end.setHours(23, 59, 59, 999);
-    return end;
-  };
-
-  const calcTimeLeft = () => {
-    const diff = getEndOfDay() - new Date();
-    if (diff <= 0) return { hours: 0, minutes: 0, seconds: 0 };
-    return {
-      hours: Math.floor(diff / (1000 * 60 * 60)),
-      minutes: Math.floor((diff / (1000 * 60)) % 60),
-      seconds: Math.floor((diff / 1000) % 60),
-    };
-  };
-
   const [timeLeft, setTimeLeft] = useState(calcTimeLeft);
 
   useEffect(() => {

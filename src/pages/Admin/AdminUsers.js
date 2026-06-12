@@ -16,6 +16,8 @@ const AdminUsers = () => {
   const [selectedUser, setSelectedUser] = useState(null);
   const [detailOpen, setDetailOpen] = useState(false);
   const [userOrders, setUserOrders] = useState([]);
+  const [ordersLoading, setOrdersLoading] = useState(false);
+  const [ordersError, setOrdersError] = useState(false);
 
   useEffect(() => { loadUsers(); }, []);
 
@@ -34,11 +36,18 @@ const AdminUsers = () => {
   const openDetail = async (user) => {
     setSelectedUser(user);
     setDetailOpen(true);
+    // Clear the previous user's orders so the dialog never flashes stale data,
+    // and track failure separately — "couldn't load" must not read as "no orders".
+    setUserOrders([]);
+    setOrdersError(false);
+    setOrdersLoading(true);
     try {
       const orders = await apiService.admin.getOrders({ userId: user.id });
       setUserOrders(orders || []);
     } catch {
-      setUserOrders([]);
+      setOrdersError(true);
+    } finally {
+      setOrdersLoading(false);
     }
   };
 
@@ -179,8 +188,23 @@ const AdminUsers = () => {
                 ))}
               </Box>
               <Divider sx={{ my: 2 }} />
-              <Typography variant="subtitle2" fontWeight="bold" gutterBottom>Recent Orders ({userOrders.length})</Typography>
-              {userOrders.length === 0 ? (
+              <Typography variant="subtitle2" fontWeight="bold" gutterBottom>
+                Recent Orders{!ordersLoading && !ordersError ? ` (${userOrders.length})` : ""}
+              </Typography>
+              {ordersLoading ? (
+                <Box>
+                  <Skeleton height={36} />
+                  <Skeleton height={36} />
+                  <Skeleton height={36} />
+                </Box>
+              ) : ordersError ? (
+                <Box sx={{ display: "flex", alignItems: "center", gap: 1, py: 0.5 }}>
+                  <Typography variant="body2" color="error.main">
+                    Couldn't load this user's orders.
+                  </Typography>
+                  <Button size="small" onClick={() => openDetail(selectedUser)}>Retry</Button>
+                </Box>
+              ) : userOrders.length === 0 ? (
                 <Typography variant="body2" color="text.secondary">No orders yet</Typography>
               ) : (
                 userOrders.slice(0, 5).map((order) => (
@@ -196,10 +220,12 @@ const AdminUsers = () => {
                   </Box>
                 ))
               )}
-              <Box sx={{ mt: 2, display: "flex", justifyContent: "space-between" }}>
-                <Typography variant="body2" color="text.secondary">Total orders: <strong>{userOrders.length}</strong></Typography>
-                <Typography variant="body2" color="text.secondary">Total spent: <strong>{formatCurrency(userOrders.reduce((s, o) => s + (o.total || 0), 0))}</strong></Typography>
-              </Box>
+              {!ordersLoading && !ordersError && (
+                <Box sx={{ mt: 2, display: "flex", justifyContent: "space-between" }}>
+                  <Typography variant="body2" color="text.secondary">Total orders: <strong>{userOrders.length}</strong></Typography>
+                  <Typography variant="body2" color="text.secondary">Total spent: <strong>{formatCurrency(userOrders.reduce((s, o) => s + (o.total || 0), 0))}</strong></Typography>
+                </Box>
+              )}
             </DialogContent>
             <DialogActions sx={{ p: 2 }}>
               <Button onClick={() => setDetailOpen(false)}>Close</Button>

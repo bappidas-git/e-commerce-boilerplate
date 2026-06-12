@@ -213,8 +213,12 @@
 .progressBarFill {
   height: 100%;
   border-radius: 3px;
-  background: linear-gradient(90deg, #8b5cf6, #6366f1);
+  background: linear-gradient(90deg, #667eea, #764ba2);
   transition: width 0.4s ease;
+}
+
+.dark .progressBarFill {
+  background: linear-gradient(90deg, #a855f7, #ec4899);
 }
 
 /* ========================================
@@ -735,15 +739,24 @@
   font-weight: 600;
   cursor: pointer;
   color: #ffffff;
-  background: linear-gradient(135deg, #8b5cf6 0%, #6366f1 100%);
-  box-shadow: 0 4px 14px rgba(99, 102, 241, 0.3);
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  box-shadow: 0 4px 14px rgba(102, 126, 234, 0.3);
   transition: all 0.2s ease;
   text-align: center;
 }
 
+.dark .checkoutBtn {
+  background: linear-gradient(135deg, #a855f7 0%, #ec4899 100%);
+  box-shadow: 0 4px 14px rgba(168, 85, 247, 0.35);
+}
+
 .checkoutBtn:hover {
-  box-shadow: 0 6px 20px rgba(99, 102, 241, 0.45);
+  box-shadow: 0 6px 20px rgba(102, 126, 234, 0.45);
   transform: translateY(-1px);
+}
+
+.dark .checkoutBtn:hover {
+  box-shadow: 0 6px 20px rgba(168, 85, 247, 0.5);
 }
 
 .checkoutBtn:active {

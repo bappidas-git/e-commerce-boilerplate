@@ -1,4 +1,4 @@
-import React, { createContext, useState, useContext, useEffect } from "react";
+import React, { createContext, useState, useContext, useEffect, useCallback } from "react";
 import { useAuth } from "./AuthContext";
 import apiService from "../services/api";
 import Swal from "sweetalert2";
@@ -19,16 +19,7 @@ export const OrderProvider = ({ children }) => {
   const [currentOrder, setCurrentOrder] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
 
-  // Load user's orders when authenticated
-  useEffect(() => {
-    if (user) {
-      loadUserOrders();
-    } else {
-      setOrders([]);
-    }
-  }, [user]);
-
-  const loadUserOrders = async () => {
+  const loadUserOrders = useCallback(async () => {
     if (!user) return;
 
     try {
@@ -47,7 +38,16 @@ export const OrderProvider = ({ children }) => {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [user]);
+
+  // Load user's orders when authenticated
+  useEffect(() => {
+    if (user) {
+      loadUserOrders();
+    } else {
+      setOrders([]);
+    }
+  }, [user, loadUserOrders]);
 
   const createOrder = async (orderData) => {
     try {

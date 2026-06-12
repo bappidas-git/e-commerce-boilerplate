@@ -16,6 +16,7 @@ import { Icon } from "@iconify/react";
 import { useAdmin } from "../../context/AdminContext";
 import { useTheme } from "../../context/ThemeContext";
 import buildAdminTheme from "../../theme/adminTheme";
+import useAdminBodyClass from "../../hooks/useAdminBodyClass";
 
 const LOGO = "https://placehold.co/210x70/4f46e5/ffffff?text=LOGO";
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -24,6 +25,7 @@ const AdminLogin = () => {
   const navigate = useNavigate();
   const { login, isAuthenticated, isLoading: adminLoading } = useAdmin();
   const { isDarkMode } = useTheme();
+  useAdminBodyClass();
 
   const [formData, setFormData] = useState({
     email: "",

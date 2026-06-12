@@ -129,7 +129,7 @@ export const AuthProvider = ({ children }) => {
         toast: true,
         position: "bottom-end",
         showConfirmButton: false,
-        timer: 3500,
+        timer: 3000,
       });
 
       return { success: false, error: errorMessage };
