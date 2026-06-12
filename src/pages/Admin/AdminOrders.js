@@ -10,11 +10,15 @@ import { useNavigate } from "react-router-dom";
 import Swal from "sweetalert2";
 import apiService from "../../services/api";
 
+// Status enums shared, label-for-label, with AdminDashboard and reconciled with
+// the storefront: a customer cancellation stamps fulfillmentStatus "cancelled"
+// and a refund stamps paymentStatus "refunded"/"failed" — all must render here.
 const FULFILLMENT_STATUS = {
   unfulfilled: { label: "Unfulfilled", color: "warning" },
   partially_fulfilled: { label: "Partial", color: "info" },
   fulfilled: { label: "Fulfilled", color: "success" },
   returned: { label: "Returned", color: "secondary" },
+  cancelled: { label: "Cancelled", color: "error" },
 };
 
 const PAYMENT_STATUS = {
@@ -22,6 +26,7 @@ const PAYMENT_STATUS = {
   paid: { label: "Paid", color: "success" },
   partially_paid: { label: "Partial", color: "info" },
   refunded: { label: "Refunded", color: "secondary" },
+  failed: { label: "Failed", color: "error" },
   voided: { label: "Voided", color: "default" },
 };
 
@@ -81,11 +86,16 @@ const AdminOrders = () => {
   const fc = (n) => `₹${Number(n || 0).toLocaleString("en-IN")}`;
   const formatDate = (d) => d ? new Date(d).toLocaleString("en-IN", { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" }) : "—";
 
+  const isFiltering = search.trim() !== "" || fulfillmentFilter !== "all" || paymentFilter !== "all";
+
   const filtered = orders.filter((o) => {
-    const q = search.toLowerCase();
-    const matchSearch = o.orderNumber?.toLowerCase().includes(q) ||
-      o.billingAddress?.firstName?.toLowerCase().includes(q) ||
-      o.billingAddress?.email?.toLowerCase().includes(q);
+    const q = search.trim().toLowerCase();
+    const name = (o.customerName || `${o.billingAddress?.firstName || ""} ${o.billingAddress?.lastName || ""}`).toLowerCase();
+    const matchSearch = !q ||
+      o.orderNumber?.toLowerCase().includes(q) ||
+      name.includes(q) ||
+      (o.customerEmail || "").toLowerCase().includes(q) ||
+      (o.trackingNumber || "").toLowerCase().includes(q);
     const matchFulfillment = fulfillmentFilter === "all" || o.fulfillmentStatus === fulfillmentFilter;
     const matchPayment = paymentFilter === "all" || o.paymentStatus === paymentFilter;
     return matchSearch && matchFulfillment && matchPayment;
@@ -98,13 +108,13 @@ const AdminOrders = () => {
           <Typography variant="h5" fontWeight="bold">Orders</Typography>
           <Typography variant="body2" color="text.secondary">Manage customer orders and fulfillment</Typography>
         </Box>
-        <Chip label={`${orders.length} total`} sx={{ bgcolor: "primary.main", color: "#fff" }} />
+        <Chip label={isFiltering ? `${filtered.length} of ${orders.length}` : `${orders.length} total`} sx={{ bgcolor: "primary.main", color: "#fff" }} />
       </Box>
 
       <Paper elevation={0} sx={{ borderRadius: 3, border: "1px solid", borderColor: "divider", overflow: "hidden" }}>
         <Box sx={{ p: 2, borderBottom: "1px solid", borderColor: "divider", display: "flex", gap: 2, flexWrap: "wrap" }}>
           <TextField
-            placeholder="Search by order #, customer name..."
+            placeholder="Search by order #, customer, email..."
             value={search} onChange={(e) => setSearch(e.target.value)}
             size="small" sx={{ flex: 1, minWidth: 220, maxWidth: 360 }}
             InputProps={{ startAdornment: <InputAdornment position="start"><Icon icon="mdi:magnify" /></InputAdornment> }}
@@ -125,7 +135,7 @@ const AdminOrders = () => {
           </FormControl>
         </Box>
         <TableContainer>
-          <Table>
+          <Table sx={{ minWidth: 900 }}>
             <TableHead>
               <TableRow>
                 <TableCell>Order</TableCell>
@@ -199,6 +209,11 @@ const AdminOrders = () => {
                       <Typography variant="body2" color="text.secondary">{selectedOrder.shippingAddress.phone}</Typography>
                     </Box>
                   )}
+                  {selectedOrder.customerEmail && (
+                    <Typography variant="caption" color="text.secondary" sx={{ display: "block", mt: 1 }}>
+                      Account: {selectedOrder.customerEmail}
+                    </Typography>
+                  )}
                 </Grid>
                 <Grid item xs={12} sm={6}>
                   <Typography variant="subtitle2" fontWeight="bold" gutterBottom>Order Summary</Typography>
@@ -255,7 +270,7 @@ const AdminOrders = () => {
             </DialogContent>
             <DialogActions sx={{ p: 2, gap: 1, flexWrap: "wrap" }}>
               <Button onClick={() => setDialogOpen(false)}>Close</Button>
-              <Button variant="outlined" startIcon={<Icon icon="mdi:package-variant-return" />} onClick={() => { setDialogOpen(false); navigate("/admin/returns"); }}>
+              <Button variant="outlined" startIcon={<Icon icon="mdi:package-variant-return" />} onClick={() => { setDialogOpen(false); navigate("/admin/returns", { state: { orderNumber: selectedOrder.orderNumber } }); }}>
                 View Returns
               </Button>
               {selectedOrder.fulfillmentStatus === "unfulfilled" && (

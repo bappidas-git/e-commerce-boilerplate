@@ -6,6 +6,7 @@ import {
   DialogTitle, DialogContent, DialogActions, Button, Divider,
 } from "@mui/material";
 import { Icon } from "@iconify/react";
+import { useLocation } from "react-router-dom";
 import Swal from "sweetalert2";
 import apiService from "../../services/api";
 
@@ -18,9 +19,11 @@ const STATUS_CONFIG = {
 };
 
 const AdminReturns = () => {
+  const location = useLocation();
   const [returns, setReturns] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [search, setSearch] = useState("");
+  // Pre-filter when arriving from an order's "View Returns" action.
+  const [search, setSearch] = useState(location.state?.orderNumber || "");
   const [statusFilter, setStatusFilter] = useState("all");
   const [selectedReturn, setSelectedReturn] = useState(null);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -71,12 +74,12 @@ const AdminReturns = () => {
 
   return (
     <Box>
-      <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 3 }}>
+      <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 3, gap: 2, flexWrap: "wrap" }}>
         <Box>
           <Typography variant="h5" fontWeight="bold">Returns & Refunds</Typography>
           <Typography variant="body2" color="text.secondary">Manage customer return requests and refunds</Typography>
         </Box>
-        <Box sx={{ display: "flex", gap: 1 }}>
+        <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap" }}>
           {Object.entries(STATUS_CONFIG).map(([key, val]) => (
             <Chip key={key} label={`${val.label}: ${returns.filter((r) => r.status === key).length}`} size="small" color={val.color} variant="outlined" />
           ))}
@@ -84,7 +87,7 @@ const AdminReturns = () => {
       </Box>
 
       <Paper elevation={0} sx={{ borderRadius: 3, border: "1px solid", borderColor: "divider", overflow: "hidden" }}>
-        <Box sx={{ p: 2, borderBottom: "1px solid", borderColor: "divider", display: "flex", gap: 2 }}>
+        <Box sx={{ p: 2, borderBottom: "1px solid", borderColor: "divider", display: "flex", gap: 2, flexWrap: "wrap" }}>
           <TextField
             placeholder="Search by return or order number..."
             value={search}
@@ -102,7 +105,7 @@ const AdminReturns = () => {
           </FormControl>
         </Box>
         <TableContainer>
-          <Table>
+          <Table sx={{ minWidth: 900 }}>
             <TableHead>
               <TableRow>
                 <TableCell>Return #</TableCell>

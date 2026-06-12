@@ -15,12 +15,14 @@ const FULFILLMENT_STATUS = {
   partially_fulfilled: { label: "Partial", color: "info" },
   fulfilled: { label: "Fulfilled", color: "success" },
   returned: { label: "Returned", color: "secondary" },
+  cancelled: { label: "Cancelled", color: "error" },
 };
 const PAYMENT_STATUS = {
   pending: { label: "Pending", color: "warning" },
   paid: { label: "Paid", color: "success" },
   partially_paid: { label: "Partial", color: "info" },
   refunded: { label: "Refunded", color: "secondary" },
+  failed: { label: "Failed", color: "error" },
   voided: { label: "Voided", color: "default" },
 };
 
