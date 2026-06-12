@@ -21,3 +21,14 @@ code {
 html {
   scroll-behavior: smooth;
 }
+
+/*
+ * SweetAlert2 defaults to z-index 1060, which sits *below* MUI's modal layer
+ * (Dialog = 1300). Without this, a confirm/validation popup fired while a
+ * dialog is open — e.g. the Admin → Payments refund confirmation or a Coupons
+ * form validation toast — renders hidden behind the dialog and can't be seen or
+ * clicked. Lift it above MUI's modal/snackbar/tooltip stack (≤1500).
+ */
+.swal2-container {
+  z-index: 2000 !important;
+}

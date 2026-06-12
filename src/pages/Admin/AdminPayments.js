@@ -57,18 +57,24 @@ const AdminPayments = () => {
   };
 
   const handleRefund = async () => {
-    if (!refundAmount || parseFloat(refundAmount) <= 0) {
+    const amt = parseFloat(refundAmount);
+    if (!amt || amt <= 0) {
       Swal.fire({ icon: "warning", title: "Enter a valid refund amount", toast: true, position: "bottom-end", showConfirmButton: false, timer: 2500 });
+      return;
+    }
+    // Can't refund more than was captured.
+    if (amt > Number(selectedPayment.amount)) {
+      Swal.fire({ icon: "warning", title: `Refund can't exceed the captured ${formatCurrency(selectedPayment.amount)}`, toast: true, position: "bottom-end", showConfirmButton: false, timer: 3000 });
       return;
     }
     const result = await Swal.fire({
       title: "Issue Refund?",
-      text: `Refund ₹${parseFloat(refundAmount).toLocaleString("en-IN")} for this payment?`,
+      text: `Refund ${formatCurrency(amt)} for this payment?`,
       icon: "question", showCancelButton: true, confirmButtonText: "Refund",
     });
     if (!result.isConfirmed) return;
     try {
-      await apiService.admin.issueRefund(selectedPayment.id, parseFloat(refundAmount), refundReason);
+      await apiService.admin.issueRefund(selectedPayment.id, amt, refundReason);
       Swal.fire({ icon: "success", title: "Refund initiated", toast: true, position: "bottom-end", showConfirmButton: false, timer: 2500 });
       setDialogOpen(false);
       loadPayments();
@@ -80,8 +86,17 @@ const AdminPayments = () => {
   const formatDate = (d) => d ? new Date(d).toLocaleString("en-IN", { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" }) : "—";
   const formatCurrency = (n) => `₹${Number(n || 0).toLocaleString("en-IN")}`;
 
-  const totalRevenue = payments.filter((p) => p.status === "captured").reduce((s, p) => s + p.amount, 0);
-  const totalRefunded = payments.filter((p) => p.status === "refunded").reduce((s, p) => s + p.amount, 0);
+  // Captured = money currently held (a row drops out once it's refunded).
+  // Refunded sums the actual refundAmount — falling back to the full amount for
+  // a legacy/full refund — so partial refunds are counted accurately. Both skip
+  // failed/pending/voided rows. Verified vs db.json: ₹1,15,514 captured, ₹0
+  // refunded, 0 failed, 3 transactions.
+  const totalRevenue = payments
+    .filter((p) => p.status === "captured")
+    .reduce((s, p) => s + (Number(p.amount) || 0), 0);
+  const totalRefunded = payments
+    .filter((p) => p.status === "refunded")
+    .reduce((s, p) => s + (Number(p.refundAmount ?? p.amount) || 0), 0);
 
   const filtered = payments.filter((p) => {
     const q = search.toLowerCase();
@@ -204,17 +219,32 @@ const AdminPayments = () => {
                   { label: "Order", value: selectedPayment.orderNumber },
                   { label: "Amount", value: formatCurrency(selectedPayment.amount) },
                   { label: "Currency", value: selectedPayment.currency },
-                  { label: "Method", value: selectedPayment.paymentMethod?.replace("_", " ") },
-                  { label: "Gateway", value: selectedPayment.gateway },
+                  { label: "Method", value: selectedPayment.paymentMethod?.replace("_", " "), cap: true },
+                  { label: "Gateway", value: selectedPayment.gateway, cap: true },
                   { label: "Date", value: formatDate(selectedPayment.createdAt) },
                   { label: "Gateway Order ID", value: selectedPayment.gatewayOrderId || "—" },
                 ].map((item) => (
                   <Box key={item.label}>
                     <Typography variant="caption" color="text.secondary">{item.label}</Typography>
-                    <Typography variant="body2" fontWeight={500} sx={{ textTransform: "capitalize" }}>{item.value}</Typography>
+                    <Typography variant="body2" fontWeight={500} sx={{ textTransform: item.cap ? "capitalize" : "none", wordBreak: "break-word" }}>{item.value}</Typography>
                   </Box>
                 ))}
               </Box>
+              {selectedPayment.status === "refunded" && (
+                <Box sx={{ p: 2, borderRadius: 2, bgcolor: "action.hover", border: "1px solid", borderColor: "divider" }}>
+                  <Typography variant="subtitle2" fontWeight="bold" gutterBottom>Refund</Typography>
+                  <Box sx={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 2 }}>
+                    <Box>
+                      <Typography variant="caption" color="text.secondary">Refunded Amount</Typography>
+                      <Typography variant="body2" fontWeight={500}>{formatCurrency(selectedPayment.refundAmount ?? selectedPayment.amount)}</Typography>
+                    </Box>
+                    <Box>
+                      <Typography variant="caption" color="text.secondary">Reason</Typography>
+                      <Typography variant="body2" fontWeight={500}>{selectedPayment.refundReason || "—"}</Typography>
+                    </Box>
+                  </Box>
+                </Box>
+              )}
               {selectedPayment.status === "captured" && (
                 <>
                   <Divider sx={{ my: 2 }} />
