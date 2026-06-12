@@ -27,6 +27,48 @@ const API_URL = process.env.API_URL || "http://localhost:3001";
 const CREDS = { email: "admin@store.com", password: "admin123" };
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
+// The notifications popover needs >5 items to surface the Show All → modal
+// path. The badge counts unfulfilled orders + status:"new" leads, so seed five
+// fixture leads (ids 9001+) and assert against counts computed from the API —
+// the script owns its fixtures instead of assuming a pre-seeded db copy.
+const FIXTURE_LEAD_IDS = [9001, 9002, 9003, 9004, 9005];
+async function seedNotificationFixtures() {
+  for (const id of FIXTURE_LEAD_IDS) {
+    await fetch(`${API_URL}/leads/${id}`, { method: "DELETE" }).catch(() => {});
+    await fetch(`${API_URL}/leads`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        id,
+        type: id % 2 ? "contact" : "newsletter",
+        name: id % 2 ? `QA Lead ${id}` : null,
+        email: `qa.lead.${id}@example.com`,
+        phone: null, orderNumber: null,
+        category: id % 2 ? "general" : null,
+        subject: id % 2 ? `QA notification fixture ${id}` : null,
+        message: id % 2 ? "Fixture lead for the admin notification tests." : null,
+        status: "new",
+        createdAt: new Date(Date.now() - id).toISOString(),
+        updatedAt: new Date(Date.now() - id).toISOString(),
+        notes: "",
+      }),
+    });
+  }
+}
+async function cleanupNotificationFixtures() {
+  for (const id of FIXTURE_LEAD_IDS) {
+    await fetch(`${API_URL}/leads/${id}`, { method: "DELETE" }).catch(() => {});
+  }
+}
+async function expectedNotificationCount() {
+  const orders = await (await fetch(`${API_URL}/orders`)).json();
+  const leads = await (await fetch(`${API_URL}/leads`)).json();
+  return (
+    orders.filter((o) => o.fulfillmentStatus === "unfulfilled" || o.status === "pending" || o.status === "processing").length +
+    leads.filter((l) => l.status === "new").length
+  );
+}
 const results = [];
 const record = (name, ok, detail = "") => {
   results.push({ name, ok, detail });
@@ -58,6 +100,7 @@ async function login(page) {
 }
 
 async function main() {
+  await seedNotificationFixtures();
   const browser = await chromium.launch();
 
   // ── LOGIN: render, show/hide, validation, wrong creds ─────────────────────
@@ -187,15 +230,20 @@ async function main() {
     record("sidebar: active item highlighted (aria-current)", activeOk);
 
     // Notifications: badge count, popover content, view-all, modal, clear-all.
+    // Expected = unfulfilled orders + new leads, computed live (incl. fixtures).
+    const expectedNotifs = await expectedNotificationCount();
+    // Badge counts are stale until the 30s poll — reload picks fixtures up now.
+    await page.reload({ waitUntil: "networkidle" });
+    await sleep(800);
     const badge = await page.locator(".MuiBadge-badge").first().innerText().catch(() => "");
-    record("notifications: badge count = 9", badge.trim() === "9", `badge=${badge}`);
+    record(`notifications: badge count = ${expectedNotifs}`, badge.trim() === String(expectedNotifs), `badge=${badge}`);
 
     await page.locator('header button:has(.MuiBadge-root)').click();
     await sleep(500);
     let pop = await page.evaluate(() => document.body.innerText);
     const hasTimeAgo = /(Just now|\d+m ago|\d+h ago|\d+d ago)/.test(pop);
     record("notifications: popover lists items + time-ago", /Notifications/.test(pop) && hasTimeAgo);
-    record("notifications: Show All button (>5)", /Show All Notifications \(9\)/.test(pop));
+    record("notifications: Show All button (>5)", new RegExp(`Show All Notifications \\(${expectedNotifs}\\)`).test(pop));
     record("notifications: View All Orders + Leads", /View All Orders/.test(pop) && /View All Leads/.test(pop));
 
     // Open full modal via Show All.
@@ -204,7 +252,7 @@ async function main() {
     const modal = await page.locator(".MuiDialog-root").last();
     const modalText = await modal.innerText().catch(() => "");
     const modalItems = await modal.locator('[class*="MuiAvatar-root"]').count().catch(() => 0);
-    record("notifications: full modal shows all", /All Notifications/.test(modalText) && modalItems >= 9, `items=${modalItems}`);
+    record("notifications: full modal shows all", /All Notifications/.test(modalText) && modalItems >= expectedNotifs, `items=${modalItems}`);
     await page.keyboard.press("Escape");
     await sleep(400);
 
@@ -332,6 +380,7 @@ async function main() {
   }
 
   await browser.close();
+  await cleanupNotificationFixtures();
 
   const failed = results.filter((r) => !r.ok);
   console.log(`\n${results.length - failed.length}/${results.length} checks passed.`);
@@ -343,7 +392,8 @@ async function main() {
   console.log("All checks passed.");
 }
 
-main().catch((err) => {
+main().catch(async (err) => {
   console.error("Verify failed:", err);
+  await cleanupNotificationFixtures().catch(() => {});
   process.exit(1);
 });

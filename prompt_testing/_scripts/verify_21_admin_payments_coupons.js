@@ -95,8 +95,16 @@ async function clickSwalConfirm(page) {
 async function sectionPayments(browser) {
   console.log("\nA. Payments — summary cards match db.json sums");
   const payments = await getJson(`${API_URL}/payments`);
-  const captured = payments.filter((p) => p.status === "captured").reduce((s, p) => s + (Number(p.amount) || 0), 0);
-  const refunded = payments.filter((p) => p.status === "refunded").reduce((s, p) => s + (Number(p.refundAmount ?? p.amount) || 0), 0);
+  // Mirrors AdminPayments: Captured is NET of refunds issued so far (partially
+  // refunded rows contribute their remainder); Refunded sums refundAmount over
+  // refunded + partially_refunded rows.
+  const remainingOf = (p) => Math.max(0, (Number(p.amount) || 0) - (Number(p.refundAmount) || 0));
+  const captured = payments
+    .filter((p) => ["captured", "partially_refunded"].includes(p.status))
+    .reduce((s, p) => s + remainingOf(p), 0);
+  const refunded = payments
+    .filter((p) => ["refunded", "partially_refunded"].includes(p.status))
+    .reduce((s, p) => s + (Number(p.refundAmount ?? p.amount) || 0), 0);
   const failedCount = payments.filter((p) => p.status === "failed").length;
 
   const ctx = await adminContext(browser);
@@ -122,7 +130,10 @@ async function sectionPayments(browser) {
   check("row shows method (capitalised, underscore→space)", new RegExp(p1.paymentMethod.replace("_", " "), "i").test(firstRow));
   check("row shows gateway", new RegExp(p1.gateway, "i").test(firstRow));
   check("row shows amount", firstRow.includes(inr(p1.amount)));
-  check("row shows a Captured status chip", /Captured/.test(firstRow));
+  // Chip must mirror the row's REAL status (seed payment 1 is now refunded —
+  // its linked return was processed — so don't hardcode Captured).
+  const p1Label = p1.status.charAt(0).toUpperCase() + p1.status.slice(1);
+  check(`row shows a ${p1Label} status chip`, new RegExp(p1Label).test(firstRow));
   // method icon present (iconify <svg>)
   check("row renders a method icon (svg)", (await page.locator("tbody tr").first().locator("svg").count()) >= 1);
 
@@ -148,10 +159,10 @@ async function sectionPayments(browser) {
   check(`status filter Captured → ${payments.filter((p) => p.status === "captured").length} rows`,
     (await page.locator("tbody tr").count()) === payments.filter((p) => p.status === "captured").length);
   await page.locator(".MuiSelect-select").click();
-  await page.getByRole("option", { name: "All" }).click();
+  await page.getByRole("option", { name: "All", exact: true }).click();
   await sleep(400);
 
-  console.log("\nC. Payments — refund validation + partial refund persists & recomputes");
+  console.log("\nC. Payments — refund validation + PARTIAL refunds accumulate to refunded");
   const target = payments.find((p) => p.status === "captured");
   const openDetail = async () => {
     const row = page.locator("tbody tr", { hasText: target.transactionId });
@@ -166,33 +177,64 @@ async function sectionPayments(browser) {
   await sleep(700);
   let after = await getJson(`${API_URL}/payments/${target.id}`);
   check("over-amount refund is rejected (status unchanged)", after.status === "captured", `status=${after.status}`);
-  // Valid partial refund of 5000
+  // Valid PARTIAL refund of 5000 → partially_refunded, not refunded
   await page.getByLabel(/Refund Amount/).fill("5000");
   await page.getByLabel("Reason").fill("Verify21 partial");
   await page.getByRole("button", { name: "Issue Refund" }).click();
   await clickSwalConfirm(page);
   await sleep(900);
   after = await getJson(`${API_URL}/payments/${target.id}`);
-  check("valid refund persists status→refunded", after.status === "refunded", `status=${after.status}`);
-  check("refundAmount stored (5000, not full amount)", after.refundAmount === 5000, `refundAmount=${after.refundAmount}`);
+  check("partial refund persists status→partially_refunded", after.status === "partially_refunded", `status=${after.status}`);
+  check("running refundAmount = 5000 (not full amount)", after.refundAmount === 5000, `refundAmount=${after.refundAmount}`);
+  check("refunds[] history records the transaction", Array.isArray(after.refunds) && after.refunds.length === 1 && after.refunds[0].amount === 5000, JSON.stringify(after.refunds || []));
   check("refundReason stored", after.refundReason === "Verify21 partial", `reason=${after.refundReason}`);
+  // Linked order mirrors the partial state
+  if (after.orderId != null) {
+    const linked = await getJson(`${API_URL}/orders/${after.orderId}`);
+    check("linked order paymentStatus → partially_refunded", linked.paymentStatus === "partially_refunded", linked.paymentStatus);
+  }
 
-  // Summary recomputes: captured drops the row; refunded uses refundAmount (5000)
+  // Summary recomputes: captured drops only the refunded PORTION; refunded adds it
   await page.reload({ waitUntil: "networkidle" });
   await sleep(1200);
-  const newCaptured = captured - target.amount;
+  const newCaptured = captured - 5000;
   const summary2 = (await page.locator(".MuiGrid-container").first().innerText()).replace(/\n/g, " ");
-  check(`Captured recomputed to ${inr(newCaptured)}`, summary2.includes(inr(newCaptured)), summary2);
-  check("Refunded shows ₹5,000 (refundAmount, NOT full ₹" + new Intl.NumberFormat("en-IN").format(target.amount) + ")",
-    new RegExp(`Total Refunded\\s+${inr(5000)}`).test(summary2) && !summary2.includes(inr(target.amount)), summary2);
-  // Refunded payment detail now shows the Refund block, not the issue-refund form
-  const refundedRow = page.locator("tbody tr", { hasText: target.transactionId });
-  await refundedRow.getByRole("button").first().click();
+  check(`Captured recomputed to ${inr(newCaptured)} (net of the partial)`, summary2.includes(inr(newCaptured)), summary2);
+  const newRefunded = refunded + 5000;
+  check(`Refunded shows ${inr(newRefunded)} (prior refunds + ₹5,000 partial)`,
+    new RegExp(`Total Refunded\\s+${inr(newRefunded)}`).test(summary2), summary2);
+
+  // Partially-refunded detail: history + remaining, and Issue Refund STILL offered
+  const partialRow = page.locator("tbody tr", { hasText: target.transactionId });
+  check("row shows the refunded portion under the amount", /5,000 refunded/.test(await partialRow.innerText()));
+  await partialRow.getByRole("button").first().click();
   await page.getByRole("dialog").waitFor();
   await sleep(300);
-  const dlg = await page.getByRole("dialog").innerText();
-  check("refunded detail shows Refunded Amount ₹5,000", /Refunded Amount/.test(dlg) && dlg.includes(inr(5000)), dlg.replace(/\n/g, " | "));
-  check("refunded detail hides the Issue-Refund action", (await page.getByRole("button", { name: "Issue Refund" }).count()) === 0);
+  let dlg = await page.getByRole("dialog").innerText();
+  const remaining = target.amount - 5000;
+  check("detail shows Refunded So Far ₹5,000 + Remaining", /Refunded So Far/.test(dlg) && dlg.includes(inr(5000)) && dlg.includes(inr(remaining)), dlg.replace(/\n/g, " | "));
+  check("partially-refunded detail still offers Issue Refund", (await page.getByRole("button", { name: "Issue Refund" }).count()) >= 1);
+
+  // Refund the remainder → fully refunded, history has both transactions
+  check("refund amount defaults to the remaining balance", (await page.getByLabel(/Refund Amount/).inputValue()) === String(remaining));
+  await page.getByLabel("Reason").fill("Verify21 remainder");
+  await page.getByRole("button", { name: "Issue Refund" }).click();
+  await clickSwalConfirm(page);
+  await sleep(900);
+  after = await getJson(`${API_URL}/payments/${target.id}`);
+  check("second refund completes status→refunded", after.status === "refunded", `status=${after.status}`);
+  check("running refundAmount covers the full capture", after.refundAmount === target.amount, `refundAmount=${after.refundAmount}`);
+  check("refunds[] history has both transactions", Array.isArray(after.refunds) && after.refunds.length === 2, `entries=${(after.refunds || []).length}`);
+
+  // Fully-refunded detail hides the Issue-Refund action
+  await page.reload({ waitUntil: "networkidle" });
+  await sleep(1000);
+  await page.locator("tbody tr", { hasText: target.transactionId }).getByRole("button").first().click();
+  await page.getByRole("dialog").waitFor();
+  await sleep(300);
+  dlg = await page.getByRole("dialog").innerText();
+  check("fully-refunded detail lists the refund history", /Refund History/.test(dlg) && dlg.includes(inr(5000)) && dlg.includes(inr(remaining)));
+  check("fully-refunded detail hides the Issue-Refund action", (await page.getByRole("button", { name: "Issue Refund" }).count()) === 0);
 
   await ctx.close();
 }
@@ -345,6 +387,29 @@ async function sectionCheckoutConsistency(browser) {
 
 // ───────────────────────────────────────────────────────────────────────────
 (async () => {
+  // ---- reset the script's own fixtures so re-runs start clean ----
+  // VERIFY21 coupon (created in E, consumed in F), the seed payments the
+  // refund tests mutate (2/3/4 — whichever was captured first), and the
+  // linked orders' paymentStatus the refund reflection touches.
+  const couponRows = await getJson(`${API_URL}/coupons`);
+  for (const c of couponRows.filter((x) => x.code === "VERIFY21")) {
+    await fetch(`${API_URL}/coupons/${c.id}`, { method: "DELETE" });
+  }
+  for (const pid of [2, 3, 4]) {
+    await fetch(`${API_URL}/payments/${pid}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ status: "captured", refundAmount: 0, refundReason: "", refunds: [] }),
+    }).catch(() => {});
+  }
+  for (const oid of [2, 3, 6]) {
+    await fetch(`${API_URL}/orders/${oid}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ paymentStatus: "paid" }),
+    }).catch(() => {});
+  }
+
   const browser = await chromium.launch({ args: ["--ignore-certificate-errors"] });
   try {
     await sectionPayments(browser);
