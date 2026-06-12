@@ -109,7 +109,7 @@ const AdminReviews = () => {
           </FormControl>
         </Box>
         <TableContainer>
-          <Table>
+          <Table sx={{ minWidth: 1100 }}>
             <TableHead>
               <TableRow>
                 <TableCell>Reviewer</TableCell>
@@ -131,7 +131,7 @@ const AdminReviews = () => {
                 filtered.map((review) => {
                   const sc = STATUS_CONFIG[review.status] || { label: review.status, color: "default" };
                   return (
-                    <TableRow key={review.id} hover sx={{ bgcolor: review.status === "pending" ? "warning.lighter" : "inherit" }}>
+                    <TableRow key={review.id} hover sx={{ bgcolor: review.status === "pending" ? (t) => (t.palette.mode === "dark" ? "rgba(255, 167, 38, 0.16)" : "rgba(255, 152, 0, 0.12)") : "inherit" }}>
                       <TableCell>
                         <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
                           <Avatar sx={{ width: 32, height: 32, fontSize: "0.8rem", bgcolor: "primary.light" }}>{review.userName?.[0]}</Avatar>
@@ -157,11 +157,11 @@ const AdminReviews = () => {
                         <Tooltip title="View">
                           <IconButton size="small" onClick={() => { setSelectedReview(review); setDialogOpen(true); }}><Icon icon="mdi:eye-outline" /></IconButton>
                         </Tooltip>
-                        {review.status === "pending" && (
-                          <>
-                            <Tooltip title="Approve"><IconButton size="small" color="success" onClick={() => handleStatusUpdate(review, "approved")}><Icon icon="mdi:check-circle-outline" /></IconButton></Tooltip>
-                            <Tooltip title="Reject"><IconButton size="small" color="error" onClick={() => handleStatusUpdate(review, "rejected")}><Icon icon="mdi:close-circle-outline" /></IconButton></Tooltip>
-                          </>
+                        {review.status !== "approved" && (
+                          <Tooltip title="Approve"><IconButton size="small" color="success" onClick={() => handleStatusUpdate(review, "approved")}><Icon icon="mdi:check-circle-outline" /></IconButton></Tooltip>
+                        )}
+                        {review.status !== "rejected" && (
+                          <Tooltip title={review.status === "approved" ? "Un-approve" : "Reject"}><IconButton size="small" color="error" onClick={() => handleStatusUpdate(review, "rejected")}><Icon icon="mdi:close-circle-outline" /></IconButton></Tooltip>
                         )}
                         <Tooltip title="Delete"><IconButton size="small" color="error" onClick={() => handleDelete(review)}><Icon icon="mdi:delete-outline" /></IconButton></Tooltip>
                       </TableCell>
@@ -201,12 +201,13 @@ const AdminReviews = () => {
             </DialogContent>
             <DialogActions sx={{ p: 2, gap: 1 }}>
               <Button onClick={() => setDialogOpen(false)}>Close</Button>
-              {selectedReview.status === "pending" && (<>
-                <Button variant="outlined" color="error" onClick={() => handleStatusUpdate(selectedReview, "rejected")}>Reject</Button>
+              {selectedReview.status !== "rejected" && (
+                <Button variant="outlined" color="error" onClick={() => handleStatusUpdate(selectedReview, "rejected")}>
+                  {selectedReview.status === "approved" ? "Un-approve" : "Reject"}
+                </Button>
+              )}
+              {selectedReview.status !== "approved" && (
                 <Button variant="contained" color="success" onClick={() => handleStatusUpdate(selectedReview, "approved")}>Approve</Button>
-              </>)}
-              {selectedReview.status === "approved" && (
-                <Button variant="outlined" color="error" onClick={() => handleStatusUpdate(selectedReview, "rejected")}>Un-approve</Button>
               )}
               <Button color="error" onClick={() => { setDialogOpen(false); handleDelete(selectedReview); }} startIcon={<Icon icon="mdi:delete-outline" />}>Delete</Button>
             </DialogActions>
