@@ -12,10 +12,14 @@ import apiService from "../../services/api";
 const PAYMENT_STATUS_CONFIG = {
   captured: { label: "Captured", color: "success" },
   pending: { label: "Pending", color: "warning" },
+  partially_refunded: { label: "Partially Refunded", color: "info" },
   failed: { label: "Failed", color: "error" },
   refunded: { label: "Refunded", color: "secondary" },
   voided: { label: "Voided", color: "default" },
 };
+
+// Money still capturable on a payment after the refunds issued so far.
+const remainingOf = (p) => Math.max(0, (Number(p?.amount) || 0) - (Number(p?.refundAmount) || 0));
 
 const METHOD_ICONS = {
   card: "mdi:credit-card",
@@ -51,7 +55,7 @@ const AdminPayments = () => {
 
   const openDetail = (payment) => {
     setSelectedPayment(payment);
-    setRefundAmount(String(payment.amount));
+    setRefundAmount(String(remainingOf(payment)));
     setRefundReason("");
     setDialogOpen(true);
   };
@@ -62,9 +66,9 @@ const AdminPayments = () => {
       Swal.fire({ icon: "warning", title: "Enter a valid refund amount", toast: true, position: "bottom-end", showConfirmButton: false, timer: 2500 });
       return;
     }
-    // Can't refund more than was captured.
-    if (amt > Number(selectedPayment.amount)) {
-      Swal.fire({ icon: "warning", title: `Refund can't exceed the captured ${formatCurrency(selectedPayment.amount)}`, toast: true, position: "bottom-end", showConfirmButton: false, timer: 3000 });
+    // Can't refund more than is still capturable (partial refunds accumulate).
+    if (amt > remainingOf(selectedPayment)) {
+      Swal.fire({ icon: "warning", title: `Refund can't exceed the remaining ${formatCurrency(remainingOf(selectedPayment))}`, toast: true, position: "bottom-end", showConfirmButton: false, timer: 3000 });
       return;
     }
     const result = await Swal.fire({
@@ -86,16 +90,16 @@ const AdminPayments = () => {
   const formatDate = (d) => d ? new Date(d).toLocaleString("en-IN", { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" }) : "—";
   const formatCurrency = (n) => `₹${Number(n || 0).toLocaleString("en-IN")}`;
 
-  // Captured = money currently held (a row drops out once it's refunded).
-  // Refunded sums the actual refundAmount — falling back to the full amount for
-  // a legacy/full refund — so partial refunds are counted accurately. Both skip
-  // failed/pending/voided rows. Verified vs db.json: ₹1,15,514 captured, ₹0
-  // refunded, 0 failed, 3 transactions.
+  // Captured = money currently held: the captured amount NET of any refunds
+  // issued so far (a partially-refunded row keeps contributing its remainder;
+  // a fully-refunded row contributes nothing). Refunded sums the running
+  // refundAmount everywhere — falling back to the full amount for a
+  // legacy/full refund without the field. Both skip failed/pending/voided rows.
   const totalRevenue = payments
-    .filter((p) => p.status === "captured")
-    .reduce((s, p) => s + (Number(p.amount) || 0), 0);
+    .filter((p) => ["captured", "partially_refunded"].includes(p.status))
+    .reduce((s, p) => s + remainingOf(p), 0);
   const totalRefunded = payments
-    .filter((p) => p.status === "refunded")
+    .filter((p) => ["refunded", "partially_refunded"].includes(p.status))
     .reduce((s, p) => s + (Number(p.refundAmount ?? p.amount) || 0), 0);
 
   const filtered = payments.filter((p) => {
@@ -189,7 +193,14 @@ const AdminPayments = () => {
                         </Box>
                       </TableCell>
                       <TableCell><Typography variant="body2" sx={{ textTransform: "capitalize" }}>{payment.gateway}</Typography></TableCell>
-                      <TableCell><Typography variant="body2" fontWeight={500}>{formatCurrency(payment.amount)}</Typography></TableCell>
+                      <TableCell>
+                        <Typography variant="body2" fontWeight={500}>{formatCurrency(payment.amount)}</Typography>
+                        {Number(payment.refundAmount) > 0 && (
+                          <Typography variant="caption" color="warning.main" sx={{ display: "block" }}>
+                            −{formatCurrency(payment.refundAmount)} refunded
+                          </Typography>
+                        )}
+                      </TableCell>
                       <TableCell><Chip label={sc.label} size="small" color={sc.color} /></TableCell>
                       <TableCell><Typography variant="caption">{formatDate(payment.createdAt)}</Typography></TableCell>
                       <TableCell align="right">
@@ -230,25 +241,44 @@ const AdminPayments = () => {
                   </Box>
                 ))}
               </Box>
-              {selectedPayment.status === "refunded" && (
+              {["refunded", "partially_refunded"].includes(selectedPayment.status) && (
                 <Box sx={{ p: 2, borderRadius: 1, bgcolor: "action.hover", border: "1px solid", borderColor: "divider" }}>
-                  <Typography variant="subtitle2" fontWeight="bold" gutterBottom>Refund</Typography>
-                  <Box sx={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 2 }}>
+                  <Typography variant="subtitle2" fontWeight="bold" gutterBottom>Refund History</Typography>
+                  <Box sx={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 2, mb: (selectedPayment.refunds || []).length ? 1.5 : 0 }}>
                     <Box>
-                      <Typography variant="caption" color="text.secondary">Refunded Amount</Typography>
+                      <Typography variant="caption" color="text.secondary">Refunded So Far</Typography>
                       <Typography variant="body2" fontWeight={500}>{formatCurrency(selectedPayment.refundAmount ?? selectedPayment.amount)}</Typography>
                     </Box>
                     <Box>
-                      <Typography variant="caption" color="text.secondary">Reason</Typography>
-                      <Typography variant="body2" fontWeight={500}>{selectedPayment.refundReason || "—"}</Typography>
+                      <Typography variant="caption" color="text.secondary">Remaining</Typography>
+                      <Typography variant="body2" fontWeight={500}>{formatCurrency(remainingOf(selectedPayment))}</Typography>
                     </Box>
                   </Box>
+                  {(selectedPayment.refunds || []).map((r) => (
+                    <Box key={r.id} sx={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", py: 0.75, borderTop: "1px solid", borderColor: "divider" }}>
+                      <Box>
+                        <Typography variant="body2" fontWeight={500}>{formatCurrency(r.amount)}</Typography>
+                        <Typography variant="caption" color="text.secondary">{r.reason || "No reason recorded"}</Typography>
+                      </Box>
+                      <Typography variant="caption" color="text.secondary">{r.by} · {formatDate(r.at)}</Typography>
+                    </Box>
+                  ))}
+                  {(selectedPayment.refunds || []).length === 0 && (
+                    <Typography variant="caption" color="text.secondary">
+                      {selectedPayment.refundReason || "Refunded (no per-transaction breakdown recorded)"}
+                    </Typography>
+                  )}
                 </Box>
               )}
-              {selectedPayment.status === "captured" && (
+              {["captured", "partially_refunded"].includes(selectedPayment.status) && remainingOf(selectedPayment) > 0 && (
                 <>
                   <Divider sx={{ my: 2 }} />
-                  <Typography variant="subtitle2" fontWeight="bold" gutterBottom>Issue Refund</Typography>
+                  <Typography variant="subtitle2" fontWeight="bold" gutterBottom>
+                    Issue Refund
+                    <Typography component="span" variant="caption" color="text.secondary" sx={{ ml: 1 }}>
+                      up to {formatCurrency(remainingOf(selectedPayment))}
+                    </Typography>
+                  </Typography>
                   <Box sx={{ display: "flex", gap: 2, mt: 1 }}>
                     <TextField label="Refund Amount (₹)" value={refundAmount} onChange={(e) => setRefundAmount(e.target.value)} type="number" size="small" sx={{ flex: 1 }} />
                     <TextField label="Reason" value={refundReason} onChange={(e) => setRefundReason(e.target.value)} size="small" sx={{ flex: 1 }} />
@@ -258,7 +288,7 @@ const AdminPayments = () => {
             </DialogContent>
             <DialogActions sx={{ p: 2, gap: 1 }}>
               <Button onClick={() => setDialogOpen(false)}>Close</Button>
-              {selectedPayment.status === "captured" && (
+              {["captured", "partially_refunded"].includes(selectedPayment.status) && remainingOf(selectedPayment) > 0 && (
                 <Button variant="contained" color="warning" onClick={handleRefund} startIcon={<Icon icon="mdi:cash-refund" />}>
                   Issue Refund
                 </Button>

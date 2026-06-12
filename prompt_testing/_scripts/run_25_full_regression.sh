@@ -39,6 +39,7 @@ SCRIPTS=(
   verify_21_admin_payments_coupons
   verify_22_admin_users_reviews_shipping_leads
   verify_25_data_sync
+  verify_26_admin_orders_returns_refunds
 )
 
 start_server() {

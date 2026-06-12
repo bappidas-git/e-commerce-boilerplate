@@ -1606,7 +1606,32 @@
       "shiprocketOrderId": null,
       "notes": "",
       "createdAt": "2026-01-15T10:30:00.000Z",
-      "updatedAt": "2026-06-12T07:14:06.552Z"
+      "updatedAt": "2026-06-12T07:14:06.552Z",
+      "statusHistory": [
+        {
+          "at": "2026-01-15T10:30:00.000Z",
+          "by": "Customer",
+          "action": "Order placed"
+        },
+        {
+          "at": "2026-01-15T10:31:00.000Z",
+          "by": "System",
+          "action": "Payment captured",
+          "note": "UPI via Razorpay"
+        },
+        {
+          "at": "2026-01-16T09:00:00.000Z",
+          "by": "Admin User",
+          "action": "Fulfilled & shipped",
+          "note": "Tracking SHIP123456789IN"
+        },
+        {
+          "at": "2026-01-22T14:30:00.000Z",
+          "by": "Admin User",
+          "action": "Return refund processed (RET-20260120-0001)",
+          "note": "₹10,439 refunded"
+        }
+      ]
     },
     {
       "id": 2,
@@ -1670,7 +1695,26 @@
       "shiprocketOrderId": "SR-78923",
       "notes": "Please leave at reception",
       "createdAt": "2026-02-01T14:20:00.000Z",
-      "updatedAt": "2026-02-03T09:00:00.000Z"
+      "updatedAt": "2026-02-03T09:00:00.000Z",
+      "statusHistory": [
+        {
+          "at": "2026-02-01T14:20:00.000Z",
+          "by": "Customer",
+          "action": "Order placed"
+        },
+        {
+          "at": "2026-02-01T14:21:00.000Z",
+          "by": "System",
+          "action": "Payment captured",
+          "note": "Card via Razorpay"
+        },
+        {
+          "at": "2026-02-03T09:00:00.000Z",
+          "by": "Admin User",
+          "action": "Fulfilled & shipped",
+          "note": "Tracking SHIP987654321IN"
+        }
+      ]
     },
     {
       "id": 3,
@@ -1717,12 +1761,25 @@
       "paymentStatus": "paid",
       "paymentMethod": "card",
       "fulfillmentStatus": "unfulfilled",
-      "shippingStatus": "processing",
+      "shippingStatus": "pending",
       "trackingNumber": null,
       "shiprocketOrderId": null,
       "notes": "",
       "createdAt": "2026-03-10T08:45:00.000Z",
-      "updatedAt": "2026-03-10T08:45:00.000Z"
+      "updatedAt": "2026-03-10T08:45:00.000Z",
+      "statusHistory": [
+        {
+          "at": "2026-03-10T08:45:00.000Z",
+          "by": "Customer",
+          "action": "Order placed"
+        },
+        {
+          "at": "2026-03-10T08:46:00.000Z",
+          "by": "System",
+          "action": "Payment captured",
+          "note": "Card via Razorpay"
+        }
+      ]
     },
     {
       "id": 4,
@@ -1774,7 +1831,15 @@
       "shiprocketOrderId": null,
       "notes": "",
       "createdAt": "2026-03-15T16:00:00.000Z",
-      "updatedAt": "2026-03-15T16:00:00.000Z"
+      "updatedAt": "2026-03-15T16:00:00.000Z",
+      "statusHistory": [
+        {
+          "at": "2026-03-15T16:00:00.000Z",
+          "by": "Customer",
+          "action": "Order placed",
+          "note": "Cash on delivery"
+        }
+      ]
     },
     {
       "items": [
@@ -1828,7 +1893,22 @@
       "createdAt": "2026-03-20T06:36:26.005Z",
       "updatedAt": "2026-06-12T01:46:10.397Z",
       "id": 5,
-      "cancelledAt": "2026-06-12T01:46:10.397Z"
+      "cancelledAt": "2026-06-12T01:46:10.397Z",
+      "statusHistory": [
+        {
+          "at": "2026-03-20T06:36:26.005Z",
+          "by": "Customer",
+          "action": "Order placed",
+          "note": "Cash on delivery"
+        },
+        {
+          "at": "2026-06-12T01:46:10.397Z",
+          "by": "Customer",
+          "action": "Order cancelled",
+          "note": "Cancelled by customer"
+        }
+      ],
+      "cancelReason": "Cancelled by customer"
     },
     {
       "items": [
@@ -1882,7 +1962,26 @@
       "shiprocketOrderId": null,
       "createdAt": "2026-06-12T01:42:57.247Z",
       "updatedAt": "2026-06-12T01:49:56.924Z",
-      "id": 6
+      "id": 6,
+      "statusHistory": [
+        {
+          "at": "2026-06-12T01:42:57.247Z",
+          "by": "Customer",
+          "action": "Order placed",
+          "note": "Cash on delivery"
+        },
+        {
+          "at": "2026-06-12T01:48:30.000Z",
+          "by": "Admin User",
+          "action": "Payment marked as paid"
+        },
+        {
+          "at": "2026-06-12T01:49:56.924Z",
+          "by": "Admin User",
+          "action": "Fulfilled & shipped",
+          "note": "Tracking TEST63452634532563242346"
+        }
+      ]
     }
   ],
   "returns": [
@@ -1912,7 +2011,71 @@
       "images": [],
       "notes": "Refund processed to original UPI account",
       "createdAt": "2026-01-20T10:00:00.000Z",
-      "updatedAt": "2026-01-22T14:30:00.000Z"
+      "updatedAt": "2026-01-22T14:30:00.000Z",
+      "statusHistory": [
+        {
+          "at": "2026-01-20T10:00:00.000Z",
+          "by": "Customer",
+          "action": "Return created",
+          "note": "Reason: defective"
+        },
+        {
+          "at": "2026-01-21T11:00:00.000Z",
+          "by": "Admin User",
+          "action": "Return approved"
+        },
+        {
+          "at": "2026-01-22T10:00:00.000Z",
+          "by": "Admin User",
+          "action": "Items received"
+        },
+        {
+          "at": "2026-01-22T14:30:00.000Z",
+          "by": "Admin User",
+          "action": "Refund processed (₹10,439)",
+          "note": "Refund processed to original UPI account"
+        }
+      ],
+      "deductionAmount": 0,
+      "restocked": true
+    },
+    {
+      "id": 2,
+      "returnNumber": "RET-20260612-0002",
+      "orderId": 6,
+      "orderNumber": "ORD-MQA9I6E7-0IR2",
+      "userId": 3,
+      "items": [
+        {
+          "productId": 3,
+          "variantId": "v1",
+          "name": "FitPulse Smartwatch Series 5 - Black / Rubber Band",
+          "sku": "ELC-FPS-SW5-BLK-R",
+          "price": 14999,
+          "quantity": 1,
+          "subtotal": 14999
+        }
+      ],
+      "reason": "not_as_described",
+      "reasonDetails": "Strap quality is not as shown in the product photos.",
+      "status": "requested",
+      "refundAmount": 14999,
+      "refundStatus": "pending",
+      "refundMethod": "original_payment",
+      "deductionAmount": 0,
+      "restocked": false,
+      "images": [],
+      "notes": "",
+      "statusHistory": [
+        {
+          "at": "2026-06-12T05:30:00.000Z",
+          "by": "Customer",
+          "action": "Return created",
+          "note": "Reason: not_as_described"
+        }
+      ],
+      "createdAt": "2026-06-12T05:30:00.000Z",
+      "updatedAt": "2026-06-12T05:30:00.000Z"
     }
   ],
   "payments": [
@@ -1936,7 +2099,16 @@
       "createdAt": "2026-01-15T10:31:00.000Z",
       "updatedAt": "2026-06-12T07:12:56.342Z",
       "refundAmount": 10439,
-      "refundReason": ""
+      "refundReason": "Return RET-20260120-0001",
+      "refunds": [
+        {
+          "id": "ref_seed0001",
+          "amount": 10439,
+          "reason": "Return RET-20260120-0001",
+          "at": "2026-01-22T14:30:00.000Z",
+          "by": "Admin User"
+        }
+      ]
     },
     {
       "id": 2,
@@ -1977,6 +2149,25 @@
       },
       "createdAt": "2026-03-10T08:46:00.000Z",
       "updatedAt": "2026-03-10T08:46:30.000Z"
+    },
+    {
+      "id": 4,
+      "orderId": 6,
+      "orderNumber": "ORD-MQA9I6E7-0IR2",
+      "userId": 3,
+      "amount": 17699,
+      "currency": "INR",
+      "paymentMethod": "cod",
+      "gateway": "cod",
+      "transactionId": "cod_MQA9I6E7",
+      "gatewayOrderId": null,
+      "status": "captured",
+      "gatewayResponse": {},
+      "refunds": [],
+      "refundAmount": 0,
+      "refundReason": "",
+      "createdAt": "2026-06-12T01:48:30.000Z",
+      "updatedAt": "2026-06-12T01:48:30.000Z"
     }
   ],
   "shipping_methods": [

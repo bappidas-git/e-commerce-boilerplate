@@ -171,6 +171,8 @@ const OrderConfirmation = () => {
         return { label: "Payment Failed", modifier: styles.paymentStatusFailed };
       case "refunded":
         return { label: "Payment Refunded", modifier: styles.paymentStatusFailed };
+      case "partially_refunded":
+        return { label: "Payment Partially Refunded", modifier: styles.paymentStatusPending };
       default:
         return {
           label:

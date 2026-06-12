@@ -350,6 +350,9 @@ async function sectionReturn(browser) {
   await d.waitFor({ state: "hidden" });
   await sleep(600);
   d = await openReturn();
+  // Keep this script's footprint clean: skip the (default-on) restock so seed
+  // product stock is untouched — verify_26 covers restock with restoration.
+  await d.locator('input[type="checkbox"]').uncheck().catch(() => {});
   await d.getByRole("button", { name: /Process Refund/ }).click();
   await d.waitFor({ state: "hidden" });
   await sleep(1000);

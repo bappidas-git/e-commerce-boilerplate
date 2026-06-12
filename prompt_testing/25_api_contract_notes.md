@@ -49,28 +49,65 @@ them in production (it doesn't: every one is `IS_MOCK_API`-gated):
    - create the linked **payment transaction** (`amount = order.total`,
      `status = captured` for paid orders / `pending` for COD, gateway,
      `orderId`/`orderNumber`/`userId` filled) — mock: `createPaymentForOrder()`;
-   - increment the redeemed **coupon's `usedCount`** — mock: `redeemCouponByCode()`.
-2. **`PATCH /admin/returns/{id}`** that processes a refund must cascade:
-   order → `paymentStatus=refunded`, `fulfillmentStatus=returned`; linked
-   payment → `status=refunded`, `refundAmount` — mock: `reflectReturnRefund()`.
-3. **`GET /admin/orders`** must eager-load the customer so each order carries
+   - increment the redeemed **coupon's `usedCount`** — mock: `redeemCouponByCode()`;
+   - seed the order's **`statusHistory`** with an "Order placed" entry.
+2. **Audit timeline (`statusHistory`)** — `PATCH /admin/orders/{id}` and
+   `PATCH /admin/returns/{id}` accept an optional `event: { action, note }`;
+   the server appends `{ at, by, action, note }` to the record's
+   `statusHistory`, deriving `by` (actor) from the bearer token. Mock appends
+   client-side from the stored admin session.
+3. **`POST /admin/payments/{id}/refund`** `{ amount, reason }` supports
+   **partial refunds**: append `{ id, amount, reason, at, by }` to the
+   payment's `refunds[]`, advance the running `refundAmount`, and set status
+   `partially_refunded` until the captured amount is fully covered, then
+   `refunded`. Reject `amount > (amount − refundAmount)` with **422**. Mirror
+   the outcome onto the linked order's `paymentStatus`
+   (`partially_refunded` / `refunded`) with a timeline entry — mock:
+   `appendPaymentRefund()` + `reflectPaymentOnOrder()`.
+4. **`PATCH /admin/returns/{id}`** that processes a refund
+   (`status=refunded`, `refundStatus=processed`) must cascade: order →
+   `paymentStatus=refunded`, `fulfillmentStatus=returned` (+ timeline); the
+   linked payment receives the **payable** (`refundAmount − deductionAmount`)
+   through the same partial-refund mechanics as #3 — mock:
+   `reflectReturnRefund()`. When the request carries **`restock: true`**, put
+   the returned quantities back into product **and matching variant** stock in
+   the same transaction and set `restocked: true` — mock: `restockReturnItems()`.
+5. **`POST /admin/orders/{id}/cancel`** `{ reason }` — admin-side cancellation:
+   `fulfillmentStatus=cancelled`, `cancelReason`, `cancelledAt` + timeline
+   entry. (Customer cancellation stays `POST /orders/{id}/cancel`.)
+6. **`POST /admin/returns`** — admin-created return (the storefront request
+   arrives as a support lead): server generates the `RET-…` `returnNumber`,
+   sets `status=requested`, `refundStatus=pending`, `deductionAmount=0`,
+   `restocked=false` and seeds the timeline.
+7. **`GET /admin/orders`** must eager-load the customer so each order carries
    `customerEmail` / `customerName` (admin search + display) — mock joins the
-   users store client-side.
-4. **`POST /coupons/validate`** `{ code, orderAmount }` → the coupon object, or
+   users store client-side. **`GET /admin/payments`** must support an
+   `orderId` query filter (the order-level refund shortcut uses it).
+8. **`POST /coupons/validate`** `{ code, orderAmount }` → the coupon object, or
    a 4xx with a human message (expired / usage limit / min order).
-5. **Timestamps** (`createdAt` / `updatedAt` / `cancelledAt` / `deliveredAt`)
+9. **Timestamps** (`createdAt` / `updatedAt` / `cancelledAt` / `deliveredAt`)
    are set by the mock branch on writes; Laravel sets them server-side.
+   "Mark as Delivered" PATCHes `shippingStatus=delivered` **and
+   `deliveredAt`** — the storefront return window is keyed on it.
 
 ## Canonical data shapes the UI depends on
 
-- **Orders** carry the status trio `paymentStatus` (`pending|paid|failed|refunded`),
-  `fulfillmentStatus` (`unfulfilled|fulfilled|returned|cancelled`),
-  `shippingStatus` (`pending|shipped|delivered`) — never a single legacy
-  `status`. Order History derives its badge from the trio (refund ⇒ Cancelled).
-- **Payments**: `status ∈ captured|pending|failed|refunded|voided`,
+- **Orders** carry the status trio `paymentStatus`
+  (`pending|paid|partially_refunded|failed|refunded`), `fulfillmentStatus`
+  (`unfulfilled|fulfilled|returned|cancelled`), `shippingStatus`
+  (`pending|shipped|delivered`) — never a single legacy `status`. Order History
+  derives its badge from the trio (full refund ⇒ Cancelled; a partial refund
+  does NOT cancel). Plus: `statusHistory[]` (`{ at, by, action, note? }`),
+  `cancelReason`, `deliveredAt`, `trackingNumber`.
+- **Payments**: `status ∈ captured|pending|partially_refunded|failed|refunded|voided`,
   `paymentMethod ∈ card|upi|net_banking|wallet|cod`, amounts in INR units.
+  `refunds[]` is the per-transaction history; `refundAmount` is the running
+  total (the UI's summary cards read `amount − refundAmount` as net captured).
 - **Returns**: `status ∈ requested|approved|received|refunded|rejected` +
   `refundStatus` (`pending|processed`), linked by `orderId`/`orderNumber`.
+  Plus: `deductionAmount` (restocking fee; payable = `refundAmount −
+  deductionAmount`), `refundMethod ∈ original_payment|store_credit|bank_transfer`,
+  `restocked`, `rejectReason`, `statusHistory[]`.
 - **Leads**: one store for both types — `type ∈ contact|newsletter`; contact
   leads carry `orderNumber`/`category` (the storefront's return requests arrive
   as `category="returns"`); newsletter rows use `status="subscribed"`.
@@ -101,7 +138,8 @@ Storefront: `GET /products` (`?search=`), `GET /products/{id}`,
 Admin (`Bearer` admin token): `POST /admin/auth/login|logout`,
 `GET /admin/dashboard/stats`, CRUD `/admin/products[/{id}]`,
 `/admin/categories[/{id}]`, `GET|PATCH /admin/orders[/{id}]`,
-`GET|PATCH /admin/returns[/{id}]`, `GET /admin/payments[/{id}]`,
+`POST /admin/orders/{id}/cancel`, `POST /admin/returns`,
+`GET|PATCH /admin/returns[/{id}]`, `GET /admin/payments[/{id}]` (`?orderId=`),
 `POST /admin/payments/{id}/refund`, CRUD `/admin/shipping-methods[/{id}]`,
 `POST /admin/shipping/shiprocket/order`,
 `GET /admin/shipping/shiprocket/track/{trackingNumber}`,
