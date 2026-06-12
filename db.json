@@ -1883,6 +1883,60 @@
       "createdAt": "2026-06-12T01:42:57.247Z",
       "updatedAt": "2026-06-12T01:49:56.924Z",
       "id": 6
+    },
+    {
+      "items": [
+        {
+          "productId": 2,
+          "variantId": "v1",
+          "name": "SoundWave Pro Wireless Earbuds - Midnight Black",
+          "image": "https://placehold.co/600x400/1a1a2e/FFFFFF?text=SoundWave+Earbuds",
+          "sku": "",
+          "price": 8999,
+          "quantity": 1,
+          "subtotal": 8999
+        }
+      ],
+      "shippingAddress": {
+        "firstName": "Bappi",
+        "lastName": "Das",
+        "phone": "+919707112233",
+        "addressLine1": "Moutupuri, Barpeta",
+        "addressLine2": "Near BH College",
+        "city": "Howly",
+        "state": "Assam",
+        "postalCode": "781316",
+        "country": "India"
+      },
+      "billingAddress": {
+        "firstName": "Bappi",
+        "lastName": "Das",
+        "phone": "+919707112233",
+        "addressLine1": "Moutupuri, Barpeta",
+        "addressLine2": "Near BH College",
+        "city": "Howly",
+        "state": "Assam",
+        "postalCode": "781316",
+        "country": "India"
+      },
+      "subtotal": 8999,
+      "discountAmount": 500,
+      "couponCode": "WELCOME500",
+      "shippingAmount": 0,
+      "taxAmount": 1530,
+      "total": 10029,
+      "paymentMethod": "cod",
+      "paymentStatus": "pending",
+      "fulfillmentStatus": "unfulfilled",
+      "shippingStatus": "pending",
+      "trackingNumber": null,
+      "notes": "",
+      "userId": 3,
+      "orderNumber": "ORD-MQB0JHUB-9KL6",
+      "shiprocketOrderId": null,
+      "createdAt": "2026-06-12T14:19:48.371Z",
+      "updatedAt": "2026-06-12T14:19:48.371Z",
+      "id": 7
     }
   ],
   "returns": [
@@ -2039,12 +2093,12 @@
       "minOrderAmount": 2000,
       "maxDiscount": 500,
       "usageLimit": 1000,
-      "usedCount": 47,
+      "usedCount": 48,
       "perUserLimit": 1,
       "isActive": true,
       "expiresAt": "2026-12-31T23:59:59.000Z",
       "createdAt": "2025-01-01T00:00:00.000Z",
-      "updatedAt": "2026-03-10T00:00:00.000Z"
+      "updatedAt": "2026-06-12T14:19:48.456Z"
     },
     {
       "id": 2,
