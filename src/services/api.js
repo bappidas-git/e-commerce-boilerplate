@@ -89,21 +89,94 @@ export const getErrorMessage = (error) => {
   return error.message || "An error occurred";
 };
 
+// ----- Audit-trail helpers (mock mode) -----
+// Orders and returns carry a statusHistory array — the timeline the Admin
+// detail dialogs render. In mock mode each admin action appends an entry
+// client-side; the Laravel branch sends the action with the request and the
+// server appends it (deriving the actor from the bearer token).
+const currentAdminName = () => {
+  try {
+    const a = JSON.parse(sessionStorage.getItem("admin") || "null");
+    if (!a) return "Admin";
+    return [a.firstName, a.lastName].filter(Boolean).join(" ") || a.email || "Admin";
+  } catch {
+    return "Admin";
+  }
+};
+
+const historyEvent = (action, note = "") => ({
+  at: new Date().toISOString(),
+  by: currentAdminName(),
+  action,
+  ...(note ? { note } : {}),
+});
+
+// Append a refund onto a payment record and return the patched row. Payments
+// keep BOTH shapes in sync: refunds[] (per-transaction history) and
+// refundAmount (running total, what the list/summary cards read). Status
+// becomes partially_refunded until the running total covers the captured
+// amount. Mock-only — the Laravel refund endpoint owns this server-side.
+const appendPaymentRefund = async (payment, amount, reason) => {
+  const prior = Number(payment.refundAmount) || 0;
+  const total = prior + Number(amount);
+  const status = total >= Number(payment.amount) ? "refunded" : "partially_refunded";
+  const entry = {
+    id: `ref_${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`,
+    amount: Number(amount),
+    reason: reason || "",
+    at: new Date().toISOString(),
+    by: currentAdminName(),
+  };
+  const response = await api.patch(`/payments/${payment.id}`, {
+    status,
+    refundAmount: total,
+    refundReason: reason || payment.refundReason || "",
+    refunds: [...(payment.refunds || []), entry],
+    updatedAt: entry.at,
+  });
+  return response.data;
+};
+
+// Reflect a payment-status change onto the linked order (chips in Admin
+// Orders, the customer's Order History badge) with a timeline entry.
+// Best-effort — a missing order must never fail the payment update.
+const reflectPaymentOnOrder = async (orderId, paymentStatus, action, note = "") => {
+  if (orderId == null) return;
+  try {
+    const current = await api.get(`/orders/${orderId}`);
+    await api.patch(`/orders/${orderId}`, {
+      paymentStatus,
+      statusHistory: [...(current.data.statusHistory || []), historyEvent(action, note)],
+      updatedAt: new Date().toISOString(),
+    });
+  } catch (e) {
+    console.error("Reflect payment on order error:", e);
+  }
+};
+
 // When a return refund is processed in mock mode, cascade the outcome onto the
 // linked order and payment so every surface stays consistent: Admin Orders
-// (chips), Admin Payments, and the customer's Order History (which derives a
-// "cancelled" badge from paymentStatus === "refunded"). Best-effort — a missing
-// order or payment must never fail the return update. In production the Laravel
-// branch performs this cascade server-side on the same updateReturn call, so the
-// client behaviour is identical across both branches.
+// (chips), Admin Payments (refund history + totals), and the customer's Order
+// History (which derives a "cancelled" badge from paymentStatus ===
+// "refunded"). The refunded figure is the PAYABLE amount: the requested
+// refundAmount minus any admin deduction (restocking fee). Best-effort — a
+// missing order or payment must never fail the return update. In production
+// the Laravel branch performs this cascade server-side on the same
+// updateReturn call, so the client behaviour is identical across both branches.
 const reflectReturnRefund = async (ret) => {
   if (!ret) return;
   const stamp = new Date().toISOString();
+  const payable = Math.max(0, (Number(ret.refundAmount) || 0) - (Number(ret.deductionAmount) || 0));
   try {
     if (ret.orderId != null) {
+      const current = await api.get(`/orders/${ret.orderId}`).catch(() => null);
       await api.patch(`/orders/${ret.orderId}`, {
         paymentStatus: "refunded",
         fulfillmentStatus: "returned",
+        statusHistory: [
+          ...((current && current.data.statusHistory) || []),
+          historyEvent(`Return refund processed (${ret.returnNumber || "return"})`, `₹${payable} refunded`),
+        ],
         updatedAt: stamp,
       });
     }
@@ -111,15 +184,34 @@ const reflectReturnRefund = async (ret) => {
     const payRes = await api.get("/payments", { params });
     const payment = Array.isArray(payRes.data) ? payRes.data[0] : payRes.data;
     if (payment && payment.id != null) {
-      await api.patch(`/payments/${payment.id}`, {
-        status: "refunded",
-        refundAmount: ret.refundAmount ?? payment.refundAmount ?? null,
-        refundReason: ret.returnNumber ? `Return ${ret.returnNumber}` : "Return refund",
-        updatedAt: stamp,
-      });
+      await appendPaymentRefund(payment, payable, ret.returnNumber ? `Return ${ret.returnNumber}` : "Return refund");
     }
   } catch (e) {
     console.error("Reflect return refund error:", e);
+  }
+};
+
+// Put returned items back into sellable inventory: bumps the product's stock
+// (and the matching variant's stock) by the returned quantity. Best-effort per
+// item — a deleted product must never fail the return. Mock-only; Laravel
+// restocks server-side when the refund request carries restock: true.
+const restockReturnItems = async (items = []) => {
+  for (const item of items) {
+    if (item?.productId == null) continue;
+    try {
+      const res = await api.get(`/products/${item.productId}`);
+      const product = res.data;
+      const qty = Number(item.quantity) || 0;
+      const patch = { stock: (Number(product.stock) || 0) + qty, updatedAt: new Date().toISOString() };
+      if (item.variantId && Array.isArray(product.variants)) {
+        patch.variants = product.variants.map((v) =>
+          v.id === item.variantId ? { ...v, stock: (Number(v.stock) || 0) + qty } : v
+        );
+      }
+      await api.patch(`/products/${item.productId}`, patch);
+    } catch (e) {
+      console.error("Restock item error:", e);
+    }
   }
 };
 
@@ -502,7 +594,17 @@ const apiService = {
   orders: {
     create: async (orderData) => {
       try {
-        const response = await api.post("/orders", orderData);
+        // Seed the audit timeline with the placement event (Laravel does the
+        // same server-side), so Admin's order timeline starts at the source.
+        const payload = IS_MOCK_API
+          ? {
+              ...orderData,
+              statusHistory: [
+                { at: new Date().toISOString(), by: "Customer", action: "Order placed" },
+              ],
+            }
+          : orderData;
+        const response = await api.post("/orders", payload);
         // Mock-only side effects the Laravel backend performs server-side on
         // the same call (see createPaymentForOrder / redeemCouponByCode):
         // record the payment transaction, and advance the coupon's usedCount
@@ -971,16 +1073,26 @@ const apiService = {
       } catch (error) { console.error("Admin get order error:", error); throw error; }
     },
 
-    updateOrder: async (id, updates) => {
+    // Optional `event` ({ action, note }) appends an audit-trail entry to the
+    // order's statusHistory. Mock mode reads-and-appends client-side; the
+    // Laravel branch sends the event with the PATCH and the server appends it
+    // (actor derived from the bearer token). Existing two-argument callers are
+    // unaffected.
+    updateOrder: async (id, updates, event = null) => {
       try {
         if (IS_MOCK_API) {
-          const response = await api.patch(`/orders/${id}`, {
-            ...updates,
-            updatedAt: new Date().toISOString(),
-          });
+          const payload = { ...updates, updatedAt: new Date().toISOString() };
+          if (event) {
+            const current = await api.get(`/orders/${id}`);
+            payload.statusHistory = [
+              ...(current.data.statusHistory || []),
+              historyEvent(event.action, event.note),
+            ];
+          }
+          const response = await api.patch(`/orders/${id}`, payload);
           return response.data;
         }
-        const response = await api.patch(`/admin/orders/${id}`, updates);
+        const response = await api.patch(`/admin/orders/${id}`, event ? { ...updates, event } : updates);
         return extractData(response);
       } catch (error) { console.error("Admin update order error:", error); throw error; }
     },
@@ -988,6 +1100,27 @@ const apiService = {
     // Keep backward-compatible alias
     updateOrderStatus: async (id, status, notes = "") => {
       return apiService.admin.updateOrder(id, { fulfillmentStatus: status, notes });
+    },
+
+    // Admin-side cancellation (customer cancellations use orders.cancel).
+    // Stamps the reason + cancelledAt and logs the timeline entry; payment
+    // changes (refunds) stay a separate, explicit admin action.
+    cancelOrder: async (id, reason = "") => {
+      try {
+        if (IS_MOCK_API) {
+          return apiService.admin.updateOrder(
+            id,
+            {
+              fulfillmentStatus: "cancelled",
+              cancelReason: reason || null,
+              cancelledAt: new Date().toISOString(),
+            },
+            { action: "Order cancelled", note: reason }
+          );
+        }
+        const response = await api.post(`/admin/orders/${id}/cancel`, { reason });
+        return extractData(response);
+      } catch (error) { console.error("Admin cancel order error:", error); throw error; }
     },
 
     // --- Returns ---
@@ -1013,21 +1146,64 @@ const apiService = {
       } catch (error) { console.error("Admin get return error:", error); throw error; }
     },
 
-    updateReturn: async (id, updates) => {
+    // Admin-created return (the storefront's request arrives as a support
+    // lead; this records the actionable return against the order). Generates
+    // the RET- number and seeds the audit timeline.
+    createReturn: async (data) => {
       try {
         if (IS_MOCK_API) {
-          const response = await api.patch(`/returns/${id}`, {
-            ...updates,
-            updatedAt: new Date().toISOString(),
+          const now = new Date();
+          const ymd = now.toISOString().slice(0, 10).replace(/-/g, "");
+          const rand = Math.random().toString(36).slice(2, 6).toUpperCase();
+          const response = await api.post("/returns", {
+            returnNumber: `RET-${ymd}-${rand}`,
+            status: "requested",
+            refundStatus: "pending",
+            refundMethod: data.refundMethod || "original_payment",
+            deductionAmount: 0,
+            restocked: false,
+            images: [],
+            notes: "",
+            ...data,
+            statusHistory: [historyEvent("Return created", data.reason ? `Reason: ${data.reason}` : "")],
+            createdAt: now.toISOString(),
+            updatedAt: now.toISOString(),
           });
+          return response.data;
+        }
+        const response = await api.post("/admin/returns", data);
+        return extractData(response);
+      } catch (error) { console.error("Admin create return error:", error); throw error; }
+    },
+
+    // Optional third argument: { event: { action, note }, restock: boolean }.
+    // `event` appends to the return's audit timeline; `restock: true` puts the
+    // returned items back into product (and variant) stock when the refund is
+    // processed. Mock mode applies both client-side; the Laravel branch sends
+    // them with the PATCH and the server applies them in the same transaction.
+    updateReturn: async (id, updates, { event = null, restock = false } = {}) => {
+      try {
+        if (IS_MOCK_API) {
+          const payload = { ...updates, updatedAt: new Date().toISOString() };
+          if (event) {
+            const current = await api.get(`/returns/${id}`);
+            payload.statusHistory = [
+              ...(current.data.statusHistory || []),
+              historyEvent(event.action, event.note),
+            ];
+          }
+          if (restock) payload.restocked = true;
+          const response = await api.patch(`/returns/${id}`, payload);
           const ret = response.data;
-          // A processed refund must show up on the linked order/payment too.
+          // A processed refund must show up on the linked order/payment too,
+          // and restock the inventory when the admin opted in.
           if (ret && (ret.status === "refunded" || updates.refundStatus === "processed")) {
             await reflectReturnRefund(ret);
+            if (restock) await restockReturnItems(ret.items);
           }
           return ret;
         }
-        const response = await api.patch(`/admin/returns/${id}`, updates);
+        const response = await api.patch(`/admin/returns/${id}`, { ...updates, event, restock });
         return extractData(response);
       } catch (error) { console.error("Admin update return error:", error); throw error; }
     },
@@ -1055,20 +1231,37 @@ const apiService = {
       } catch (error) { console.error("Admin get payment error:", error); throw error; }
     },
 
+    // Issue a (possibly partial) refund. Each call appends to the payment's
+    // refunds[] history and advances the running refundAmount; the status
+    // flips to partially_refunded until the captured amount is fully covered,
+    // then refunded. The linked order's paymentStatus mirrors the outcome.
+    // Rejects amounts beyond what remains capturable (REFUND_EXCEEDS).
     issueRefund: async (paymentId, amount, reason) => {
       try {
         if (IS_MOCK_API) {
-          const response = await api.patch(`/payments/${paymentId}`, {
-            status: "refunded",
-            refundAmount: amount,
-            refundReason: reason,
-            updatedAt: new Date().toISOString(),
-          });
-          return response.data;
+          const payment = (await api.get(`/payments/${paymentId}`)).data;
+          const remaining = (Number(payment.amount) || 0) - (Number(payment.refundAmount) || 0);
+          if (Number(amount) > remaining) {
+            const err = new Error(`Refund exceeds the remaining ₹${remaining}`);
+            err.code = "REFUND_EXCEEDS";
+            throw err;
+          }
+          const updated = await appendPaymentRefund(payment, amount, reason);
+          await reflectPaymentOnOrder(
+            payment.orderId,
+            updated.status === "refunded" ? "refunded" : "partially_refunded",
+            `Refund issued (₹${Number(amount).toLocaleString("en-IN")})`,
+            reason
+          );
+          return updated;
         }
         const response = await api.post(`/admin/payments/${paymentId}/refund`, { amount, reason });
         return extractData(response);
-      } catch (error) { console.error("Issue refund error:", error); throw error; }
+      } catch (error) {
+        // An over-amount attempt is an expected validation outcome.
+        if (error.code !== "REFUND_EXCEEDS") console.error("Issue refund error:", error);
+        throw error;
+      }
     },
 
     // --- Shipping Methods ---
