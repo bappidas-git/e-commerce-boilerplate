@@ -96,6 +96,65 @@ body.light::-webkit-scrollbar-thumb {
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
 }
 
+/* Dark theme scrollbar — dark-palette gradient instead of the light one */
+body.dark::-webkit-scrollbar-track,
+body.dark *::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+body.dark::-webkit-scrollbar-thumb,
+body.dark *::-webkit-scrollbar-thumb {
+  background: linear-gradient(135deg, #a855f7 0%, #ec4899 100%);
+}
+
+body.dark::-webkit-scrollbar-thumb:hover,
+body.dark *::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(135deg, #ec4899 0%, #a855f7 100%);
+}
+
+/* Pin the page background to the admin palette while an admin screen is
+   mounted. ThemeContext writes the storefront color inline on <body>, so the
+   slate shows a navy strip wherever it peeks through (overscroll, drawer
+   edges); !important is the intended override and unwinds with .admin-area. */
+body.admin-area.light {
+  background-color: #f8fafc !important;
+}
+
+body.admin-area.dark {
+  background-color: #0b1220 !important;
+}
+
+/* Admin scrollbars: flat slate to match the admin design system */
+body.admin-area::-webkit-scrollbar-track,
+body.admin-area *::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+body.admin-area::-webkit-scrollbar-thumb,
+body.admin-area *::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+}
+
+body.admin-area::-webkit-scrollbar-thumb:hover,
+body.admin-area *::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+body.admin-area.dark::-webkit-scrollbar-track,
+body.admin-area.dark *::-webkit-scrollbar-track {
+  background: rgba(148, 163, 184, 0.06);
+}
+
+body.admin-area.dark::-webkit-scrollbar-thumb,
+body.admin-area.dark *::-webkit-scrollbar-thumb {
+  background: #334155;
+}
+
+body.admin-area.dark::-webkit-scrollbar-thumb:hover,
+body.admin-area.dark *::-webkit-scrollbar-thumb:hover {
+  background: #475569;
+}
+
 /* Glassmorphism effect */
 .glass-effect {
   background: var(--glass-bg);
@@ -275,4 +334,91 @@ body.light::-webkit-scrollbar-thumb {
 .card-hover:hover {
   transform: translateY(-5px);
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+}
+
+/* =====================================================================
+   SweetAlert2 theming
+   Swal renders directly under <body>, outside both MUI ThemeProviders,
+   so it can't inherit the palette. Theme it from the body-level mode
+   classes instead: body.light / body.dark (set by ThemeContext) pick the
+   storefront palette, and body.admin-area (set while an admin screen is
+   mounted) swaps the playful storefront look for the flat admin design
+   language. Everything is expressed through SweetAlert2's own CSS
+   variables so a per-call confirmButtonColor (the destructive reds on
+   delete/logout confirms) still wins — Swal sets those as inline
+   variables on the button itself.
+   ===================================================================== */
+body.light .swal2-popup {
+  --swal2-background: #ffffff;
+  --swal2-color: #1a202c;
+  --swal2-border-radius: 16px;
+  --swal2-confirm-button-background-color: #667eea;
+  --swal2-cancel-button-background-color: #64748b;
+  --swal2-confirm-button-border-radius: 10px;
+  --swal2-cancel-button-border-radius: 10px;
+  --swal2-action-button-focus-box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.4);
+  --swal2-timer-progress-bar-background: rgba(102, 126, 234, 0.5);
+}
+
+/* secondary text tone for the message body (title inherits popup color) */
+body.light .swal2-html-container {
+  color: #4a5568;
+}
+
+body.dark .swal2-popup {
+  --swal2-background: #1a1f3a;
+  --swal2-color: #f5f7fa;
+  --swal2-border: 1px solid rgba(168, 85, 247, 0.25);
+  --swal2-border-radius: 16px;
+  --swal2-confirm-button-background-color: #a855f7;
+  --swal2-cancel-button-background-color: #475569;
+  --swal2-confirm-button-border-radius: 10px;
+  --swal2-cancel-button-border-radius: 10px;
+  --swal2-close-button-color: #a0aec0;
+  --swal2-action-button-focus-box-shadow: 0 0 0 3px rgba(168, 85, 247, 0.45);
+  --swal2-timer-progress-bar-background: rgba(255, 255, 255, 0.3);
+  --swal2-toast-border: 1px solid rgba(168, 85, 247, 0.25);
+  --swal2-toast-box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+}
+
+body.dark .swal2-popup:not(.swal2-toast) {
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
+}
+
+body.dark .swal2-html-container {
+  color: #a0aec0;
+}
+
+body.light .swal2-popup.swal2-toast,
+body.dark .swal2-popup.swal2-toast {
+  --swal2-border-radius: 12px;
+}
+
+/* Admin area: flat surfaces, 6-8px radii, slate palette */
+body.admin-area.light .swal2-popup,
+body.admin-area.dark .swal2-popup {
+  --swal2-border-radius: 8px;
+  --swal2-confirm-button-border-radius: 6px;
+  --swal2-cancel-button-border-radius: 6px;
+}
+
+body.admin-area.light .swal2-popup {
+  --swal2-confirm-button-background-color: #4f46e5;
+  --swal2-action-button-focus-box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.35);
+  --swal2-timer-progress-bar-background: rgba(79, 70, 229, 0.4);
+}
+
+body.admin-area.dark .swal2-popup {
+  --swal2-background: #111927;
+  --swal2-color: #f1f5f9;
+  --swal2-border: 1px solid rgba(148, 163, 184, 0.16);
+  --swal2-toast-border: 1px solid rgba(148, 163, 184, 0.16);
+  /* primary.dark rather than primary.main: white button text needs the
+     deeper indigo to stay readable on the dark admin surface */
+  --swal2-confirm-button-background-color: #6366f1;
+  --swal2-action-button-focus-box-shadow: 0 0 0 3px rgba(129, 140, 248, 0.4);
+}
+
+body.admin-area.dark .swal2-html-container {
+  color: #94a3b8;
 }

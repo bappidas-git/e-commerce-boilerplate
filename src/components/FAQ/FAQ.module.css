@@ -6,6 +6,7 @@
 .item { border-radius: 10px; border: 1px solid #e2e8f0; overflow: hidden; transition: border-color 0.2s; }
 .dark .item { border-color: #334155; }
 .item.open { border-color: #667eea; }
+.dark .item.open { border-color: #a855f7; }
 .question { width: 100%; padding: 16px 20px; background: #fff; border: none; cursor: pointer; display: flex; justify-content: space-between; align-items: center; gap: 16px; font-size: 1rem; font-weight: 500; text-align: left; font-family: inherit; color: inherit; }
 .dark .question { background: #1e293b; color: #e2e8f0; }
 .question:hover { background: #f8fafc; }
@@ -14,6 +15,7 @@
 /* Plus icon drawn with pseudo-elements so it can rotate into a cross. */
 .toggle { position: relative; flex: 0 0 auto; width: 18px; height: 18px; }
 .toggle::before, .toggle::after { content: ""; position: absolute; top: 50%; left: 50%; width: 14px; height: 2px; border-radius: 2px; background: #667eea; transform: translate(-50%, -50%); transition: transform 0.28s ease; }
+.dark .toggle::before, .dark .toggle::after { background: #a855f7; }
 .toggle::after { transform: translate(-50%, -50%) rotate(90deg); }
 .item.open .toggle::after { transform: translate(-50%, -50%) rotate(180deg); }
 

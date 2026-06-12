@@ -1,6 +1,7 @@
 .breadcrumb { display: flex; align-items: center; gap: 8px; font-size: 0.875rem; padding: 12px 0; flex-wrap: wrap; }
 .dark { color: #94a3b8; }
 .link { color: #667eea; text-decoration: none; }
+.dark .link { color: #a855f7; }
 .link:hover { text-decoration: underline; }
 /* Touch-target sizing: grow the hit area without moving the row */
 @media (max-width: 768px) {

@@ -40,6 +40,7 @@
   --empty-box: #e2e8f0;
   --empty-line: #cbd5e1;
   --empty-circle: #94a3b8;
+  --error-color: #cc0c39;
 
   min-height: 100vh;
   background: var(--bg);
@@ -82,6 +83,7 @@
   --empty-box: #252540;
   --empty-line: #3d3d5c;
   --empty-circle: #6b7280;
+  --error-color: #f87171;
 }
 
 /* ==========================================================================
@@ -841,6 +843,12 @@
 
 .emptyBtn:hover {
   background: var(--btn-primary-hover);
+}
+
+/* Fetch-failure state shares the empty layout but reads as an error */
+.errorIcon {
+  color: var(--error-color);
+  margin-bottom: 16px;
 }
 
 /* ==========================================================================

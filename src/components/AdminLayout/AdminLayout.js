@@ -27,11 +27,12 @@ import {
   DialogContent,
   Button,
 } from "@mui/material";
-import { ThemeProvider } from "@mui/material/styles";
+import { ThemeProvider, alpha } from "@mui/material/styles";
 import { Icon } from "@iconify/react";
 import { useAdmin } from "../../context/AdminContext";
 import { useThemeContext } from "../../context/ThemeContext";
 import buildAdminTheme from "../../theme/adminTheme";
+import useAdminBodyClass from "../../hooks/useAdminBodyClass";
 import apiService from "../../services/api";
 import Swal from "sweetalert2";
 
@@ -128,6 +129,7 @@ const AdminLayout = () => {
   // Dedicated flat/professional admin theme; tracks the same light/dark mode
   // as the storefront toggle but swaps the whole design language.
   const adminTheme = useMemo(() => buildAdminTheme(mode), [mode]);
+  useAdminBodyClass();
 
   const [mobileOpen, setMobileOpen] = useState(false);
   const [anchorEl, setAnchorEl] = useState(null);
@@ -544,9 +546,10 @@ const AdminLayout = () => {
                 </Box>
               ) : visibleNotifications.length === 0 ? (
                 <Box sx={{ textAlign: "center", py: 4 }}>
-                  <Icon
+                  <Box
+                    component={Icon}
                     icon="mdi:bell-check-outline"
-                    style={{ fontSize: 48, color: "#9e9e9e" }}
+                    sx={{ fontSize: 48, color: "text.disabled" }}
                   />
                   <Typography color="text.secondary" sx={{ mt: 1 }}>
                     No new notifications
@@ -568,16 +571,15 @@ const AdminLayout = () => {
                     <Box sx={{ display: "flex", gap: 1.5 }}>
                       <Avatar
                         variant="rounded"
-                        sx={{
+                        sx={(theme) => ({
                           width: 40,
                           height: 40,
-                          bgcolor:
-                            notification.type === "order"
-                              ? "rgba(76, 175, 80, 0.15)"
-                              : "rgba(33, 150, 243, 0.15)",
-                          color:
-                            notification.type === "order" ? "#4caf50" : "#2196f3",
-                        }}
+                          bgcolor: alpha(
+                            theme.palette[notification.type === "order" ? "success" : "info"].main,
+                            0.15
+                          ),
+                          color: notification.type === "order" ? "success.main" : "info.main",
+                        })}
                       >
                         <Icon
                           icon={
@@ -603,22 +605,17 @@ const AdminLayout = () => {
                           <Chip
                             label={notification.status}
                             size="small"
+                            color={
+                              notification.status === "pending"
+                                ? "warning"
+                                : notification.status === "new"
+                                ? "info"
+                                : "primary"
+                            }
                             sx={{
                               height: 20,
                               fontSize: "0.65rem",
                               textTransform: "capitalize",
-                              bgcolor:
-                                notification.status === "pending"
-                                  ? "rgba(255, 152, 0, 0.15)"
-                                  : notification.status === "new"
-                                  ? "rgba(33, 150, 243, 0.15)"
-                                  : "rgba(99, 102, 241, 0.14)",
-                              color:
-                                notification.status === "pending"
-                                  ? "#ff9800"
-                                  : notification.status === "new"
-                                  ? "#2196f3"
-                                  : "#6366f1",
                             }}
                           />
                         </Box>
@@ -762,9 +759,10 @@ const AdminLayout = () => {
             <DialogContent sx={{ p: 0 }}>
               {visibleNotifications.length === 0 ? (
                 <Box sx={{ textAlign: "center", py: 8 }}>
-                  <Icon
+                  <Box
+                    component={Icon}
                     icon="mdi:bell-check-outline"
-                    style={{ fontSize: 64, color: "#9e9e9e" }}
+                    sx={{ fontSize: 64, color: "text.disabled" }}
                   />
                   <Typography color="text.secondary" sx={{ mt: 2 }} variant="h6">
                     No notifications
@@ -790,16 +788,15 @@ const AdminLayout = () => {
                       <Box sx={{ display: "flex", gap: 2 }}>
                         <Avatar
                           variant="rounded"
-                          sx={{
+                          sx={(theme) => ({
                             width: 48,
                             height: 48,
-                            bgcolor:
-                              notification.type === "order"
-                                ? "rgba(76, 175, 80, 0.15)"
-                                : "rgba(33, 150, 243, 0.15)",
-                            color:
-                              notification.type === "order" ? "#4caf50" : "#2196f3",
-                          }}
+                            bgcolor: alpha(
+                              theme.palette[notification.type === "order" ? "success" : "info"].main,
+                              0.15
+                            ),
+                            color: notification.type === "order" ? "success.main" : "info.main",
+                          })}
                         >
                           <Icon
                             icon={
@@ -826,22 +823,17 @@ const AdminLayout = () => {
                               <Chip
                                 label={notification.status}
                                 size="small"
+                                color={
+                                  notification.status === "pending"
+                                    ? "warning"
+                                    : notification.status === "new"
+                                    ? "info"
+                                    : "primary"
+                                }
                                 sx={{
                                   height: 22,
                                   fontSize: "0.7rem",
                                   textTransform: "capitalize",
-                                  bgcolor:
-                                    notification.status === "pending"
-                                      ? "rgba(255, 152, 0, 0.15)"
-                                      : notification.status === "new"
-                                      ? "rgba(33, 150, 243, 0.15)"
-                                      : "rgba(99, 102, 241, 0.14)",
-                                  color:
-                                    notification.status === "pending"
-                                      ? "#ff9800"
-                                      : notification.status === "new"
-                                      ? "#2196f3"
-                                      : "#6366f1",
                                 }}
                               />
                               <Typography
