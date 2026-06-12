@@ -169,12 +169,12 @@ const AdminCategories = () => {
           <Typography variant="h5" fontWeight="bold">Categories</Typography>
           <Typography variant="body2" color="text.secondary">Manage product categories and subcategories</Typography>
         </Box>
-        <Button variant="contained" startIcon={<Icon icon="mdi:plus" />} onClick={openCreate} sx={{ borderRadius: 2 }}>
+        <Button variant="contained" startIcon={<Icon icon="mdi:plus" />} onClick={openCreate}>
           Add Category
         </Button>
       </Box>
 
-      <Paper elevation={0} sx={{ borderRadius: 3, border: "1px solid", borderColor: "divider", overflow: "hidden" }}>
+      <Paper elevation={0} sx={{ border: "1px solid", borderColor: "divider", overflow: "hidden" }}>
         <Box sx={{ p: 2, borderBottom: "1px solid", borderColor: "divider" }}>
           <TextField
             placeholder="Search categories..."
@@ -244,7 +244,7 @@ const AdminCategories = () => {
       </Paper>
 
       {/* Create / Edit Dialog */}
-      <Dialog open={dialogOpen} onClose={() => !saving && setDialogOpen(false)} maxWidth="sm" fullWidth PaperProps={{ sx: { borderRadius: 3 } }}>
+      <Dialog open={dialogOpen} onClose={() => !saving && setDialogOpen(false)} maxWidth="sm" fullWidth>
         <DialogTitle sx={{ fontWeight: "bold" }}>{editingCategory ? "Edit Category" : "New Category"}</DialogTitle>
         <DialogContent dividers>
           <Box sx={{ display: "flex", flexDirection: "column", gap: 2, pt: 1 }}>
@@ -269,7 +269,7 @@ const AdminCategories = () => {
         </DialogContent>
         <DialogActions sx={{ p: 2, gap: 1 }}>
           <Button onClick={() => setDialogOpen(false)} disabled={saving}>Cancel</Button>
-          <Button variant="contained" onClick={handleSave} disabled={saving} sx={{ borderRadius: 2 }}>
+          <Button variant="contained" onClick={handleSave} disabled={saving}>
             {saving ? "Saving..." : editingCategory ? "Save Changes" : "Create Category"}
           </Button>
         </DialogActions>

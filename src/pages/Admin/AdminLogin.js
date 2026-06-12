@@ -11,11 +11,13 @@ import {
   CircularProgress,
   Alert,
 } from "@mui/material";
+import { ThemeProvider } from "@mui/material/styles";
 import { Icon } from "@iconify/react";
 import { useAdmin } from "../../context/AdminContext";
 import { useTheme } from "../../context/ThemeContext";
+import buildAdminTheme from "../../theme/adminTheme";
 
-const LOGO = "https://placehold.co/210x70/667eea/ffffff?text=LOGO";
+const LOGO = "https://placehold.co/210x70/4f46e5/ffffff?text=LOGO";
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 const AdminLogin = () => {
@@ -68,25 +70,25 @@ const AdminLogin = () => {
     }
   };
 
-  const bgGradient = isDarkMode
-    ? "linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f0f23 100%)"
-    : "linear-gradient(135deg, #667eea 0%, #764ba2 50%, #6B8DD6 100%)";
+  const adminTheme = buildAdminTheme(isDarkMode ? "dark" : "light");
 
   // Wait for the sessionStorage restore before deciding what to render, so an
   // already-authenticated admin never sees a flash of the login form.
   if (adminLoading) {
     return (
-      <Box
-        sx={{
-          minHeight: "100vh",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          background: bgGradient,
-        }}
-      >
-        <CircularProgress sx={{ color: "#fff" }} />
-      </Box>
+      <ThemeProvider theme={adminTheme}>
+        <Box
+          sx={{
+            minHeight: "100vh",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            bgcolor: "background.default",
+          }}
+        >
+          <CircularProgress />
+        </Box>
+      </ThemeProvider>
     );
   }
 
@@ -96,25 +98,26 @@ const AdminLogin = () => {
   }
 
   return (
+    <ThemeProvider theme={adminTheme}>
     <Box
-      style={{
+      sx={{
         minHeight: "100vh",
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        background: bgGradient,
-        padding: "16px",
+        bgcolor: "background.default",
+        p: 2,
       }}
     >
       <Paper
-        elevation={24}
+        elevation={0}
         sx={{
-          p: 4,
+          p: { xs: 3, sm: 4 },
           width: "100%",
           maxWidth: 420,
-          borderRadius: 3,
-          backgroundColor: isDarkMode ? "rgba(30, 30, 50, 0.95)" : "rgba(255, 255, 255, 0.95)",
-          backdropFilter: "blur(10px)",
+          border: "1px solid",
+          borderColor: "divider",
+          boxShadow: "0 1px 3px rgba(15, 23, 42, 0.06)",
         }}
       >
           {/* Logo/Header */}
@@ -131,14 +134,13 @@ const AdminLogin = () => {
               <img
                 src={LOGO}
                 alt={process.env.REACT_APP_NAME || "Admin"}
-                style={{
-                  height: 70,
-                  width: "auto",
-                  filter: "drop-shadow(0 4px 16px rgba(102, 126, 234, 0.3))",
-                }}
+                style={{ height: 56, width: "auto" }}
               />
             </Box>
-            <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+            <Typography variant="h6" sx={{ fontWeight: 700 }}>
+              Admin Console
+            </Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
               Sign in to manage your store
             </Typography>
           </Box>
@@ -213,19 +215,7 @@ const AdminLogin = () => {
               variant="contained"
               size="large"
               disabled={isLoading}
-              sx={{
-                py: 1.5,
-                background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
-                borderRadius: 2,
-                textTransform: "none",
-                fontSize: "1rem",
-                fontWeight: 600,
-                boxShadow: "0 8px 24px rgba(102, 126, 234, 0.3)",
-                "&:hover": {
-                  background: "linear-gradient(135deg, #5a72d4 0%, #6a4190 100%)",
-                  boxShadow: "0 12px 32px rgba(102, 126, 234, 0.4)",
-                },
-              }}
+              sx={{ py: 1.25, fontSize: "0.95rem" }}
             >
               {isLoading ? (
                 <CircularProgress size={24} color="inherit" />
@@ -243,13 +233,14 @@ const AdminLogin = () => {
             <Button
               onClick={() => navigate("/")}
               startIcon={<Icon icon="mdi:arrow-left" />}
-              sx={{ textTransform: "none" }}
+              sx={{ color: "text.secondary" }}
             >
               Back to Store
             </Button>
           </Box>
       </Paper>
     </Box>
+    </ThemeProvider>
   );
 };
 

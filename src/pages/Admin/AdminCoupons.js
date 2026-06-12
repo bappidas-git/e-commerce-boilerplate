@@ -114,12 +114,12 @@ const AdminCoupons = () => {
           <Typography variant="h5" fontWeight="bold">Coupons</Typography>
           <Typography variant="body2" color="text.secondary">Manage discount codes and promotions</Typography>
         </Box>
-        <Button variant="contained" startIcon={<Icon icon="mdi:plus" />} onClick={openCreate} sx={{ borderRadius: 2 }}>
+        <Button variant="contained" startIcon={<Icon icon="mdi:plus" />} onClick={openCreate}>
           Create Coupon
         </Button>
       </Box>
 
-      <Paper elevation={0} sx={{ borderRadius: 3, border: "1px solid", borderColor: "divider", overflow: "hidden" }}>
+      <Paper elevation={0} sx={{ border: "1px solid", borderColor: "divider", overflow: "hidden" }}>
         <Box sx={{ p: 2, borderBottom: "1px solid", borderColor: "divider" }}>
           <TextField
             placeholder="Search coupons..."
@@ -168,7 +168,7 @@ const AdminCoupons = () => {
                       <TableCell><Typography variant="body2">₹{coupon.minOrderAmount || 0}</Typography></TableCell>
                       <TableCell sx={{ minWidth: 140 }}>
                         <Typography variant="caption">{coupon.usedCount} {coupon.usageLimit ? `/ ${coupon.usageLimit}` : "uses"}</Typography>
-                        {pct !== null && <LinearProgress variant="determinate" value={pct} sx={{ mt: 0.5, height: 4, borderRadius: 2 }} color={pct >= 90 ? "error" : pct >= 70 ? "warning" : "primary"} />}
+                        {pct !== null && <LinearProgress variant="determinate" value={pct} sx={{ mt: 0.5, height: 4, borderRadius: 1 }} color={pct >= 90 ? "error" : pct >= 70 ? "warning" : "primary"} />}
                       </TableCell>
                       <TableCell>
                         <Typography variant="body2" color={expired ? "error.main" : "text.primary"}>{formatDate(coupon.expiresAt)}</Typography>
@@ -198,7 +198,7 @@ const AdminCoupons = () => {
       </Paper>
 
       {/* Create/Edit Dialog */}
-      <Dialog open={dialogOpen} onClose={() => setDialogOpen(false)} maxWidth="sm" fullWidth PaperProps={{ sx: { borderRadius: 3 } }}>
+      <Dialog open={dialogOpen} onClose={() => setDialogOpen(false)} maxWidth="sm" fullWidth>
         <DialogTitle sx={{ fontWeight: "bold" }}>{editingCoupon ? "Edit Coupon" : "New Coupon"}</DialogTitle>
         <DialogContent dividers>
           <Box sx={{ display: "flex", flexDirection: "column", gap: 2, pt: 1 }}>
@@ -209,7 +209,7 @@ const AdminCoupons = () => {
                 fullWidth size="small" placeholder="e.g., SUMMER25"
                 InputProps={{ sx: { fontFamily: "monospace", fontWeight: 700 } }}
               />
-              <Button variant="outlined" size="small" onClick={generateCode} sx={{ whiteSpace: "nowrap", borderRadius: 2 }}>
+              <Button variant="outlined" size="small" onClick={generateCode} sx={{ whiteSpace: "nowrap" }}>
                 Generate
               </Button>
             </Box>
@@ -250,7 +250,7 @@ const AdminCoupons = () => {
         </DialogContent>
         <DialogActions sx={{ p: 2, gap: 1 }}>
           <Button onClick={() => setDialogOpen(false)}>Cancel</Button>
-          <Button variant="contained" onClick={handleSave} sx={{ borderRadius: 2 }}>{editingCoupon ? "Save Changes" : "Create Coupon"}</Button>
+          <Button variant="contained" onClick={handleSave}>{editingCoupon ? "Save Changes" : "Create Coupon"}</Button>
         </DialogActions>
       </Dialog>
     </Box>

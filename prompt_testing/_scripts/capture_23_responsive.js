@@ -130,10 +130,13 @@ function fixtures(def, theme, data) {
   }, { def, USER, ADMIN, cartItems: data.cartItems, wishItems: data.wishItems, theme }];
 }
 
+const ADMIN_ONLY = process.argv.includes("--admin-only");
+const activePages = () => (ADMIN_ONLY ? PAGES.filter((p) => p.path.startsWith("/admin")) : PAGES);
+
 async function capturePages(browser, vp, theme, data) {
   const ctx = await browser.newContext({ viewport: { width: vp.w, height: vp.h }, ignoreHTTPSErrors: true });
   const page = await ctx.newPage();
-  for (const def of PAGES) {
+  for (const def of activePages()) {
     const p = def.path === "/__LONGEST__" ? `/products/${data.longest.id}` : def.path;
     await page.addInitScript(...fixtures(def, theme, data));
     try {
@@ -175,7 +178,7 @@ async function captureOverlays(browser, vp, theme, data) {
   const isMobile = vp.w <= 768;
 
   // storefront overlays (guest with seeded cart)
-  {
+  if (!ADMIN_ONLY) {
     const ctx = await browser.newContext({ viewport: { width: vp.w, height: vp.h }, ignoreHTTPSErrors: true });
     await ctx.addInitScript(...fixtures({ cart: true }, theme, data));
     const page = await ctx.newPage();
@@ -277,7 +280,7 @@ async function captureOverlays(browser, vp, theme, data) {
   const browser = await chromium.launch({ args: ["--ignore-certificate-errors"] });
 
   // page matrix, 4 workers across viewport×theme cells
-  if (!process.argv.includes("--overlays-only")) {
+  if (!process.argv.includes("--overlays-only") || ADMIN_ONLY) {
     const cells = [];
     for (const vp of VIEWPORTS) for (const theme of THEMES) cells.push({ vp, theme });
     const queue = [...cells];

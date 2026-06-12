@@ -90,7 +90,7 @@ const AdminReviews = () => {
         )}
       </Box>
 
-      <Paper elevation={0} sx={{ borderRadius: 3, border: "1px solid", borderColor: "divider", overflow: "hidden" }}>
+      <Paper elevation={0} sx={{ border: "1px solid", borderColor: "divider", overflow: "hidden" }}>
         <Box sx={{ p: 2, borderBottom: "1px solid", borderColor: "divider", display: "flex", gap: 2 }}>
           <TextField
             placeholder="Search reviews..."
@@ -175,7 +175,7 @@ const AdminReviews = () => {
       </Paper>
 
       {/* Review Detail Dialog */}
-      <Dialog open={dialogOpen} onClose={() => setDialogOpen(false)} maxWidth="sm" fullWidth PaperProps={{ sx: { borderRadius: 3 } }}>
+      <Dialog open={dialogOpen} onClose={() => setDialogOpen(false)} maxWidth="sm" fullWidth>
         {selectedReview && (
           <>
             <DialogTitle sx={{ fontWeight: "bold" }}>

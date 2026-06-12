@@ -122,16 +122,16 @@ const AdminShipping = () => {
           <Typography variant="h5" fontWeight="bold">Shipping</Typography>
           <Typography variant="body2" color="text.secondary">Manage shipping methods and carrier integrations</Typography>
         </Box>
-        <Button variant="contained" startIcon={<Icon icon="mdi:plus" />} onClick={openCreate} sx={{ borderRadius: 2 }}>
+        <Button variant="contained" startIcon={<Icon icon="mdi:plus" />} onClick={openCreate}>
           Add Method
         </Button>
       </Box>
 
       {/* Shiprocket Integration Card */}
-      <Paper elevation={0} sx={{ p: 3, borderRadius: 3, border: "1px solid", borderColor: "divider", mb: 3 }}>
+      <Paper elevation={0} sx={{ p: 3, border: "1px solid", borderColor: "divider", mb: 3 }}>
         <Box sx={{ display: "flex", alignItems: "center", gap: 2, mb: 2 }}>
-          <Box sx={{ p: 1.5, bgcolor: "rgba(102, 126, 234, 0.1)", borderRadius: 2 }}>
-            <Icon icon="mdi:truck-fast" style={{ fontSize: 28, color: "#667eea" }} />
+          <Box sx={{ p: 1.5, bgcolor: "rgba(79, 70, 229, 0.08)", borderRadius: 1, display: "flex" }}>
+            <Icon icon="mdi:truck-fast" style={{ fontSize: 26, color: "#6366f1" }} />
           </Box>
           <Box sx={{ flex: 1 }}>
             <Typography variant="subtitle1" fontWeight="bold">Shiprocket Integration</Typography>
@@ -142,7 +142,7 @@ const AdminShipping = () => {
 
         {shiprocketEnabled && (
           <>
-            <Alert severity="info" sx={{ mb: 2, borderRadius: 2 }}>
+            <Alert severity="info" sx={{ mb: 2 }}>
               Shiprocket API credentials are managed in your Laravel <code>.env</code> file via <code>SHIPROCKET_EMAIL</code> and <code>SHIPROCKET_PASSWORD</code>. Save the settings below to update the store configuration.
             </Alert>
             <Grid container spacing={2}>
@@ -154,7 +154,7 @@ const AdminShipping = () => {
               </Grid>
             </Grid>
             <Box sx={{ mt: 2, display: "flex", gap: 2 }}>
-              <Button variant="contained" size="small" sx={{ borderRadius: 2 }} onClick={handleSaveShiprocket}>
+              <Button variant="contained" size="small" onClick={handleSaveShiprocket}>
                 Save Integration
               </Button>
             </Box>
@@ -182,7 +182,7 @@ const AdminShipping = () => {
       </Paper>
 
       {/* Shipping Methods Table */}
-      <Paper elevation={0} sx={{ borderRadius: 3, border: "1px solid", borderColor: "divider", overflow: "hidden" }}>
+      <Paper elevation={0} sx={{ border: "1px solid", borderColor: "divider", overflow: "hidden" }}>
         <Box sx={{ p: 2, borderBottom: "1px solid", borderColor: "divider" }}>
           <Typography variant="h6" fontWeight="bold">Shipping Methods</Typography>
         </Box>
@@ -237,7 +237,7 @@ const AdminShipping = () => {
       </Paper>
 
       {/* Create/Edit Dialog */}
-      <Dialog open={dialogOpen} onClose={() => setDialogOpen(false)} maxWidth="sm" fullWidth PaperProps={{ sx: { borderRadius: 3 } }}>
+      <Dialog open={dialogOpen} onClose={() => setDialogOpen(false)} maxWidth="sm" fullWidth>
         <DialogTitle sx={{ fontWeight: "bold" }}>{editingMethod ? "Edit Shipping Method" : "New Shipping Method"}</DialogTitle>
         <DialogContent dividers>
           <Box sx={{ display: "flex", flexDirection: "column", gap: 2, pt: 1 }}>
@@ -262,7 +262,7 @@ const AdminShipping = () => {
         </DialogContent>
         <DialogActions sx={{ p: 2, gap: 1 }}>
           <Button onClick={() => setDialogOpen(false)}>Cancel</Button>
-          <Button variant="contained" onClick={handleSave} sx={{ borderRadius: 2 }}>{editingMethod ? "Save Changes" : "Create"}</Button>
+          <Button variant="contained" onClick={handleSave}>{editingMethod ? "Save Changes" : "Create"}</Button>
         </DialogActions>
       </Dialog>
     </Box>

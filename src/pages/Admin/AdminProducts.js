@@ -278,12 +278,12 @@ const AdminProducts = () => {
           <Typography variant="h5" fontWeight="bold">Products</Typography>
           <Typography variant="body2" color="text.secondary">Manage your product catalogue</Typography>
         </Box>
-        <Button variant="contained" startIcon={<Icon icon="mdi:plus" />} onClick={openCreate} sx={{ borderRadius: 2 }}>
+        <Button variant="contained" startIcon={<Icon icon="mdi:plus" />} onClick={openCreate}>
           Add Product
         </Button>
       </Box>
 
-      <Paper elevation={0} sx={{ borderRadius: 3, border: "1px solid", borderColor: "divider", overflow: "hidden" }}>
+      <Paper elevation={0} sx={{ border: "1px solid", borderColor: "divider", overflow: "hidden" }}>
         <Box sx={{ p: 2, borderBottom: "1px solid", borderColor: "divider", display: "flex", gap: 2, flexWrap: "wrap" }}>
           <TextField
             placeholder="Search by name, SKU or brand..."
@@ -371,7 +371,7 @@ const AdminProducts = () => {
       </Paper>
 
       {/* Create / Edit Dialog */}
-      <Dialog open={dialogOpen} onClose={() => !saving && setDialogOpen(false)} maxWidth="md" fullWidth PaperProps={{ sx: { borderRadius: 3 } }}>
+      <Dialog open={dialogOpen} onClose={() => !saving && setDialogOpen(false)} maxWidth="md" fullWidth>
         <DialogTitle sx={{ fontWeight: "bold" }}>{editingProduct ? "Edit Product" : "New Product"}</DialogTitle>
         <DialogContent dividers>
           <Grid container spacing={2} sx={{ pt: 1 }}>
@@ -462,14 +462,14 @@ const AdminProducts = () => {
                     Add options like size/colour with their own price, stock &amp; SKU. Shown on the product page.
                   </Typography>
                 </Box>
-                <Button size="small" startIcon={<Icon icon="mdi:plus" />} onClick={addVariant} sx={{ borderRadius: 2, flexShrink: 0 }}>
+                <Button size="small" startIcon={<Icon icon="mdi:plus" />} onClick={addVariant} sx={{ flexShrink: 0 }}>
                   Add Variant
                 </Button>
               </Box>
             </Grid>
             {form.variants.length === 0 ? (
               <Grid item xs={12}>
-                <Box sx={{ p: 2, border: "1px dashed", borderColor: "divider", borderRadius: 2, textAlign: "center" }}>
+                <Box sx={{ p: 2, border: "1px dashed", borderColor: "divider", borderRadius: 1, textAlign: "center" }}>
                   <Typography variant="caption" color="text.secondary">No variants — this product is sold as a single option.</Typography>
                 </Box>
               </Grid>
@@ -553,7 +553,7 @@ const AdminProducts = () => {
         </DialogContent>
         <DialogActions sx={{ p: 2, gap: 1 }}>
           <Button onClick={() => setDialogOpen(false)} disabled={saving}>Cancel</Button>
-          <Button variant="contained" onClick={handleSave} disabled={saving} sx={{ borderRadius: 2 }}>
+          <Button variant="contained" onClick={handleSave} disabled={saving}>
             {saving ? "Saving…" : editingProduct ? "Save Changes" : "Create Product"}
           </Button>
         </DialogActions>

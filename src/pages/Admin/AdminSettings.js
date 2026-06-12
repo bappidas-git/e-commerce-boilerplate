@@ -12,7 +12,6 @@ import {
   Divider,
   Alert,
   Snackbar,
-  useTheme,
   Tabs,
   Tab,
   Card,
@@ -56,10 +55,8 @@ const CURRENCIES = [
 ];
 
 const AdminSettings = () => {
-  const theme = useTheme();
   const navigate = useNavigate();
-  const cardBg = theme.palette.mode === "dark" ? "#1a1a2e" : "#fff";
-
+  
   const [activeTab, setActiveTab] = useState(0);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -195,7 +192,7 @@ const AdminSettings = () => {
 
   const symbol = storeForm.currencySymbol || "₹";
 
-  const sectionCardSx = { borderRadius: 2, height: "100%", bgcolor: cardBg };
+  const sectionCardSx = { height: "100%" };
 
   const renderGeneralSkeleton = () => (
     <Grid container spacing={3}>
@@ -230,7 +227,7 @@ const AdminSettings = () => {
       </Box>
 
       {/* Tabs */}
-      <Paper sx={{ borderRadius: 2, mb: 3, bgcolor: cardBg }}>
+      <Paper sx={{ mb: 3, border: "1px solid", borderColor: "divider" }} elevation={0}>
         <Tabs
           value={activeTab}
           onChange={handleTabChange}
@@ -271,10 +268,6 @@ const AdminSettings = () => {
                 onClick={handleSaveGeneral}
                 disabled={saving}
                 startIcon={saving ? <CircularProgress size={18} color="inherit" /> : <Icon icon="mdi:content-save" />}
-                sx={{
-                  background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
-                  "&:hover": { background: "linear-gradient(135deg, #5a6fd6 0%, #6a4190 100%)" },
-                }}
               >
                 {saving ? "Saving..." : "Save Changes"}
               </Button>
@@ -358,7 +351,7 @@ const AdminSettings = () => {
 
               {/* Cash on Delivery */}
               <Grid item xs={12}>
-                <Card sx={{ borderRadius: 2, bgcolor: cardBg }}>
+                <Card>
                   <CardContent>
                     <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 1, mb: 2 }}>
                       <Box sx={{ display: "flex", alignItems: "center" }}>
@@ -415,22 +408,22 @@ const AdminSettings = () => {
 
       {/* Categories Tab — reconciled: one canonical manager lives at /admin/categories */}
       <TabPanel value={activeTab} index={1}>
-        <Paper sx={{ borderRadius: 2, bgcolor: cardBg, p: { xs: 3, sm: 5 } }}>
+        <Paper sx={{ p: { xs: 3, sm: 5 }, border: "1px solid", borderColor: "divider" }} elevation={0}>
           <Box sx={{ maxWidth: 520, mx: "auto", textAlign: "center" }}>
             <Box
               sx={{
-                width: 72,
-                height: 72,
+                width: 64,
+                height: 64,
                 mx: "auto",
                 mb: 2,
-                borderRadius: 3,
+                borderRadius: 1,
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
-                background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+                bgcolor: "primary.main",
               }}
             >
-              <Icon icon="mdi:folder-multiple" style={{ fontSize: 36, color: "#fff" }} />
+              <Icon icon="mdi:folder-multiple" style={{ fontSize: 32, color: "#fff" }} />
             </Box>
             <Typography variant="h6" gutterBottom>
               Manage categories in one place
@@ -453,10 +446,6 @@ const AdminSettings = () => {
                 size="large"
                 startIcon={<Icon icon="mdi:folder-cog" />}
                 onClick={() => navigate("/admin/categories")}
-                sx={{
-                  background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
-                  "&:hover": { background: "linear-gradient(135deg, #5a6fd6 0%, #6a4190 100%)" },
-                }}
               >
                 Open Category Manager
               </Button>
