@@ -22,7 +22,7 @@ const AdminShipping = () => {
   const [shiprocketEnabled, setShiprocketEnabled] = useState(false);
   const [shiprocketConfig, setShiprocketConfig] = useState({ email: "", password: "" });
 
-  useEffect(() => { loadMethods(); }, []);
+  useEffect(() => { loadMethods(); loadShiprocket(); }, []);
 
   const loadMethods = async () => {
     try {
@@ -33,6 +33,43 @@ const AdminShipping = () => {
       console.error(e);
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Hydrate the Shiprocket card from the persisted store settings so the toggle
+  // and email reflect what was saved (password is never echoed back). Non-blocking.
+  const loadShiprocket = async () => {
+    try {
+      const settings = await apiService.admin.getSettings();
+      const sh = settings?.shipping || {};
+      setShiprocketEnabled(!!sh.shiprocketEnabled);
+      setShiprocketConfig({ email: sh.shiprocketEmail || "", password: "" });
+    } catch (e) {
+      // Settings are optional context for this card — never blank the page over it.
+    }
+  };
+
+  // Persist the enable/disable flag immediately so it round-trips on reload. The
+  // updateSettings call merges, leaving stored credentials and weight/dimensions intact.
+  const handleShiprocketToggle = async (checked) => {
+    setShiprocketEnabled(checked);
+    try {
+      await apiService.admin.updateSettings("shipping", { shiprocketEnabled: checked });
+    } catch (e) {
+      Swal.fire({ icon: "error", title: "Error", text: e.message });
+    }
+  };
+
+  const handleSaveShiprocket = async () => {
+    try {
+      // Only send the password when the admin typed one, so saving after a reload
+      // (where the field is intentionally blank) doesn't wipe the stored secret.
+      const payload = { shiprocketEnabled: true, shiprocketEmail: shiprocketConfig.email };
+      if (shiprocketConfig.password) payload.shiprocketPassword = shiprocketConfig.password;
+      await apiService.admin.updateSettings("shipping", payload);
+      Swal.fire({ icon: "success", title: "Shiprocket settings saved", toast: true, position: "bottom-end", showConfirmButton: false, timer: 2500 });
+    } catch (e) {
+      Swal.fire({ icon: "error", title: "Error", text: e.message });
     }
   };
 
@@ -100,7 +137,7 @@ const AdminShipping = () => {
             <Typography variant="subtitle1" fontWeight="bold">Shiprocket Integration</Typography>
             <Typography variant="body2" color="text.secondary">Connect Shiprocket to automate shipping label generation and tracking</Typography>
           </Box>
-          <Switch checked={shiprocketEnabled} onChange={(e) => setShiprocketEnabled(e.target.checked)} />
+          <Switch checked={shiprocketEnabled} onChange={(e) => handleShiprocketToggle(e.target.checked)} />
         </Box>
 
         {shiprocketEnabled && (
@@ -117,14 +154,7 @@ const AdminShipping = () => {
               </Grid>
             </Grid>
             <Box sx={{ mt: 2, display: "flex", gap: 2 }}>
-              <Button variant="contained" size="small" sx={{ borderRadius: 2 }} onClick={async () => {
-                try {
-                  await apiService.admin.updateSettings("shipping", { shiprocketEnabled: true, shiprocketEmail: shiprocketConfig.email, shiprocketPassword: shiprocketConfig.password });
-                  Swal.fire({ icon: "success", title: "Shiprocket settings saved", toast: true, position: "bottom-end", showConfirmButton: false, timer: 2500 });
-                } catch (e) {
-                  Swal.fire({ icon: "error", title: "Error", text: e.message });
-                }
-              }}>
+              <Button variant="contained" size="small" sx={{ borderRadius: 2 }} onClick={handleSaveShiprocket}>
                 Save Integration
               </Button>
             </Box>
@@ -157,7 +187,7 @@ const AdminShipping = () => {
           <Typography variant="h6" fontWeight="bold">Shipping Methods</Typography>
         </Box>
         <TableContainer>
-          <Table>
+          <Table sx={{ minWidth: 900 }}>
             <TableHead>
               <TableRow>
                 <TableCell>Method</TableCell>
@@ -185,6 +215,8 @@ const AdminShipping = () => {
                     <TableCell>
                       {method.rateType === "free" ? (
                         <Chip label="Free" size="small" color="success" />
+                      ) : method.rateType === "calculated" ? (
+                        <Chip label="Calculated" size="small" color="info" variant="outlined" />
                       ) : (
                         <Typography variant="body2">{formatCurrency(method.flatRate)}</Typography>
                       )}

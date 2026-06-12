@@ -3,7 +3,7 @@ import {
   Box, Paper, Typography, Table, TableBody, TableCell, TableContainer,
   TableHead, TableRow, Avatar, Chip, IconButton, Tooltip, Skeleton,
   TextField, InputAdornment, Dialog, DialogTitle, DialogContent,
-  DialogActions, Button, Divider, FormControlLabel, Switch,
+  DialogActions, Button, Divider,
 } from "@mui/material";
 import { Icon } from "@iconify/react";
 import Swal from "sweetalert2";
@@ -97,7 +97,7 @@ const AdminUsers = () => {
           />
         </Box>
         <TableContainer>
-          <Table>
+          <Table sx={{ minWidth: 720 }}>
             <TableHead>
               <TableRow>
                 <TableCell>User</TableCell>
@@ -117,7 +117,7 @@ const AdminUsers = () => {
                   <TableRow key={user.id} hover>
                     <TableCell>
                       <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
-                        <Avatar sx={{ width: 40, height: 40, background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)", fontSize: "0.9rem" }}>
+                        <Avatar src={user.avatar || undefined} sx={{ width: 40, height: 40, background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)", fontSize: "0.9rem" }}>
                           {user.firstName?.[0]}{user.lastName?.[0]}
                         </Avatar>
                         <Box>
@@ -155,7 +155,7 @@ const AdminUsers = () => {
           <>
             <DialogTitle sx={{ fontWeight: "bold" }}>
               <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
-                <Avatar sx={{ width: 48, height: 48, background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)" }}>
+                <Avatar src={selectedUser.avatar || undefined} sx={{ width: 48, height: 48, background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)" }}>
                   {selectedUser.firstName?.[0]}{selectedUser.lastName?.[0]}
                 </Avatar>
                 <Box>

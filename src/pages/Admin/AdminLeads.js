@@ -29,11 +29,10 @@ import {
   FormControl,
   InputLabel,
   useTheme,
-  Tabs,
-  Tab,
 } from "@mui/material";
 import { Icon } from "@iconify/react";
 import { motion, AnimatePresence } from "framer-motion";
+import Swal from "sweetalert2";
 import apiService from "../../services/api";
 
 const AdminLeads = () => {
@@ -59,6 +58,9 @@ const AdminLeads = () => {
 
   useEffect(() => {
     filterLeads();
+    // filterLeads is recreated each render; depending on it would loop. The
+    // inputs that should retrigger filtering are listed explicitly.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchQuery, typeFilter, statusFilter, leads]);
 
   const loadLeads = async () => {
@@ -127,20 +129,32 @@ const AdminLeads = () => {
         )
       );
       setDetailsDialogOpen(false);
+      Swal.fire({ icon: "success", title: "Lead updated", toast: true, position: "bottom-end", showConfirmButton: false, timer: 2000 });
     } catch (error) {
       console.error("Error updating lead:", error);
+      Swal.fire({ icon: "error", title: "Error", text: error.message });
     }
   };
 
   const handleDeleteLead = async (id) => {
-    if (!window.confirm("Are you sure you want to delete this lead?")) return;
+    const result = await Swal.fire({
+      title: "Delete lead?",
+      text: "This lead will be permanently removed.",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#d32f2f",
+      confirmButtonText: "Delete",
+    });
+    if (!result.isConfirmed) return;
 
     try {
       await apiService.admin.deleteLead(id);
       setLeads((prev) => prev.filter((lead) => lead.id !== id));
       setDetailsDialogOpen(false);
+      Swal.fire({ icon: "success", title: "Deleted", toast: true, position: "bottom-end", showConfirmButton: false, timer: 2000 });
     } catch (error) {
       console.error("Error deleting lead:", error);
+      Swal.fire({ icon: "error", title: "Error", text: error.message });
     }
   };
 
@@ -236,7 +250,7 @@ const AdminLeads = () => {
               bgcolor: typeFilter === "all" ? "rgba(102, 126, 234, 0.1)" : "transparent",
               "&:hover": { bgcolor: "rgba(102, 126, 234, 0.08)" },
             }}
-            onClick={() => setTypeFilter("all")}
+            onClick={() => { setTypeFilter("all"); setStatusFilter("all"); }}
           >
             <Typography variant="h4" fontWeight="bold" sx={{ color: "#667eea" }}>
               {leads.length}
@@ -258,7 +272,7 @@ const AdminLeads = () => {
               bgcolor: typeFilter === "contact" ? "rgba(102, 126, 234, 0.1)" : "transparent",
               "&:hover": { bgcolor: "rgba(102, 126, 234, 0.08)" },
             }}
-            onClick={() => setTypeFilter("contact")}
+            onClick={() => { setTypeFilter("contact"); setStatusFilter("all"); }}
           >
             <Typography variant="h4" fontWeight="bold" sx={{ color: "#764ba2" }}>
               {contactCount}
@@ -280,7 +294,7 @@ const AdminLeads = () => {
               bgcolor: typeFilter === "newsletter" ? "rgba(76, 175, 80, 0.1)" : "transparent",
               "&:hover": { bgcolor: "rgba(76, 175, 80, 0.08)" },
             }}
-            onClick={() => setTypeFilter("newsletter")}
+            onClick={() => { setTypeFilter("newsletter"); setStatusFilter("all"); }}
           >
             <Typography variant="h4" fontWeight="bold" sx={{ color: "#4caf50" }}>
               {newsletterCount}
@@ -302,7 +316,7 @@ const AdminLeads = () => {
               bgcolor: statusFilter === "new" ? "rgba(33, 150, 243, 0.1)" : "transparent",
               "&:hover": { bgcolor: "rgba(33, 150, 243, 0.08)" },
             }}
-            onClick={() => setStatusFilter("new")}
+            onClick={() => { setStatusFilter("new"); setTypeFilter("all"); }}
           >
             <Typography variant="h4" fontWeight="bold" sx={{ color: "#2196f3" }}>
               {newLeadsCount}
@@ -418,7 +432,7 @@ const AdminLeads = () => {
         }}
       >
         <TableContainer>
-          <Table>
+          <Table sx={{ minWidth: 860 }}>
             <TableHead>
               <TableRow sx={{ bgcolor: theme.palette.mode === "dark" ? "rgba(255,255,255,0.03)" : "rgba(0,0,0,0.02)" }}>
                 <TableCell>Type</TableCell>
