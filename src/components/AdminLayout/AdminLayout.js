@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from "react";
+import React, { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useNavigate, useLocation, Outlet, Navigate } from "react-router-dom";
 import {
   Box,
@@ -16,7 +16,6 @@ import {
   Avatar,
   Menu,
   MenuItem,
-  useTheme,
   useMediaQuery,
   Tooltip,
   Badge,
@@ -28,13 +27,15 @@ import {
   DialogContent,
   Button,
 } from "@mui/material";
+import { ThemeProvider } from "@mui/material/styles";
 import { Icon } from "@iconify/react";
 import { useAdmin } from "../../context/AdminContext";
 import { useThemeContext } from "../../context/ThemeContext";
+import buildAdminTheme from "../../theme/adminTheme";
 import apiService from "../../services/api";
 import Swal from "sweetalert2";
 
-const LOGO = "https://placehold.co/160x40/667eea/ffffff?text=LOGO";
+const LOGO = "https://placehold.co/160x40/4f46e5/ffffff?text=LOGO";
 
 const drawerWidth = 260;
 
@@ -76,7 +77,9 @@ const menuItems = [
   },
   {
     title: "Returns",
-    icon: "mdi:package-variant-return",
+    // NB: "mdi:package-variant-return" does not exist in the MDI set, which is
+    // why this nav item rendered without an icon.
+    icon: "mdi:backup-restore",
     path: "/admin/returns",
   },
   {
@@ -117,12 +120,14 @@ const menuItems = [
 ];
 
 const AdminLayout = () => {
-  const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down("md"));
+  const isMobile = useMediaQuery("(max-width:899.95px)");
   const navigate = useNavigate();
   const location = useLocation();
   const { admin, isAuthenticated, isLoading: adminLoading, logout } = useAdmin();
   const { mode, toggleTheme } = useThemeContext();
+  // Dedicated flat/professional admin theme; tracks the same light/dark mode
+  // as the storefront toggle but swaps the whole design language.
+  const adminTheme = useMemo(() => buildAdminTheme(mode), [mode]);
 
   const [mobileOpen, setMobileOpen] = useState(false);
   const [anchorEl, setAnchorEl] = useState(null);
@@ -267,9 +272,11 @@ const AdminLayout = () => {
   // Wait for sessionStorage restore before guarding the route
   if (adminLoading) {
     return (
-      <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", minHeight: "100vh" }}>
-        <CircularProgress />
-      </Box>
+      <ThemeProvider theme={adminTheme}>
+        <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", minHeight: "100vh", bgcolor: "background.default" }}>
+          <CircularProgress />
+        </Box>
+      </ThemeProvider>
     );
   }
 
@@ -321,11 +328,7 @@ const AdminLayout = () => {
         <img
           src={LOGO}
           alt={process.env.REACT_APP_NAME || "Admin Panel"}
-          style={{
-            height: 32,
-            width: "auto",
-            filter: "drop-shadow(0 2px 8px rgba(102, 126, 234, 0.3))",
-          }}
+          style={{ height: 32, width: "auto" }}
         />
       </Box>
 
@@ -366,21 +369,11 @@ const AdminLayout = () => {
                   if (isMobile) setMobileOpen(false);
                 }}
                 sx={{
-                  borderRadius: 2,
                   mx: 0.5,
                   py: 0.75,
-                  bgcolor: isActive
-                    ? theme.palette.mode === "dark"
-                      ? "rgba(102, 126, 234, 0.2)"
-                      : "rgba(102, 126, 234, 0.1)"
-                    : "transparent",
+                  bgcolor: isActive ? "action.selected" : "transparent",
                   color: isActive ? "primary.main" : "text.primary",
-                  "&:hover": {
-                    bgcolor:
-                      theme.palette.mode === "dark"
-                        ? "rgba(102, 126, 234, 0.15)"
-                        : "rgba(102, 126, 234, 0.08)",
-                  },
+                  "&:hover": { bgcolor: isActive ? "action.selected" : "action.hover" },
                 }}
               >
                 <ListItemIcon
@@ -408,15 +401,9 @@ const AdminLayout = () => {
         <ListItemButton
           onClick={() => navigate("/")}
           sx={{
-            borderRadius: 2,
             border: "1px solid",
             borderColor: "divider",
-            "&:hover": {
-              bgcolor:
-                theme.palette.mode === "dark"
-                  ? "rgba(255, 255, 255, 0.05)"
-                  : "rgba(0, 0, 0, 0.04)",
-            },
+            "&:hover": { bgcolor: "action.hover" },
           }}
         >
           <ListItemIcon sx={{ minWidth: 40 }}>
@@ -432,6 +419,7 @@ const AdminLayout = () => {
   );
 
   return (
+    <ThemeProvider theme={adminTheme}>
     <Box sx={{ display: "flex", minHeight: "100vh" }}>
       {/* App Bar */}
       <AppBar
@@ -440,7 +428,7 @@ const AdminLayout = () => {
         sx={{
           width: { md: `calc(100% - ${drawerWidth}px)` },
           ml: { md: `${drawerWidth}px` },
-          bgcolor: theme.palette.mode === "dark" ? "#1a1a2e" : "#fff",
+          bgcolor: "background.paper",
           borderBottom: "1px solid",
           borderColor: "divider",
         }}
@@ -504,7 +492,6 @@ const AdminLayout = () => {
                 mt: 1,
                 width: 360,
                 maxHeight: 480,
-                borderRadius: 2,
                 overflow: "hidden",
               },
             }}
@@ -575,16 +562,12 @@ const AdminLayout = () => {
                       borderBottom: "1px solid",
                       borderColor: "divider",
                       cursor: "pointer",
-                      "&:hover": {
-                        bgcolor:
-                          theme.palette.mode === "dark"
-                            ? "rgba(255, 255, 255, 0.05)"
-                            : "rgba(0, 0, 0, 0.02)",
-                      },
+                      "&:hover": { bgcolor: "action.hover" },
                     }}
                   >
                     <Box sx={{ display: "flex", gap: 1.5 }}>
                       <Avatar
+                        variant="rounded"
                         sx={{
                           width: 40,
                           height: 40,
@@ -629,13 +612,13 @@ const AdminLayout = () => {
                                   ? "rgba(255, 152, 0, 0.15)"
                                   : notification.status === "new"
                                   ? "rgba(33, 150, 243, 0.15)"
-                                  : "rgba(102, 126, 234, 0.15)",
+                                  : "rgba(99, 102, 241, 0.14)",
                               color:
                                 notification.status === "pending"
                                   ? "#ff9800"
                                   : notification.status === "new"
                                   ? "#2196f3"
-                                  : "#667eea",
+                                  : "#6366f1",
                             }}
                           />
                         </Box>
@@ -680,11 +663,7 @@ const AdminLayout = () => {
                     variant="outlined"
                     size="small"
                     onClick={handleOpenNotificationsModal}
-                    sx={{
-                      mb: 1,
-                      textTransform: "none",
-                      borderRadius: 1.5,
-                    }}
+                    sx={{ mb: 1 }}
                     startIcon={<Icon icon="mdi:bell-ring-outline" style={{ fontSize: 16 }} />}
                   >
                     Show All Notifications ({visibleNotifications.length})
@@ -736,10 +715,7 @@ const AdminLayout = () => {
             maxWidth="md"
             fullWidth
             PaperProps={{
-              sx: {
-                borderRadius: 2,
-                maxHeight: "85vh",
-              },
+              sx: { maxHeight: "85vh" },
             }}
           >
             <DialogTitle
@@ -808,16 +784,12 @@ const AdminLayout = () => {
                         borderBottom: index < visibleNotifications.length - 1 ? "1px solid" : "none",
                         borderColor: "divider",
                         cursor: "pointer",
-                        "&:hover": {
-                          bgcolor:
-                            theme.palette.mode === "dark"
-                              ? "rgba(255, 255, 255, 0.05)"
-                              : "rgba(0, 0, 0, 0.02)",
-                        },
+                        "&:hover": { bgcolor: "action.hover" },
                       }}
                     >
                       <Box sx={{ display: "flex", gap: 2 }}>
                         <Avatar
+                          variant="rounded"
                           sx={{
                             width: 48,
                             height: 48,
@@ -863,13 +835,13 @@ const AdminLayout = () => {
                                       ? "rgba(255, 152, 0, 0.15)"
                                       : notification.status === "new"
                                       ? "rgba(33, 150, 243, 0.15)"
-                                      : "rgba(102, 126, 234, 0.15)",
+                                      : "rgba(99, 102, 241, 0.14)",
                                   color:
                                     notification.status === "pending"
                                       ? "#ff9800"
                                       : notification.status === "new"
                                       ? "#2196f3"
-                                      : "#667eea",
+                                      : "#6366f1",
                                 }}
                               />
                               <Typography
@@ -898,8 +870,9 @@ const AdminLayout = () => {
               sx={{
                 width: 36,
                 height: 36,
-                background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+                bgcolor: "primary.main",
                 fontSize: "0.9rem",
+                fontWeight: 600,
               }}
             >
               {admin?.firstName?.[0] || "A"}
@@ -913,11 +886,7 @@ const AdminLayout = () => {
             transformOrigin={{ horizontal: "right", vertical: "top" }}
             anchorOrigin={{ horizontal: "right", vertical: "bottom" }}
             PaperProps={{
-              sx: {
-                mt: 1,
-                minWidth: 180,
-                borderRadius: 2,
-              },
+              sx: { mt: 1, minWidth: 180 },
             }}
           >
             <Box sx={{ px: 2, py: 1.5 }}>
@@ -955,7 +924,7 @@ const AdminLayout = () => {
             "& .MuiDrawer-paper": {
               boxSizing: "border-box",
               width: drawerWidth,
-              bgcolor: theme.palette.mode === "dark" ? "#1a1a2e" : "#fff",
+              bgcolor: "background.paper",
             },
           }}
         >
@@ -970,7 +939,7 @@ const AdminLayout = () => {
             "& .MuiDrawer-paper": {
               boxSizing: "border-box",
               width: drawerWidth,
-              bgcolor: theme.palette.mode === "dark" ? "#1a1a2e" : "#fff",
+              bgcolor: "background.paper",
               borderRight: "1px solid",
               borderColor: "divider",
             },
@@ -995,7 +964,7 @@ const AdminLayout = () => {
           maxWidth: "100%",
           overflowX: "hidden",
           minHeight: "100vh",
-          bgcolor: theme.palette.mode === "dark" ? "#0f0f23" : "#f5f7fa",
+          bgcolor: "background.default",
         }}
       >
         <Toolbar />
@@ -1004,6 +973,7 @@ const AdminLayout = () => {
         </Box>
       </Box>
     </Box>
+    </ThemeProvider>
   );
 };
 

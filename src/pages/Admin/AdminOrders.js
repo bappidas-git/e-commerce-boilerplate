@@ -111,7 +111,7 @@ const AdminOrders = () => {
         <Chip label={isFiltering ? `${filtered.length} of ${orders.length}` : `${orders.length} total`} sx={{ bgcolor: "primary.main", color: "#fff" }} />
       </Box>
 
-      <Paper elevation={0} sx={{ borderRadius: 3, border: "1px solid", borderColor: "divider", overflow: "hidden" }}>
+      <Paper elevation={0} sx={{ border: "1px solid", borderColor: "divider", overflow: "hidden" }}>
         <Box sx={{ p: 2, borderBottom: "1px solid", borderColor: "divider", display: "flex", gap: 2, flexWrap: "wrap" }}>
           <TextField
             placeholder="Search by order #, customer, email..."
@@ -185,7 +185,7 @@ const AdminOrders = () => {
       </Paper>
 
       {/* Order Detail Dialog */}
-      <Dialog open={dialogOpen} onClose={() => setDialogOpen(false)} maxWidth="md" fullWidth PaperProps={{ sx: { borderRadius: 3 } }}>
+      <Dialog open={dialogOpen} onClose={() => setDialogOpen(false)} maxWidth="md" fullWidth>
         {selectedOrder && (
           <>
             <DialogTitle sx={{ fontWeight: "bold" }}>

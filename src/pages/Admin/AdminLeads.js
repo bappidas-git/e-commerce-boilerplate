@@ -28,7 +28,6 @@ import {
   MenuItem,
   FormControl,
   InputLabel,
-  useTheme,
 } from "@mui/material";
 import { Icon } from "@iconify/react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -36,7 +35,6 @@ import Swal from "sweetalert2";
 import apiService from "../../services/api";
 
 const AdminLeads = () => {
-  const theme = useTheme();
   const [loading, setLoading] = useState(true);
   const [leads, setLeads] = useState([]);
   const [filteredLeads, setFilteredLeads] = useState([]);
@@ -192,7 +190,7 @@ const AdminLeads = () => {
   };
 
   const getTypeColor = (type) => {
-    return type === "contact" ? "#667eea" : "#4caf50";
+    return type === "contact" ? "#6366f1" : "#10b981";
   };
 
   const getCategoryIcon = (category) => {
@@ -216,8 +214,8 @@ const AdminLeads = () => {
   if (loading) {
     return (
       <Box>
-        <Skeleton variant="rounded" height={60} sx={{ mb: 3, borderRadius: 2 }} />
-        <Skeleton variant="rounded" height={400} sx={{ borderRadius: 3 }} />
+        <Skeleton variant="rounded" height={60} sx={{ mb: 3 }} />
+        <Skeleton variant="rounded" height={400} sx={{}} />
       </Box>
     );
   }
@@ -243,16 +241,15 @@ const AdminLeads = () => {
             elevation={0}
             sx={{
               p: 2,
-              borderRadius: 2,
               border: "1px solid",
               borderColor: "divider",
               cursor: "pointer",
-              bgcolor: typeFilter === "all" ? "rgba(102, 126, 234, 0.1)" : "transparent",
-              "&:hover": { bgcolor: "rgba(102, 126, 234, 0.08)" },
+              bgcolor: typeFilter === "all" ? "action.selected" : "transparent",
+              "&:hover": { bgcolor: "action.hover" },
             }}
             onClick={() => { setTypeFilter("all"); setStatusFilter("all"); }}
           >
-            <Typography variant="h4" fontWeight="bold" sx={{ color: "#667eea" }}>
+            <Typography variant="h4" fontWeight="bold" sx={{ color: "primary.main" }}>
               {leads.length}
             </Typography>
             <Typography variant="body2" color="text.secondary">
@@ -265,16 +262,15 @@ const AdminLeads = () => {
             elevation={0}
             sx={{
               p: 2,
-              borderRadius: 2,
               border: "1px solid",
               borderColor: "divider",
               cursor: "pointer",
-              bgcolor: typeFilter === "contact" ? "rgba(102, 126, 234, 0.1)" : "transparent",
-              "&:hover": { bgcolor: "rgba(102, 126, 234, 0.08)" },
+              bgcolor: typeFilter === "contact" ? "action.selected" : "transparent",
+              "&:hover": { bgcolor: "action.hover" },
             }}
             onClick={() => { setTypeFilter("contact"); setStatusFilter("all"); }}
           >
-            <Typography variant="h4" fontWeight="bold" sx={{ color: "#764ba2" }}>
+            <Typography variant="h4" fontWeight="bold" sx={{ color: "primary.main" }}>
               {contactCount}
             </Typography>
             <Typography variant="body2" color="text.secondary">
@@ -287,16 +283,15 @@ const AdminLeads = () => {
             elevation={0}
             sx={{
               p: 2,
-              borderRadius: 2,
               border: "1px solid",
               borderColor: "divider",
               cursor: "pointer",
-              bgcolor: typeFilter === "newsletter" ? "rgba(76, 175, 80, 0.1)" : "transparent",
-              "&:hover": { bgcolor: "rgba(76, 175, 80, 0.08)" },
+              bgcolor: typeFilter === "newsletter" ? "rgba(16, 185, 129, 0.10)" : "transparent",
+              "&:hover": { bgcolor: "action.hover" },
             }}
             onClick={() => { setTypeFilter("newsletter"); setStatusFilter("all"); }}
           >
-            <Typography variant="h4" fontWeight="bold" sx={{ color: "#4caf50" }}>
+            <Typography variant="h4" fontWeight="bold" sx={{ color: "#10b981" }}>
               {newsletterCount}
             </Typography>
             <Typography variant="body2" color="text.secondary">
@@ -309,16 +304,15 @@ const AdminLeads = () => {
             elevation={0}
             sx={{
               p: 2,
-              borderRadius: 2,
               border: "1px solid",
               borderColor: "divider",
               cursor: "pointer",
-              bgcolor: statusFilter === "new" ? "rgba(33, 150, 243, 0.1)" : "transparent",
-              "&:hover": { bgcolor: "rgba(33, 150, 243, 0.08)" },
+              bgcolor: statusFilter === "new" ? "rgba(59, 130, 246, 0.10)" : "transparent",
+              "&:hover": { bgcolor: "action.hover" },
             }}
             onClick={() => { setStatusFilter("new"); setTypeFilter("all"); }}
           >
-            <Typography variant="h4" fontWeight="bold" sx={{ color: "#2196f3" }}>
+            <Typography variant="h4" fontWeight="bold" sx={{ color: "#3b82f6" }}>
               {newLeadsCount}
             </Typography>
             <Typography variant="body2" color="text.secondary">
@@ -334,7 +328,6 @@ const AdminLeads = () => {
         sx={{
           p: 2,
           mb: 3,
-          borderRadius: 3,
           border: "1px solid",
           borderColor: "divider",
         }}
@@ -353,11 +346,6 @@ const AdminLeads = () => {
                   </InputAdornment>
                 ),
               }}
-              sx={{
-                "& .MuiOutlinedInput-root": {
-                  borderRadius: 2,
-                },
-              }}
             />
           </Grid>
           <Grid item xs={6} md={2}>
@@ -367,7 +355,7 @@ const AdminLeads = () => {
                 value={typeFilter}
                 label="Type"
                 onChange={(e) => setTypeFilter(e.target.value)}
-                sx={{ borderRadius: 2 }}
+               
               >
                 <MenuItem value="all">All Types</MenuItem>
                 <MenuItem value="contact">Contact</MenuItem>
@@ -382,7 +370,7 @@ const AdminLeads = () => {
                 value={statusFilter}
                 label="Status"
                 onChange={(e) => setStatusFilter(e.target.value)}
-                sx={{ borderRadius: 2 }}
+               
               >
                 <MenuItem value="all">All Status</MenuItem>
                 <MenuItem value="new">New</MenuItem>
@@ -400,7 +388,7 @@ const AdminLeads = () => {
                 variant="outlined"
                 startIcon={<Icon icon="mdi:refresh" />}
                 onClick={loadLeads}
-                sx={{ borderRadius: 2 }}
+               
               >
                 Refresh
               </Button>
@@ -412,7 +400,7 @@ const AdminLeads = () => {
                   setStatusFilter("all");
                   setSearchQuery("");
                 }}
-                sx={{ borderRadius: 2 }}
+               
               >
                 Clear Filters
               </Button>
@@ -425,7 +413,6 @@ const AdminLeads = () => {
       <Paper
         elevation={0}
         sx={{
-          borderRadius: 3,
           border: "1px solid",
           borderColor: "divider",
           overflow: "hidden",
@@ -434,7 +421,7 @@ const AdminLeads = () => {
         <TableContainer>
           <Table sx={{ minWidth: 860 }}>
             <TableHead>
-              <TableRow sx={{ bgcolor: theme.palette.mode === "dark" ? "rgba(255,255,255,0.03)" : "rgba(0,0,0,0.02)" }}>
+              <TableRow>
                 <TableCell>Type</TableCell>
                 <TableCell>Contact</TableCell>
                 <TableCell>Subject / Category</TableCell>
@@ -456,7 +443,7 @@ const AdminLeads = () => {
                       component={TableRow}
                       hover
                       sx={{
-                        bgcolor: lead.status === "new" ? (theme.palette.mode === "dark" ? "rgba(33, 150, 243, 0.05)" : "rgba(33, 150, 243, 0.03)") : "transparent",
+                        bgcolor: lead.status === "new" ? "rgba(59, 130, 246, 0.05)" : "transparent",
                       }}
                     >
                       <TableCell>
@@ -582,7 +569,6 @@ const AdminLeads = () => {
         maxWidth="md"
         fullWidth
         PaperProps={{
-          sx: { borderRadius: 3 },
         }}
       >
         {selectedLead && (
@@ -690,8 +676,8 @@ const AdminLeads = () => {
                       elevation={0}
                       sx={{
                         p: 2,
-                        bgcolor: theme.palette.mode === "dark" ? "rgba(255,255,255,0.03)" : "rgba(0,0,0,0.02)",
-                        borderRadius: 2,
+                        bgcolor: "action.hover",
+                        borderRadius: 1,
                       }}
                     >
                       <Typography variant="body2" sx={{ whiteSpace: "pre-wrap" }}>

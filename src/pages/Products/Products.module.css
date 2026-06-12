@@ -1141,10 +1141,27 @@
   .addToCartBtn {
     padding: 6px 12px;
     font-size: 12px;
+    min-height: 40px;
   }
 
   .breadcrumb {
     padding: 10px 12px;
+  }
+
+  /* Touch-target sizing */
+  .breadcrumbLink {
+    display: inline-block;
+    padding: 8px 2px;
+    margin: -8px 0;
+  }
+
+  .sortSelect {
+    min-height: 40px;
+  }
+
+  .pageBtn {
+    min-width: 40px;
+    min-height: 40px;
   }
 }
 

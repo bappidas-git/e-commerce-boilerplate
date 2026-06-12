@@ -873,6 +873,13 @@
   .container {
     padding: 0 16px;
   }
+
+  /* Touch-target sizing: grow the hit area without moving the header row */
+  .viewAllLink {
+    display: inline-block;
+    padding: 10px 2px;
+    margin: -10px 0;
+  }
 }
 
 @media (max-width: 480px) {

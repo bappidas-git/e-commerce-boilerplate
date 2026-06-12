@@ -22,6 +22,19 @@
   .footer {
     margin-bottom: 70px;
   }
+
+  /* Touch-friendly link rows: pad each link instead of relying on list gap so
+     the tap target grows without changing the visual rhythm much. */
+  .footerLink,
+  .legalLink,
+  .contactLink {
+    display: inline-block;
+    padding: 8px 0;
+  }
+
+  .linkList {
+    gap: 4px;
+  }
 }
 
 /* ========== NEWSLETTER SECTION ========== */

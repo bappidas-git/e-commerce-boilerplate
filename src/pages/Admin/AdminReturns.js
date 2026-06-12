@@ -86,7 +86,7 @@ const AdminReturns = () => {
         </Box>
       </Box>
 
-      <Paper elevation={0} sx={{ borderRadius: 3, border: "1px solid", borderColor: "divider", overflow: "hidden" }}>
+      <Paper elevation={0} sx={{ border: "1px solid", borderColor: "divider", overflow: "hidden" }}>
         <Box sx={{ p: 2, borderBottom: "1px solid", borderColor: "divider", display: "flex", gap: 2, flexWrap: "wrap" }}>
           <TextField
             placeholder="Search by return or order number..."
@@ -150,7 +150,7 @@ const AdminReturns = () => {
       </Paper>
 
       {/* Detail / Update Dialog */}
-      <Dialog open={dialogOpen} onClose={() => setDialogOpen(false)} maxWidth="sm" fullWidth PaperProps={{ sx: { borderRadius: 3 } }}>
+      <Dialog open={dialogOpen} onClose={() => setDialogOpen(false)} maxWidth="sm" fullWidth>
         {selectedReturn && (
           <>
             <DialogTitle sx={{ fontWeight: "bold" }}>
@@ -165,7 +165,7 @@ const AdminReturns = () => {
                 <Box><Typography variant="caption" color="text.secondary">Refund Method</Typography><Typography variant="body2" sx={{ textTransform: "capitalize" }}>{selectedReturn.refundMethod?.replace("_", " ") || "—"}</Typography></Box>
               </Box>
               {selectedReturn.reasonDetails && (
-                <Box sx={{ bgcolor: "action.hover", borderRadius: 2, p: 2, mb: 2 }}>
+                <Box sx={{ bgcolor: "action.hover", borderRadius: 1, p: 2, mb: 2 }}>
                   <Typography variant="caption" color="text.secondary">Customer's Note</Typography>
                   <Typography variant="body2">{selectedReturn.reasonDetails}</Typography>
                 </Box>

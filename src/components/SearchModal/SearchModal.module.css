@@ -69,6 +69,9 @@
 /* ===== Search Bar ===== */
 .searchBar {
   flex: 1;
+  /* without this the bar's auto minimum inherits the input's ~20ch intrinsic
+     width (nested flex), pushing the close button off-panel at 320px */
+  min-width: 0;
   display: flex;
   align-items: center;
   gap: 10px;
@@ -119,6 +122,9 @@
 
 .searchInput {
   flex: 1;
+  /* shrink below the ~20ch input intrinsic width so the close button isn't
+     pushed off-panel at 320px */
+  min-width: 0;
   border: none;
   outline: none;
   background: transparent;
@@ -181,6 +187,7 @@
   justify-content: center;
   width: 40px;
   height: 40px;
+  flex-shrink: 0;
   border: none;
   border-radius: 10px;
   cursor: pointer;

@@ -85,7 +85,7 @@ const AdminUsers = () => {
         <Chip label={`${users.length} total`} sx={{ bgcolor: "primary.main", color: "#fff" }} />
       </Box>
 
-      <Paper elevation={0} sx={{ borderRadius: 3, border: "1px solid", borderColor: "divider", overflow: "hidden" }}>
+      <Paper elevation={0} sx={{ border: "1px solid", borderColor: "divider", overflow: "hidden" }}>
         <Box sx={{ p: 2, borderBottom: "1px solid", borderColor: "divider" }}>
           <TextField
             placeholder="Search by name, email or phone..."
@@ -117,7 +117,7 @@ const AdminUsers = () => {
                   <TableRow key={user.id} hover>
                     <TableCell>
                       <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
-                        <Avatar src={user.avatar || undefined} sx={{ width: 40, height: 40, background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)", fontSize: "0.9rem" }}>
+                        <Avatar src={user.avatar || undefined} sx={{ width: 40, height: 40, bgcolor: "primary.main", fontSize: "0.9rem", fontWeight: 600 }}>
                           {user.firstName?.[0]}{user.lastName?.[0]}
                         </Avatar>
                         <Box>
@@ -150,12 +150,12 @@ const AdminUsers = () => {
       </Paper>
 
       {/* User Detail Dialog */}
-      <Dialog open={detailOpen} onClose={() => setDetailOpen(false)} maxWidth="sm" fullWidth PaperProps={{ sx: { borderRadius: 3 } }}>
+      <Dialog open={detailOpen} onClose={() => setDetailOpen(false)} maxWidth="sm" fullWidth>
         {selectedUser && (
           <>
             <DialogTitle sx={{ fontWeight: "bold" }}>
               <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
-                <Avatar src={selectedUser.avatar || undefined} sx={{ width: 48, height: 48, background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)" }}>
+                <Avatar src={selectedUser.avatar || undefined} sx={{ width: 48, height: 48, bgcolor: "primary.main", fontWeight: 600 }}>
                   {selectedUser.firstName?.[0]}{selectedUser.lastName?.[0]}
                 </Avatar>
                 <Box>
@@ -203,7 +203,7 @@ const AdminUsers = () => {
             </DialogContent>
             <DialogActions sx={{ p: 2 }}>
               <Button onClick={() => setDetailOpen(false)}>Close</Button>
-              <Button variant="outlined" color={selectedUser.isActive !== false ? "error" : "success"} onClick={() => handleToggleStatus(selectedUser)} sx={{ borderRadius: 2 }}>
+              <Button variant="outlined" color={selectedUser.isActive !== false ? "error" : "success"} onClick={() => handleToggleStatus(selectedUser)}>
                 {selectedUser.isActive !== false ? "Deactivate Account" : "Activate Account"}
               </Button>
             </DialogActions>

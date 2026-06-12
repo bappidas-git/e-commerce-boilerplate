@@ -119,13 +119,13 @@ const AdminPayments = () => {
         {[
           { label: "Total Captured", value: formatCurrency(totalRevenue), icon: "mdi:cash-check", color: "#4caf50" },
           { label: "Total Refunded", value: formatCurrency(totalRefunded), icon: "mdi:cash-refund", color: "#ff9800" },
-          { label: "Transactions", value: payments.length, icon: "mdi:swap-horizontal", color: "#667eea" },
+          { label: "Transactions", value: payments.length, icon: "mdi:swap-horizontal", color: "#6366f1" },
           { label: "Failed", value: payments.filter((p) => p.status === "failed").length, icon: "mdi:close-circle-outline", color: "#f44336" },
         ].map((card) => (
           <Grid item xs={6} md={3} key={card.label}>
-            <Paper elevation={0} sx={{ p: 2.5, borderRadius: 3, border: "1px solid", borderColor: "divider" }}>
+            <Paper elevation={0} sx={{ p: 2.5, border: "1px solid", borderColor: "divider" }}>
               <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
-                <Box sx={{ p: 1, borderRadius: 2, bgcolor: `${card.color}20` }}>
+                <Box sx={{ p: 1, borderRadius: 1, bgcolor: `${card.color}1A`, display: "flex" }}>
                   <Icon icon={card.icon} style={{ fontSize: 24, color: card.color }} />
                 </Box>
                 <Box>
@@ -138,7 +138,7 @@ const AdminPayments = () => {
         ))}
       </Grid>
 
-      <Paper elevation={0} sx={{ borderRadius: 3, border: "1px solid", borderColor: "divider", overflow: "hidden" }}>
+      <Paper elevation={0} sx={{ border: "1px solid", borderColor: "divider", overflow: "hidden" }}>
         <Box sx={{ p: 2, borderBottom: "1px solid", borderColor: "divider", display: "flex", gap: 2 }}>
           <TextField
             placeholder="Search by transaction ID or order number..."
@@ -205,7 +205,7 @@ const AdminPayments = () => {
       </Paper>
 
       {/* Payment Detail Dialog */}
-      <Dialog open={dialogOpen} onClose={() => setDialogOpen(false)} maxWidth="sm" fullWidth PaperProps={{ sx: { borderRadius: 3 } }}>
+      <Dialog open={dialogOpen} onClose={() => setDialogOpen(false)} maxWidth="sm" fullWidth>
         {selectedPayment && (
           <>
             <DialogTitle sx={{ fontWeight: "bold" }}>
@@ -231,7 +231,7 @@ const AdminPayments = () => {
                 ))}
               </Box>
               {selectedPayment.status === "refunded" && (
-                <Box sx={{ p: 2, borderRadius: 2, bgcolor: "action.hover", border: "1px solid", borderColor: "divider" }}>
+                <Box sx={{ p: 2, borderRadius: 1, bgcolor: "action.hover", border: "1px solid", borderColor: "divider" }}>
                   <Typography variant="subtitle2" fontWeight="bold" gutterBottom>Refund</Typography>
                   <Box sx={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 2 }}>
                     <Box>
@@ -259,7 +259,7 @@ const AdminPayments = () => {
             <DialogActions sx={{ p: 2, gap: 1 }}>
               <Button onClick={() => setDialogOpen(false)}>Close</Button>
               {selectedPayment.status === "captured" && (
-                <Button variant="contained" color="warning" onClick={handleRefund} startIcon={<Icon icon="mdi:cash-refund" />} sx={{ borderRadius: 2 }}>
+                <Button variant="contained" color="warning" onClick={handleRefund} startIcon={<Icon icon="mdi:cash-refund" />}>
                   Issue Refund
                 </Button>
               )}

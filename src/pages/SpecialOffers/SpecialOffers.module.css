@@ -975,6 +975,22 @@
   .sectionTitle {
     font-size: 1.25rem;
   }
+
+  /* Touch-target sizing */
+  .tab {
+    padding: 10px 20px;
+    min-height: 40px;
+  }
+
+  .copyBtn {
+    padding: 10px 14px;
+    min-height: 40px;
+  }
+
+  .quickViewBtn,
+  .addToCartBtn {
+    min-height: 40px;
+  }
 }
 
 @media (max-width: 480px) {
