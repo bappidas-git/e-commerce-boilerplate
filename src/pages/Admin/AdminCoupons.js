@@ -61,10 +61,17 @@ const AdminCoupons = () => {
   };
 
   const handleSave = async () => {
-    if (!form.code.trim()) { Swal.fire({ icon: "warning", title: "Coupon code is required", toast: true, position: "bottom-end", showConfirmButton: false, timer: 2500 }); return; }
+    // Normalise exactly as checkout does before validating (trim + uppercase),
+    // so a code created here matches what shoppers type at redemption.
+    const code = form.code.trim().toUpperCase();
+    if (!code) { Swal.fire({ icon: "warning", title: "Coupon code is required", toast: true, position: "bottom-end", showConfirmButton: false, timer: 2500 }); return; }
     if (!form.value || form.value <= 0) { Swal.fire({ icon: "warning", title: "Value must be greater than 0", toast: true, position: "bottom-end", showConfirmButton: false, timer: 2500 }); return; }
+    // Block duplicate codes — checkout validates by exact code, so two coupons
+    // sharing one would make redemption ambiguous. Skip the row being edited.
+    const duplicate = coupons.find((c) => (c.code || "").trim().toUpperCase() === code && c.id !== editingCoupon?.id);
+    if (duplicate) { Swal.fire({ icon: "warning", title: `Coupon code "${code}" already exists`, toast: true, position: "bottom-end", showConfirmButton: false, timer: 3000 }); return; }
     try {
-      const payload = { ...form, code: form.code.toUpperCase(), expiresAt: form.expiresAt ? new Date(form.expiresAt).toISOString() : null };
+      const payload = { ...form, code, expiresAt: form.expiresAt ? new Date(form.expiresAt).toISOString() : null };
       if (editingCoupon) {
         await apiService.admin.updateCoupon(editingCoupon.id, payload);
       } else {

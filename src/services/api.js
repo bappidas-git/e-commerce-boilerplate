@@ -123,6 +123,31 @@ const reflectReturnRefund = async (ret) => {
   }
 };
 
+// When an order is placed with a coupon in mock mode, bump that coupon's
+// usedCount so Admin → Coupons reflects real redemptions and usageLimit checks
+// advance (mirroring coupons.validate()). Matched case-insensitively on the
+// stored code, which the Admin and checkout both keep uppercased/trimmed.
+// Best-effort — an unknown/removed code must never fail order creation. In
+// production the Laravel branch increments coupon usage server-side on the same
+// order-create call, so the behaviour is identical across both branches and the
+// client must not double-count there.
+const redeemCouponByCode = async (code) => {
+  const normalized = (code || "").trim();
+  if (!normalized) return;
+  try {
+    const res = await api.get("/coupons", { params: { code: normalized } });
+    const coupon = Array.isArray(res.data) ? res.data[0] : res.data;
+    if (coupon && coupon.id != null) {
+      await api.patch(`/coupons/${coupon.id}`, {
+        usedCount: (Number(coupon.usedCount) || 0) + 1,
+        updatedAt: new Date().toISOString(),
+      });
+    }
+  } catch (e) {
+    console.error("Redeem coupon error:", e);
+  }
+};
+
 // =============================================================================
 // API Service Object
 // =============================================================================
@@ -443,6 +468,13 @@ const apiService = {
     create: async (orderData) => {
       try {
         const response = await api.post("/orders", orderData);
+        // A placed order consumes its coupon: advance usedCount so Admin →
+        // Coupons and usageLimit checks reflect the redemption. Mock-only; the
+        // Laravel branch does this server-side on the same call (see
+        // redeemCouponByCode). Best-effort — never block a saved order.
+        if (IS_MOCK_API && orderData?.couponCode) {
+          await redeemCouponByCode(orderData.couponCode);
+        }
         return extractData(response);
       } catch (error) { console.error("Create order error:", error); throw error; }
     },
@@ -1073,11 +1105,16 @@ const apiService = {
 
     updateCoupon: async (id, data) => {
       try {
-        const response = await api.put(IS_MOCK_API ? `/coupons/${id}` : `/admin/coupons/${id}`, {
-          ...data,
-          updatedAt: new Date().toISOString(),
-        });
-        return IS_MOCK_API ? response.data : extractData(response);
+        const payload = { ...data, updatedAt: new Date().toISOString() };
+        if (IS_MOCK_API) {
+          // PATCH (merge) — a PUT would replace the record and drop fields the
+          // edit form doesn't carry (usedCount, createdAt), resetting usage and
+          // breaking the "Limit Reached" status. Explicit nulls still apply.
+          const response = await api.patch(`/coupons/${id}`, payload);
+          return response.data;
+        }
+        const response = await api.put(`/admin/coupons/${id}`, payload);
+        return extractData(response);
       } catch (error) { console.error("Admin update coupon error:", error); throw error; }
     },
 
