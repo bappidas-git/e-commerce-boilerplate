@@ -1768,13 +1768,13 @@
       "total": 2874,
       "paymentStatus": "pending",
       "paymentMethod": "cod",
-      "fulfillmentStatus": "unfulfilled",
-      "shippingStatus": "pending",
+      "fulfillmentStatus": "fulfilled",
+      "shippingStatus": "shipped",
       "trackingNumber": null,
       "shiprocketOrderId": null,
       "notes": "",
       "createdAt": "2026-03-15T16:00:00.000Z",
-      "updatedAt": "2026-03-15T16:00:00.000Z"
+      "updatedAt": "2026-06-12T14:17:08.244Z"
     },
     {
       "items": [
