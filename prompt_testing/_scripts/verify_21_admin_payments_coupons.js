@@ -122,7 +122,10 @@ async function sectionPayments(browser) {
   check("row shows method (capitalised, underscore→space)", new RegExp(p1.paymentMethod.replace("_", " "), "i").test(firstRow));
   check("row shows gateway", new RegExp(p1.gateway, "i").test(firstRow));
   check("row shows amount", firstRow.includes(inr(p1.amount)));
-  check("row shows a Captured status chip", /Captured/.test(firstRow));
+  // Chip must mirror the row's REAL status (seed payment 1 is now refunded —
+  // its linked return was processed — so don't hardcode Captured).
+  const p1Label = p1.status.charAt(0).toUpperCase() + p1.status.slice(1);
+  check(`row shows a ${p1Label} status chip`, new RegExp(p1Label).test(firstRow));
   // method icon present (iconify <svg>)
   check("row renders a method icon (svg)", (await page.locator("tbody tr").first().locator("svg").count()) >= 1);
 
@@ -183,8 +186,12 @@ async function sectionPayments(browser) {
   const newCaptured = captured - target.amount;
   const summary2 = (await page.locator(".MuiGrid-container").first().innerText()).replace(/\n/g, " ");
   check(`Captured recomputed to ${inr(newCaptured)}`, summary2.includes(inr(newCaptured)), summary2);
-  check("Refunded shows ₹5,000 (refundAmount, NOT full ₹" + new Intl.NumberFormat("en-IN").format(target.amount) + ")",
-    new RegExp(`Total Refunded\\s+${inr(5000)}`).test(summary2) && !summary2.includes(inr(target.amount)), summary2);
+  // Refunded total adds THIS partial 5000 on top of already-refunded rows
+  // (seed payment 1 carries its processed-return refund) and must not count
+  // the target's full captured amount.
+  const newRefunded = refunded + 5000;
+  check(`Refunded shows ${inr(newRefunded)} (prior refunds + ₹5,000 partial, NOT full ₹` + new Intl.NumberFormat("en-IN").format(target.amount) + ")",
+    new RegExp(`Total Refunded\\s+${inr(newRefunded)}`).test(summary2) && !summary2.includes(inr(target.amount)), summary2);
   // Refunded payment detail now shows the Refund block, not the issue-refund form
   const refundedRow = page.locator("tbody tr", { hasText: target.transactionId });
   await refundedRow.getByRole("button").first().click();
@@ -345,6 +352,21 @@ async function sectionCheckoutConsistency(browser) {
 
 // ───────────────────────────────────────────────────────────────────────────
 (async () => {
+  // ---- reset the script's own fixtures so re-runs start clean ----
+  // VERIFY21 coupon (created in E, consumed in F) and the seed payments the
+  // partial-refund test mutates (2 and 3 — whichever was captured first).
+  const couponRows = await getJson(`${API_URL}/coupons`);
+  for (const c of couponRows.filter((x) => x.code === "VERIFY21")) {
+    await fetch(`${API_URL}/coupons/${c.id}`, { method: "DELETE" });
+  }
+  for (const pid of [2, 3]) {
+    await fetch(`${API_URL}/payments/${pid}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ status: "captured", refundAmount: null, refundReason: null }),
+    }).catch(() => {});
+  }
+
   const browser = await chromium.launch({ args: ["--ignore-certificate-errors"] });
   try {
     await sectionPayments(browser);

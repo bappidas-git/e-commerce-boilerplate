@@ -62,8 +62,10 @@ const Checkout = () => {
   useEffect(() => {
     const loadShipping = async () => {
       try {
-        const methods = await apiService.admin.getShippingMethods();
-        const active = methods.filter((m) => m.isActive);
+        // Storefront endpoint (active methods only) — never the admin-scoped
+        // method, which needs an admin token on the Laravel branch.
+        const methods = await apiService.shipping.getMethods();
+        const active = methods.filter((m) => m.isActive !== false);
         setShippingMethods(active);
         if (active.length > 0) setSelectedShipping(active[0]);
       } catch (e) { console.error("Load shipping methods error:", e); }

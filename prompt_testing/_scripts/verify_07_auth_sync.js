@@ -15,8 +15,26 @@
 const { chromium } = require("playwright");
 
 const BASE_URL = process.env.BASE_URL || "http://localhost:3000";
-const USER = { email: "mail4bappidas@gmail.com", password: "Bappi@12345" }; // has a seeded server cart (product 3)
+const API_URL = process.env.API_URL || "http://localhost:3001";
+const USER = { email: "mail4bappidas@gmail.com", password: "Bappi@12345", id: 3 };
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
+// The merge scenario needs a server-side cart line for the test user that the
+// guest cart does NOT have. Seed it here (and clear any leftovers first) so the
+// test owns its fixture instead of assuming db.json still carries one.
+async function seedServerCart() {
+  const rows = await (await fetch(`${API_URL}/cart?userId=${USER.id}`)).json();
+  await Promise.all(rows.map((r) => fetch(`${API_URL}/cart/${r.id}`, { method: "DELETE" })));
+  await fetch(`${API_URL}/cart`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      userId: USER.id, productId: 3, variantId: "v1", variantName: "Black / Rubber Band",
+      name: "FitPulse Smartwatch Series 5", image: "", price: 14999, comparePrice: 19999,
+      currency: "INR", quantity: 1,
+    }),
+  });
+}
 
 let pass = 0;
 let fail = 0;
@@ -71,6 +89,8 @@ async function logout(page) {
   page.on("pageerror", (e) => consoleErrors.push(e.message));
 
   try {
+    await seedServerCart();
+
     // Clean guest slate.
     await page.goto(BASE_URL, { waitUntil: "networkidle" });
     await page.evaluate(() => localStorage.removeItem("cart"));

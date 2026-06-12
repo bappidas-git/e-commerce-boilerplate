@@ -122,6 +122,57 @@ async function clickTab(page, label) {
     .click();
 }
 
+// The four user-1 fixture orders (ids 101–104) every section asserts against:
+// 101 processing (COD, created 2026-04-01 — the ETA check hardcodes it),
+// 102 shipped (tracking SHIPSEED102IN), 103 delivered (deliveredAt 2026-06-09,
+// hardcoded in section H), 104 cancelled. Seeded into the throwaway db here so
+// the script owns its fixtures instead of assuming a pre-seeded copy.
+const ADDR_JOHN = {
+  firstName: "John", lastName: "Doe", phone: "+91 9876543210",
+  addressLine1: "123 Main Street", addressLine2: "Apt 4B", city: "Mumbai",
+  state: "Maharashtra", postalCode: "400001", country: "India",
+};
+const FIXTURE_ORDERS = [
+  {
+    id: 101, orderNumber: "ORD-SEED-0101", userId: 1,
+    items: [{ productId: 5, variantId: "v2", name: "Urban Classic Cotton T-Shirt - White / M", image: "", sku: "APP-UCT-WHT-M", price: 899, quantity: 3, subtotal: 2697 }],
+    billingAddress: ADDR_JOHN, shippingAddress: ADDR_JOHN,
+    subtotal: 2697, discountAmount: 270, couponCode: "FLAT10", shippingAmount: 49, taxAmount: 398, total: 2874,
+    paymentMethod: "cod", paymentStatus: "pending", fulfillmentStatus: "unfulfilled", shippingStatus: "pending",
+    trackingNumber: null, shiprocketOrderId: null, notes: "",
+    createdAt: "2026-04-01T10:00:00.000Z", updatedAt: "2026-04-01T10:00:00.000Z",
+  },
+  {
+    id: 102, orderNumber: "ORD-SEED-0102", userId: 1,
+    items: [{ productId: 2, variantId: "v1", name: "SoundWave Pro Wireless Earbuds - Midnight Black", image: "", sku: "AUD-SWP-TWS-BLK", price: 8999, quantity: 1, subtotal: 8999 }],
+    billingAddress: ADDR_JOHN, shippingAddress: ADDR_JOHN,
+    subtotal: 8999, discountAmount: 0, couponCode: null, shippingAmount: 0, taxAmount: 1620, total: 10619,
+    paymentMethod: "upi", paymentStatus: "paid", fulfillmentStatus: "fulfilled", shippingStatus: "shipped",
+    trackingNumber: "SHIPSEED102IN", shiprocketOrderId: null, notes: "",
+    createdAt: "2026-05-10T09:00:00.000Z", updatedAt: "2026-05-12T09:00:00.000Z",
+  },
+  {
+    id: 103, orderNumber: "ORD-SEED-0103", userId: 1,
+    items: [{ productId: 3, variantId: "v1", name: "FitPulse Smartwatch Series 5 - Black / Rubber Band", image: "", sku: "ELC-FPS-SW5-BLK-R", price: 14999, quantity: 1, subtotal: 14999 }],
+    billingAddress: ADDR_JOHN, shippingAddress: ADDR_JOHN,
+    subtotal: 14999, discountAmount: 0, couponCode: null, shippingAmount: 0, taxAmount: 2700, total: 17699,
+    paymentMethod: "card", paymentStatus: "paid", fulfillmentStatus: "fulfilled", shippingStatus: "delivered",
+    trackingNumber: "SHIPSEED103IN", shiprocketOrderId: null, notes: "",
+    deliveredAt: "2026-06-09T12:00:00.000Z",
+    createdAt: "2026-06-05T08:00:00.000Z", updatedAt: "2026-06-09T12:00:00.000Z",
+  },
+  {
+    id: 104, orderNumber: "ORD-SEED-0104", userId: 1,
+    items: [{ productId: 5, variantId: "v2", name: "Urban Classic Cotton T-Shirt - White / M", image: "", sku: "APP-UCT-WHT-M", price: 899, quantity: 1, subtotal: 899 }],
+    billingAddress: ADDR_JOHN, shippingAddress: ADDR_JOHN,
+    subtotal: 899, discountAmount: 0, couponCode: null, shippingAmount: 99, taxAmount: 162, total: 1160,
+    paymentMethod: "card", paymentStatus: "pending", fulfillmentStatus: "cancelled", shippingStatus: "pending",
+    trackingNumber: null, shiprocketOrderId: null, notes: "",
+    cancelledAt: "2026-06-10T16:00:00.000Z",
+    createdAt: "2026-06-10T15:00:00.000Z", updatedAt: "2026-06-10T16:00:00.000Z",
+  },
+];
+
 (async () => {
   // ---- reset throwaway db state so the script is idempotent ----
   await fetch(`${API_URL}/orders/4`, {
@@ -142,6 +193,16 @@ async function clickTab(page, label) {
   const cartRows = await getJson(`${API_URL}/cart`);
   for (const r of cartRows.filter((x) => x.userId === 1)) {
     await fetch(`${API_URL}/cart/${r.id}`, { method: "DELETE" });
+  }
+
+  // ---- (re)seed the fixture orders ----
+  for (const o of FIXTURE_ORDERS) {
+    await fetch(`${API_URL}/orders/${o.id}`, { method: "DELETE" }).catch(() => {});
+    await fetch(`${API_URL}/orders`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(o),
+    });
   }
 
   const { password, ...user1 } = await getJson(`${API_URL}/users/1`);
@@ -203,10 +264,12 @@ async function clickTab(page, label) {
     await expectCards(page, 2, "Processing tab → 2 orders");
     await clickTab(page, "Shipped");
     await expectCards(page, 2, "Shipped tab → 2 orders");
+    // Seed order 1 derives Cancelled (paymentStatus refunded — its seeded
+    // return was processed), so Delivered holds only fixture 0103.
     await clickTab(page, "Delivered");
-    await expectCards(page, 2, "Delivered tab → 2 orders");
+    await expectCards(page, 1, "Delivered tab → 1 order");
     await clickTab(page, "Cancelled");
-    await expectCards(page, 1, "Cancelled tab → 1 order");
+    await expectCards(page, 2, "Cancelled tab → 2 orders (0104 + refunded order 1)");
     await clickTab(page, "All");
     await expectCards(page, 5, "All tab restores page 1");
 
@@ -306,7 +369,7 @@ async function clickTab(page, label) {
     check("db: paymentStatus untouched (refunds are Admin's)",
       dbOrder4.paymentStatus === "pending");
     await clickTab(page, "Cancelled");
-    await expectCards(page, 2, "Cancelled tab now shows 2 orders");
+    await expectCards(page, 3, "Cancelled tab now shows 3 orders");
     await ctx.close();
   }
 

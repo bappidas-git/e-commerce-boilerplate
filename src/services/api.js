@@ -123,6 +123,41 @@ const reflectReturnRefund = async (ret) => {
   }
 };
 
+// When an order is placed in mock mode, record the payment transaction the
+// gateway would have produced, so Admin → Payments (and the return-refund
+// cascade, which looks payments up by orderId) sees every storefront order —
+// not just the seeded ones. Shape mirrors the seeded records: order
+// paymentStatus "paid" → captured razorpay transaction; COD → pending cash
+// entry awaiting collection. Best-effort — a failed insert must never fail
+// order creation. In production the Laravel branch creates the payment row
+// server-side inside the same order-create call, so callers see identical
+// behaviour and the client must not double-create there.
+const createPaymentForOrder = async (order) => {
+  if (!order || order.id == null) return;
+  try {
+    const stamp = new Date().toISOString();
+    const isCod = order.paymentMethod === "cod";
+    const ref = Date.now().toString(36).toUpperCase();
+    await api.post("/payments", {
+      orderId: order.id,
+      orderNumber: order.orderNumber || null,
+      userId: order.userId ?? null,
+      amount: order.total ?? 0,
+      currency: "INR",
+      paymentMethod: order.paymentMethod || "card",
+      gateway: isCod ? "cod" : "razorpay",
+      transactionId: isCod ? null : `pay_MOCK${ref}`,
+      gatewayOrderId: isCod ? null : `order_MOCK${ref}`,
+      status: order.paymentStatus === "paid" ? "captured" : "pending",
+      gatewayResponse: {},
+      createdAt: stamp,
+      updatedAt: stamp,
+    });
+  } catch (e) {
+    console.error("Create payment record error:", e);
+  }
+};
+
 // When an order is placed with a coupon in mock mode, bump that coupon's
 // usedCount so Admin → Coupons reflects real redemptions and usageLimit checks
 // advance (mirroring coupons.validate()). Matched case-insensitively on the
@@ -468,12 +503,14 @@ const apiService = {
     create: async (orderData) => {
       try {
         const response = await api.post("/orders", orderData);
-        // A placed order consumes its coupon: advance usedCount so Admin →
-        // Coupons and usageLimit checks reflect the redemption. Mock-only; the
-        // Laravel branch does this server-side on the same call (see
-        // redeemCouponByCode). Best-effort — never block a saved order.
-        if (IS_MOCK_API && orderData?.couponCode) {
-          await redeemCouponByCode(orderData.couponCode);
+        // Mock-only side effects the Laravel backend performs server-side on
+        // the same call (see createPaymentForOrder / redeemCouponByCode):
+        // record the payment transaction, and advance the coupon's usedCount
+        // so Admin → Payments / Coupons reflect the order immediately.
+        // Best-effort — never block a saved order.
+        if (IS_MOCK_API) {
+          await createPaymentForOrder(extractData(response));
+          if (orderData?.couponCode) await redeemCouponByCode(orderData.couponCode);
         }
         return extractData(response);
       } catch (error) { console.error("Create order error:", error); throw error; }
@@ -858,7 +895,9 @@ const apiService = {
     // --- Categories ---
     getCategories: async () => {
       try {
-        const response = await api.get("/categories");
+        // Admin needs every category (inactive included) — /admin/categories
+        // on Laravel; the public /categories may serve only active ones.
+        const response = await api.get(IS_MOCK_API ? "/categories" : "/admin/categories");
         return IS_MOCK_API ? response.data : extractData(response);
       } catch (error) { console.error("Admin get categories error:", error); throw error; }
     },
@@ -1035,7 +1074,10 @@ const apiService = {
     // --- Shipping Methods ---
     getShippingMethods: async () => {
       try {
-        const response = await api.get("/shipping_methods");
+        // Admin needs every method (inactive included) — /admin/shipping-methods
+        // on Laravel, consistent with create/update/delete below. The storefront
+        // uses shipping.getMethods(), which serves only active ones.
+        const response = await api.get(IS_MOCK_API ? "/shipping_methods" : "/admin/shipping-methods");
         return IS_MOCK_API ? response.data : extractData(response);
       } catch (error) { console.error("Get shipping methods error:", error); throw error; }
     },
