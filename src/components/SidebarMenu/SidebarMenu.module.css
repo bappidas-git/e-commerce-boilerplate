@@ -85,6 +85,8 @@
   -webkit-overflow-scrolling: touch;
   display: flex;
   flex-direction: column;
+  /* keep the last items reachable above the home indicator on notched phones */
+  padding-bottom: env(safe-area-inset-bottom, 0px);
 }
 
 .scrollArea::-webkit-scrollbar {

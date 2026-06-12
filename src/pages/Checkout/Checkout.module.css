@@ -2,6 +2,10 @@
 .dark { color: #e2e8f0; }
 .breadcrumb { display: flex; gap: 8px; align-items: center; margin-bottom: 24px; font-size: 0.875rem; color: #64748b; }
 .breadcrumb a { color: #667eea; text-decoration: none; }
+/* Touch-target sizing: grow the breadcrumb hit area without moving the row */
+@media (max-width: 768px) {
+  .breadcrumb a { display: inline-block; padding: 10px 2px; margin: -10px 0; }
+}
 .dark .breadcrumb { color: #94a3b8; }
 
 /* Step Indicator */
@@ -45,13 +49,21 @@
 .removeBtn { background: none; border: none; font-size: 1.3rem; color: #94a3b8; cursor: pointer; padding: 0 4px; }
 .removeBtn:hover { color: #ef4444; }
 @media (max-width: 640px) { .itemSubtotal { display: none; } .cartItemImage { width: 48px; height: 48px; } }
+/* Comfortable touch targets for the line-item controls on phones. */
+@media (max-width: 768px) {
+  .quantityControls button { width: 40px; height: 40px; }
+  .quantityControls span { width: 30px; }
+  .removeBtn { min-width: 44px; min-height: 44px; padding: 0 8px; }
+}
 
 /* Coupon */
 .couponSection { padding: 16px; border-radius: 10px; background: #f8fafc; border: 1px solid #e2e8f0; margin-bottom: 20px; }
 .dark .couponSection { background: #0f172a; border-color: #334155; }
 .couponSection h3 { font-size: 0.95rem; font-weight: 600; margin-bottom: 10px; }
 .couponForm { display: flex; gap: 8px; }
-.couponForm input { flex: 1; padding: 8px 12px; border-radius: 8px; border: 1px solid #d1d5db; font-size: 0.9rem; background: #fff; font-family: inherit; }
+/* min-width:0 lets flex shrink the input below its ~20ch intrinsic width, else
+   the Apply button is pushed past the 320px viewport edge. */
+.couponForm input { flex: 1; min-width: 0; padding: 8px 12px; border-radius: 8px; border: 1px solid #d1d5db; font-size: 0.9rem; background: #fff; font-family: inherit; }
 .dark .couponForm input { background: #1e293b; border-color: #475569; color: #e2e8f0; }
 .couponForm button { padding: 8px 20px; border-radius: 8px; border: none; background: #667eea; color: #fff; font-weight: 600; cursor: pointer; font-family: inherit; }
 .couponApplied { display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; border-radius: 8px; background: #ecfdf5; color: #059669; }
@@ -156,8 +168,11 @@
 .primaryBtn:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(102, 126, 234, 0.3); }
 .primaryBtn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
 
-/* Sidebar */
-.sidebar { position: sticky; top: 80px; align-self: start; }
+/* Sidebar.
+   Sticky offset must clear the fixed header: 140px tall on desktop, 104px on
+   tablet (901–1024px; below 900px the layout is single-column and not sticky). */
+.sidebar { position: sticky; top: 152px; align-self: start; }
+@media (max-width: 1024px) { .sidebar { top: 116px; } }
 .summaryCard { padding: 24px; border-radius: 14px; background: #fff; border: 1px solid #e2e8f0; }
 .dark .summaryCard { background: #1e293b; border-color: #334155; }
 .summaryCard h3 { font-size: 1.1rem; font-weight: 700; margin-bottom: 16px; }

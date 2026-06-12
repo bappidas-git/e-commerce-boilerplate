@@ -2,6 +2,14 @@
 .dark { color: #94a3b8; }
 .link { color: #667eea; text-decoration: none; }
 .link:hover { text-decoration: underline; }
+/* Touch-target sizing: grow the hit area without moving the row */
+@media (max-width: 768px) {
+  .link {
+    display: inline-block;
+    padding: 10px 2px;
+    margin: -10px 0;
+  }
+}
 .separator { color: #94a3b8; }
 .current { color: #475569; font-weight: 500; }
 .dark .current { color: #e2e8f0; }

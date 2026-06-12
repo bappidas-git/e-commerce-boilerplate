@@ -71,7 +71,10 @@
 /* ── Main Layout ─────────────────────────────────────────────────────────── */
 .mainLayout {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  /* minmax(0, 1fr): a bare 1fr track has an implied min of the content's
+     min-content width, so wide intrinsic content (inputs, nowrap prices)
+     would blow the column past a 320px viewport. */
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   gap: 40px;
   margin-bottom: 48px;
 }
@@ -79,8 +82,11 @@
 /* ── Gallery Section (Left) ──────────────────────────────────────────────── */
 .gallerySection {
   position: sticky;
-  top: 80px;
+  /* clears the 140px fixed desktop header (sticky only applies >1024px;
+     smaller widths switch to position:static in the media query below) */
+  top: 152px;
   align-self: start;
+  min-width: 0;
 }
 
 .galleryWrapper {
@@ -180,6 +186,7 @@
   display: flex;
   flex-direction: column;
   gap: 0;
+  min-width: 0;
 }
 
 /* 1. Product Name */
@@ -679,6 +686,9 @@
 
 .pincodeInput {
   flex: 1;
+  /* An <input>'s intrinsic min-content width (~20ch) otherwise forces the row —
+     and the whole PDP grid column — wider than a 320px viewport. */
+  min-width: 0;
   padding: 10px 14px;
   border: 1px solid #d1d5db;
   border-radius: 8px;
@@ -1518,7 +1528,7 @@
 /* ═══════════════════════════════════════════════════════════════════════════ */
 @media (max-width: 1024px) {
   .mainLayout {
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
     gap: 28px;
   }
 
@@ -1533,7 +1543,7 @@
   }
 
   .mainLayout {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
     gap: 24px;
   }
 
@@ -1606,6 +1616,19 @@
 
   .similarImageWrapper {
     height: 150px;
+  }
+
+  /* Touch-target sizing: pad the small inline controls without shifting the
+     surrounding layout (negative margin offsets the added padding). */
+  .breadcrumbLink {
+    display: inline-block;
+    padding: 8px 2px;
+    margin: -8px 0;
+  }
+
+  .writeReviewLink {
+    padding: 12px 4px;
+    margin: -12px 0;
   }
 }
 

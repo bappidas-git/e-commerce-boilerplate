@@ -178,33 +178,38 @@
 /* Dot Navigation */
 .dotsContainer {
   position: absolute;
-  bottom: 16px;
+  bottom: 6px;
   left: 50%;
   transform: translateX(-50%);
   display: flex;
-  gap: 8px;
+  gap: 0;
   z-index: 5;
 }
 
+/* The visible dot stays small, but content-box padding + background-clip give
+   each button a ~32px touch target (the padding also spaces the dots apart). */
 .dot {
+  box-sizing: content-box;
   width: 8px;
   height: 8px;
+  padding: 13px;
   border-radius: 50%;
   border: none;
-  background: rgba(255, 255, 255, 0.45);
+  background-color: rgba(255, 255, 255, 0.45);
+  background-clip: content-box;
   cursor: pointer;
-  padding: 0;
   transition: all 0.3s ease;
 }
 
 .dot:hover {
-  background: rgba(255, 255, 255, 0.7);
+  background-color: rgba(255, 255, 255, 0.7);
 }
 
 .dotActive {
   width: 24px;
-  border-radius: 4px;
-  background: #ffffff;
+  /* 17px on the padding box = 4px radius on the visible (content-box) pill */
+  border-radius: 17px;
+  background-color: #ffffff;
 }
 
 /* ==========================================================================
@@ -483,11 +488,11 @@
     display: none;
   }
 
-  /* Arrow buttons always visible on mobile (no hover) */
+  /* Arrow buttons always visible on mobile (no hover); keep ≥40px for touch */
   .arrowBtn {
     opacity: 0.85;
-    width: 32px;
-    height: 32px;
+    width: 40px;
+    height: 40px;
   }
 
   .arrowLeft {
@@ -499,8 +504,8 @@
   }
 
   .dotsContainer {
-    bottom: 10px;
-    gap: 6px;
+    bottom: 2px;
+    gap: 0;
   }
 
   .dot {
@@ -583,13 +588,13 @@
   }
 
   .arrowBtn {
-    width: 28px;
-    height: 28px;
+    width: 40px;
+    height: 40px;
   }
 
   .arrowBtn svg {
-    width: 16px;
-    height: 16px;
+    width: 18px;
+    height: 18px;
   }
 
   .categoryItem {

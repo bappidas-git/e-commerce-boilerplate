@@ -2,6 +2,10 @@
 .dark { color: #e2e8f0; }
 .breadcrumb { display: flex; gap: 8px; align-items: center; margin-bottom: 24px; font-size: 0.875rem; color: #64748b; }
 .breadcrumb a { color: #667eea; text-decoration: none; }
+/* Touch-target sizing: grow the breadcrumb hit area without moving the row */
+@media (max-width: 768px) {
+  .breadcrumb a { display: inline-block; padding: 10px 2px; margin: -10px 0; }
+}
 .dark .breadcrumb { color: #94a3b8; }
 .title { font-size: 2rem; font-weight: 700; margin-bottom: 8px; }
 .subtitle { color: #64748b; font-size: 0.9rem; margin-bottom: 16px; }

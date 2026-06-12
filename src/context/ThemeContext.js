@@ -21,6 +21,19 @@ export const useThemeContext = () => {
   return { mode: context.isDarkMode ? "dark" : "light", toggleTheme: context.toggleTheme };
 };
 
+// Small icon buttons (admin table actions, input adornments, dialog controls)
+// keep their compact desktop density but get a padded ≥40px hit area on
+// touch-sized screens. Shared by the light and dark themes.
+const iconButtonTouchOverrides = {
+  styleOverrides: {
+    sizeSmall: {
+      "@media (max-width: 768px)": {
+        padding: 11,
+      },
+    },
+  },
+};
+
 export const ThemeContextProvider = ({ children }) => {
   const [isDarkMode, setIsDarkMode] = useState(() => {
     const savedTheme = localStorage.getItem("theme");
@@ -171,6 +184,7 @@ export const ThemeContextProvider = ({ children }) => {
           },
         },
       },
+      MuiIconButton: iconButtonTouchOverrides,
     },
   });
 
@@ -289,6 +303,7 @@ export const ThemeContextProvider = ({ children }) => {
           },
         },
       },
+      MuiIconButton: iconButtonTouchOverrides,
     },
   });
 

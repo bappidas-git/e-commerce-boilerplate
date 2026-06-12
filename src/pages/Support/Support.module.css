@@ -8,14 +8,21 @@
 .breadcrumb { display: flex; gap: 8px; align-items: center; margin-bottom: 24px; font-size: 0.875rem; color: #64748b; }
 .breadcrumb a { color: #667eea; text-decoration: none; }
 .breadcrumb a:hover { text-decoration: underline; }
+/* Touch-target sizing: grow the breadcrumb hit area without moving the row */
+@media (max-width: 768px) {
+  .breadcrumb a { display: inline-block; padding: 10px 2px; margin: -10px 0; }
+}
 .dark .breadcrumb { color: #94a3b8; }
 .header { text-align: center; margin-bottom: 40px; }
 .header h1 { font-size: 2rem; font-weight: 700; margin-bottom: 8px; }
 .header p { color: #64748b; font-size: 1.1rem; }
 .dark .header p { color: #94a3b8; }
-.content { display: grid; grid-template-columns: 1fr 2fr; gap: 32px; }
-@media (max-width: 768px) { .content { grid-template-columns: 1fr; } }
-.contactInfo { display: flex; flex-direction: column; gap: 16px; }
+/* minmax(0,…) tracks + min-width:0 items: bare fr tracks inherit the form
+   fields' intrinsic widths (~20ch each), overflowing 320px and 820px wide
+   viewports. */
+.content { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 2fr); gap: 32px; }
+@media (max-width: 768px) { .content { grid-template-columns: minmax(0, 1fr); } }
+.contactInfo { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
 .infoCard { padding: 20px; border-radius: 12px; background: #fff; border: 1px solid #e2e8f0; }
 .dark .infoCard { background: #1e293b; border-color: #334155; }
 .infoIcon { font-size: 1.5rem; margin-bottom: 8px; }
@@ -27,15 +34,21 @@
 .quickLinks h3 { font-size: 1rem; font-weight: 600; margin-bottom: 4px; }
 .quickLinks a { color: #667eea; text-decoration: none; font-size: 0.9rem; }
 .quickLinks a:hover { text-decoration: underline; }
-.form { padding: 32px; border-radius: 16px; background: #fff; border: 1px solid #e2e8f0; }
+/* Touch-target sizing for the stacked quick links on phones */
+@media (max-width: 768px) {
+  .quickLinks { gap: 0; }
+  .quickLinks a { padding: 10px 0; }
+}
+.form { padding: 32px; border-radius: 16px; background: #fff; border: 1px solid #e2e8f0; min-width: 0; }
 .dark .form { background: #1e293b; border-color: #334155; }
 .form h2 { font-size: 1.5rem; font-weight: 600; margin-bottom: 24px; }
-.formRow { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-@media (max-width: 576px) { .formRow { grid-template-columns: 1fr; } }
-.formGroup { display: flex; flex-direction: column; gap: 6px; margin-bottom: 16px; }
+.formRow { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px; }
+@media (max-width: 576px) { .formRow { grid-template-columns: minmax(0, 1fr); } }
+.formGroup { display: flex; flex-direction: column; gap: 6px; margin-bottom: 16px; min-width: 0; }
 .formGroup label { font-size: 0.875rem; font-weight: 500; color: #475569; }
 .dark .formGroup label { color: #94a3b8; }
 .formGroup input, .formGroup select, .formGroup textarea {
+  width: 100%; min-width: 0;
   padding: 10px 14px; border-radius: 8px; border: 1px solid #d1d5db; font-size: 0.95rem;
   background: #f9fafb; transition: border-color 0.2s; font-family: inherit;
 }

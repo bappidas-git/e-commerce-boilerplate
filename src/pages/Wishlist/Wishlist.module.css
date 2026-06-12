@@ -625,6 +625,11 @@
     width: 100%;
     flex-wrap: wrap;
   }
+
+  /* Touch-target sizing */
+  .guestBannerBtn {
+    min-height: 44px;
+  }
 }
 
 @media (max-width: 560px) {

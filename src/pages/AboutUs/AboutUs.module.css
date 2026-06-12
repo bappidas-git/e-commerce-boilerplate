@@ -2,6 +2,10 @@
 .dark { color: #e2e8f0; }
 .breadcrumb { display: flex; gap: 8px; align-items: center; margin-bottom: 24px; font-size: 0.875rem; color: #64748b; }
 .breadcrumb a { color: #667eea; text-decoration: none; }
+/* Touch-target sizing: grow the breadcrumb hit area without moving the row */
+@media (max-width: 768px) {
+  .breadcrumb a { display: inline-block; padding: 10px 2px; margin: -10px 0; }
+}
 .dark .breadcrumb { color: #94a3b8; }
 .hero { text-align: center; margin-bottom: 48px; padding: 48px 24px; border-radius: 20px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: #fff; }
 .heroEyebrow { display: inline-block; font-size: 0.78rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; padding: 6px 16px; border-radius: 999px; background: rgba(255, 255, 255, 0.18); margin-bottom: 16px; }
