@@ -1,8 +1,29 @@
 {
   "banners": [
-    { "id": 1, "title": "Flash Sale", "subtitle": "Up to 70% Off on Electronics", "cta": "Shop Now", "link": "/products?category=electronics", "gradient": "linear-gradient(135deg, #667eea 0%, #764ba2 100%)" },
-    { "id": 2, "title": "New Arrivals", "subtitle": "Discover Latest Fashion Trends", "cta": "Explore", "link": "/products?category=clothing", "gradient": "linear-gradient(135deg, #f093fb 0%, #f5576c 100%)" },
-    { "id": 3, "title": "Ethnic Collection", "subtitle": "Traditional Meets Modern", "cta": "Shop Collection", "link": "/products?category=womens-ethnic-wear", "gradient": "linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)" }
+    {
+      "id": 1,
+      "title": "Flash Sale",
+      "subtitle": "Up to 70% Off on Electronics",
+      "cta": "Shop Now",
+      "link": "/products?category=electronics",
+      "gradient": "linear-gradient(135deg, #667eea 0%, #764ba2 100%)"
+    },
+    {
+      "id": 2,
+      "title": "New Arrivals",
+      "subtitle": "Discover Latest Fashion Trends",
+      "cta": "Explore",
+      "link": "/products?category=clothing",
+      "gradient": "linear-gradient(135deg, #f093fb 0%, #f5576c 100%)"
+    },
+    {
+      "id": 3,
+      "title": "Ethnic Collection",
+      "subtitle": "Traditional Meets Modern",
+      "cta": "Shop Collection",
+      "link": "/products?category=womens-ethnic-wear",
+      "gradient": "linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)"
+    }
   ],
   "users": [
     {
@@ -179,7 +200,7 @@
       "isActive": true,
       "sortOrder": 7,
       "createdAt": "2025-01-01T00:00:00.000Z",
-      "updatedAt": "2025-01-01T00:00:00.000Z"
+      "updatedAt": "2026-06-12T01:38:32.822Z"
     },
     {
       "id": 10,
@@ -1531,22 +1552,7 @@
       "updatedAt": "2025-03-14T00:00:00.000Z"
     }
   ],
-  "cart": [
-    {
-      "id": "3-default",
-      "productId": 3,
-      "variantId": "v1",
-      "variantName": "Black / Rubber Band",
-      "name": "FitPulse Smartwatch Series 5",
-      "image": "https://placehold.co/600x400/0f3460/FFFFFF?text=FitPulse+Watch",
-      "price": 14999,
-      "comparePrice": 19999,
-      "currency": "INR",
-      "quantity": 1,
-      "cartItemId": 1773988479463,
-      "userId": 3
-    }
-  ],
+  "cart": [],
   "orders": [
     {
       "id": 1,
@@ -1595,12 +1601,12 @@
       "paymentStatus": "paid",
       "paymentMethod": "upi",
       "fulfillmentStatus": "fulfilled",
-      "shippingStatus": "delivered",
+      "shippingStatus": "shipped",
       "trackingNumber": "SHIP123456789IN",
       "shiprocketOrderId": null,
       "notes": "",
       "createdAt": "2026-01-15T10:30:00.000Z",
-      "updatedAt": "2026-01-18T14:00:00.000Z"
+      "updatedAt": "2026-06-12T01:40:17.764Z"
     },
     {
       "id": 2,
@@ -1813,15 +1819,70 @@
       "total": 17699,
       "paymentMethod": "cod",
       "paymentStatus": "pending",
-      "fulfillmentStatus": "unfulfilled",
+      "fulfillmentStatus": "cancelled",
       "shippingStatus": "pending",
       "trackingNumber": null,
       "notes": "",
       "userId": 3,
       "orderNumber": "ORD-MMYJ01ED-ZR26",
       "createdAt": "2026-03-20T06:36:26.005Z",
-      "updatedAt": "2026-03-20T06:36:26.005Z",
-      "id": 5
+      "updatedAt": "2026-06-12T01:46:10.397Z",
+      "id": 5,
+      "cancelledAt": "2026-06-12T01:46:10.397Z"
+    },
+    {
+      "items": [
+        {
+          "productId": 3,
+          "variantId": "v1",
+          "name": "FitPulse Smartwatch Series 5 - Black / Rubber Band",
+          "image": "https://placehold.co/600x400/0f3460/FFFFFF?text=FitPulse+Watch",
+          "sku": "",
+          "price": 14999,
+          "quantity": 1,
+          "subtotal": 14999
+        }
+      ],
+      "shippingAddress": {
+        "firstName": "Bappi",
+        "lastName": "Das",
+        "phone": "+919707112233",
+        "addressLine1": "Moutupuri, Barpeta",
+        "addressLine2": "Near BH College",
+        "city": "Howly",
+        "state": "Assam",
+        "postalCode": "781316",
+        "country": "India"
+      },
+      "billingAddress": {
+        "firstName": "Bappi",
+        "lastName": "Das",
+        "phone": "+919707112233",
+        "addressLine1": "Moutupuri, Barpeta",
+        "addressLine2": "Near BH College",
+        "city": "Howly",
+        "state": "Assam",
+        "postalCode": "781316",
+        "country": "India"
+      },
+      "subtotal": 14999,
+      "discountAmount": 0,
+      "couponCode": null,
+      "shippingAmount": 0,
+      "taxAmount": 2700,
+      "total": 17699,
+      "paymentMethod": "cod",
+      "paymentStatus": "paid",
+      "fulfillmentStatus": "fulfilled",
+      "shippingStatus": "shipped",
+      "trackingNumber": "TEST63452634532563242346",
+      "notes": "Delivered",
+      "userId": 3,
+      "orderNumber": "ORD-MQA9I6E7-0IR2",
+      "shiprocketOrderId": null,
+      "createdAt": "2026-06-12T01:42:57.247Z",
+      "updatedAt": "2026-06-12T01:49:56.924Z",
+      "id": 6
     }
   ],
   "returns": [
@@ -2092,47 +2153,7 @@
       "updatedAt": "2026-04-17T14:32:29.365Z"
     }
   ],
-  "wishlist": [
-    {
-      "userId": 3,
-      "productId": 3,
-      "id": 1773988467439,
-      "name": "FitPulse Smartwatch Series 5",
-      "image": "https://placehold.co/600x400/0f3460/FFFFFF?text=FitPulse+Watch",
-      "brand": "FitPulse",
-      "price": 14999,
-      "comparePrice": 19999,
-      "rating": 4.5,
-      "totalReviews": 215,
-      "shortDescription": "Advanced health tracking smartwatch with GPS and AMOLED display",
-      "variants": [
-        {
-          "id": "v1",
-          "name": "Black / Rubber Band",
-          "price": 14999,
-          "stock": 30,
-          "sku": "ELC-FPS-SW5-BLK-R"
-        },
-        {
-          "id": "v2",
-          "name": "Silver / Metal Band",
-          "price": 16999,
-          "stock": 25,
-          "sku": "ELC-FPS-SW5-SLV-M"
-        },
-        {
-          "id": "v3",
-          "name": "Gold / Leather Band",
-          "price": 18999,
-          "stock": 20,
-          "sku": "ELC-FPS-SW5-GLD-L"
-        }
-      ],
-      "trending": false,
-      "hot": true,
-      "addedAt": "2026-03-20T06:34:27.439Z"
-    }
-  ],
+  "wishlist": [],
   "leads": [
     {
       "id": 1,
