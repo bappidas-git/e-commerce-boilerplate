@@ -533,12 +533,45 @@ const OrderHistory = () => {
                                 </button>
                               )}
                             </div>
+                            {order.trackingUrl && (
+                              <div className={styles.trackingRow}>
+                                <span className={styles.trackingLabel}>Track Shipment</span>
+                                <a
+                                  href={order.trackingUrl}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className={styles.trackingLink}
+                                >
+                                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                    <rect x="1" y="3" width="15" height="13" rx="2" ry="2" />
+                                    <polygon points="16 8 20 8 23 11 23 16 16 16 16 8" />
+                                    <circle cx="5.5" cy="18.5" r="2.5" />
+                                    <circle cx="18.5" cy="18.5" r="2.5" />
+                                  </svg>
+                                  Open carrier tracking page
+                                </a>
+                              </div>
+                            )}
                             <div className={styles.trackingRow}>
                               <span className={styles.trackingLabel}>Status</span>
                               <span className={`${styles.statusBadge} ${styles[statusInfo.className]}`}>
                                 {statusInfo.label}
                               </span>
                             </div>
+                            {order.refundStatus && (
+                              <div className={styles.trackingRow}>
+                                <span className={styles.trackingLabel}>Refund</span>
+                                <span className={styles.trackingValue} style={{ fontFamily: "inherit" }}>
+                                  {order.refundStatus === "completed"
+                                    ? `Refunded${order.refundedAmount ? ` ${formatCurrency(order.refundedAmount)}` : ""} to your ${(order.refundMethod || "original payment").replace(/_/g, " ")}`
+                                    : order.refundStatus === "processing"
+                                    ? "Refund in progress — typically 5–7 business days"
+                                    : order.refundStatus === "failed"
+                                    ? "Refund delayed — our team is on it"
+                                    : order.refundStatus}
+                                </span>
+                              </div>
+                            )}
                           </div>
                         </motion.div>
                       )}
