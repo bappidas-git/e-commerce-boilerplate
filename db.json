@@ -1758,7 +1758,7 @@
       "shippingAmount": 99,
       "taxAmount": 2720,
       "total": 19818,
-      "paymentStatus": "paid",
+      "paymentStatus": "refunded",
       "paymentMethod": "card",
       "fulfillmentStatus": "unfulfilled",
       "shippingStatus": "pending",
@@ -1766,7 +1766,7 @@
       "shiprocketOrderId": null,
       "notes": "",
       "createdAt": "2026-03-10T08:45:00.000Z",
-      "updatedAt": "2026-03-10T08:45:00.000Z",
+      "updatedAt": "2026-06-13T06:13:05.821Z",
       "statusHistory": [
         {
           "at": "2026-03-10T08:45:00.000Z",
@@ -1778,6 +1778,12 @@
           "by": "System",
           "action": "Payment captured",
           "note": "Card via Razorpay"
+        },
+        {
+          "at": "2026-06-13T06:13:05.821Z",
+          "by": "Admin User",
+          "action": "Refund issued (₹19,818)",
+          "note": "Refunded from order"
         }
       ]
     },
@@ -2030,16 +2036,16 @@
       "taxAmount": 1530,
       "total": 10029,
       "paymentMethod": "cod",
-      "paymentStatus": "pending",
-      "fulfillmentStatus": "unfulfilled",
-      "shippingStatus": "pending",
-      "trackingNumber": null,
-      "notes": "",
+      "paymentStatus": "paid",
+      "fulfillmentStatus": "fulfilled",
+      "shippingStatus": "delivered",
+      "trackingNumber": "12331231212",
+      "notes": "Test Notes",
       "userId": 3,
       "orderNumber": "ORD-MQB0JHUB-9KL6",
       "shiprocketOrderId": null,
       "createdAt": "2026-06-12T14:19:48.371Z",
-      "updatedAt": "2026-06-12T14:19:48.371Z",
+      "updatedAt": "2026-06-12T14:49:17.688Z",
       "id": 7,
       "statusHistory": [
         {
@@ -2047,8 +2053,35 @@
           "by": "Customer",
           "action": "Order placed",
           "note": "Cash on delivery"
+        },
+        {
+          "at": "2026-06-12T14:47:54.035Z",
+          "by": "Admin User",
+          "action": "Fulfilled & shipped"
+        },
+        {
+          "at": "2026-06-12T14:48:06.179Z",
+          "by": "Admin User",
+          "action": "Tracking updated"
+        },
+        {
+          "at": "2026-06-12T14:48:34.835Z",
+          "by": "Admin User",
+          "action": "Tracking updated",
+          "note": "Tracking 12331231212"
+        },
+        {
+          "at": "2026-06-12T14:49:04.101Z",
+          "by": "Admin User",
+          "action": "Marked delivered"
+        },
+        {
+          "at": "2026-06-12T14:49:17.716Z",
+          "by": "Admin User",
+          "action": "Payment marked as paid"
         }
-      ]
+      ],
+      "deliveredAt": "2026-06-12T14:49:04.053Z"
     }
   ],
   "returns": [
@@ -2208,14 +2241,25 @@
       "gateway": "razorpay",
       "transactionId": "pay_RZP345678901",
       "gatewayOrderId": "order_RZP765432109",
-      "status": "captured",
+      "status": "refunded",
       "gatewayResponse": {
         "code": "SUCCESS",
         "bank": "ICICI",
         "last4": "1234"
       },
       "createdAt": "2026-03-10T08:46:00.000Z",
-      "updatedAt": "2026-03-10T08:46:30.000Z"
+      "updatedAt": "2026-06-13T06:13:05.674Z",
+      "refundAmount": 19818,
+      "refundReason": "Refunded from order",
+      "refunds": [
+        {
+          "id": "ref_mqbylfkanpi6",
+          "amount": 19818,
+          "reason": "Refunded from order",
+          "at": "2026-06-13T06:13:05.674Z",
+          "by": "Admin User"
+        }
+      ]
     },
     {
       "id": 4,
