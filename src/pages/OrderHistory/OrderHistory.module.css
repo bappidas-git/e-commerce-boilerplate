@@ -850,6 +850,36 @@
   color: #e2e8f0;
 }
 
+/* Carrier tracking link — opens the courier's tracking page in a new tab */
+.trackingLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #6366f1;
+  text-decoration: none;
+  padding: 0.3rem 0.65rem;
+  border: 1px solid rgba(99, 102, 241, 0.35);
+  border-radius: 8px;
+  transition: background 0.18s ease, border-color 0.18s ease;
+}
+
+.trackingLink:hover {
+  background: rgba(99, 102, 241, 0.08);
+  border-color: #6366f1;
+}
+
+.dark .trackingLink {
+  color: #a5b4fc;
+  border-color: rgba(165, 180, 252, 0.35);
+}
+
+.dark .trackingLink:hover {
+  background: rgba(165, 180, 252, 0.12);
+  border-color: #a5b4fc;
+}
+
 /* Expanded Details */
 .expandedSection {
   overflow: hidden;

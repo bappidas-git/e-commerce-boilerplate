@@ -4,6 +4,7 @@ import {
   TableHead, TableRow, Chip, IconButton, Tooltip, Skeleton, TextField,
   InputAdornment, Select, MenuItem, FormControl, InputLabel, Dialog,
   DialogTitle, DialogContent, DialogActions, Button, Divider, Grid,
+  Checkbox, FormControlLabel, Link, Alert,
 } from "@mui/material";
 import { Icon } from "@iconify/react";
 import { useNavigate } from "react-router-dom";
@@ -31,6 +32,53 @@ const PAYMENT_STATUS = {
   voided: { label: "Voided", color: "default" },
 };
 
+// In-flight refund lifecycle (separate from the settled paymentStatus): a
+// refund is initiated, then settles to the customer days later.
+const REFUND_STATUS = {
+  processing: { label: "Refund Processing", color: "warning", icon: "mdi:progress-clock" },
+  completed: { label: "Refund Completed", color: "success", icon: "mdi:check-circle-outline" },
+  failed: { label: "Refund Failed", color: "error", icon: "mdi:alert-circle-outline" },
+};
+
+// Refund destinations. "Original payment" reverses an online gateway charge;
+// COD has no charge to reverse, so cash refunds go out via bank/UPI/credit.
+const REFUND_METHODS = {
+  original_payment: "Original payment method",
+  bank_transfer: "Bank transfer",
+  upi: "UPI",
+  store_credit: "Store credit",
+};
+const COD_REFUND_METHODS = ["bank_transfer", "upi", "store_credit"];
+
+const isOnlinePayment = (o) => Boolean(o && o.paymentMethod && o.paymentMethod !== "cod");
+
+// Add a scheme if the admin typed a bare host (paste-friendly).
+const normalizeUrl = (u) => {
+  const s = (u || "").trim();
+  if (!s) return "";
+  return /^https?:\/\//i.test(s) ? s : `https://${s}`;
+};
+
+// What cancelling THIS order means for the customer's money, by payment method
+// and state. Drives the refund section of the cancel dialog and the cancel call.
+const refundImplication = (o) => {
+  if (!o) return { kind: "none", text: "" };
+  const online = isOnlinePayment(o);
+  const captured = ["paid", "partially_refunded"].includes(o.paymentStatus);
+  const method = (o.paymentMethod || "").toUpperCase();
+  const amount = `₹${Number(o.total || 0).toLocaleString("en-IN")}`;
+  if (captured && online) {
+    return { kind: "refund", text: `Customer paid ${amount} online via ${method}. A refund will be initiated to the original payment method.` };
+  }
+  if (captured && !online) {
+    return { kind: "refund", text: `COD payment of ${amount} was collected. Issue a refund via bank transfer or UPI.` };
+  }
+  if (online) {
+    return { kind: "void", text: `No payment was captured. The pending ${method} authorization will be voided — nothing to refund.` };
+  }
+  return { kind: "none", text: `Cash on Delivery — no payment has been collected yet. No refund is required.` };
+};
+
 const SORT_OPTIONS = {
   date_desc: { label: "Newest first", cmp: (a, b) => new Date(b.createdAt) - new Date(a.createdAt) },
   date_asc: { label: "Oldest first", cmp: (a, b) => new Date(a.createdAt) - new Date(b.createdAt) },
@@ -56,9 +104,26 @@ const AdminOrders = () => {
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [trackingInput, setTrackingInput] = useState("");
+  const [trackingUrlInput, setTrackingUrlInput] = useState("");
   const [notesInput, setNotesInput] = useState("");
   const [editAddr, setEditAddr] = useState(false);
   const [addrForm, setAddrForm] = useState(EMPTY_ADDR);
+  const [actionBusy, setActionBusy] = useState(false);
+
+  // Cancel-order dialog (replaces the old SweetAlert prompt — a Swal text input
+  // can't be typed into while a MUI Dialog holds the focus trap).
+  const [cancelOpen, setCancelOpen] = useState(false);
+  const [cancelReason, setCancelReason] = useState("");
+  const [cancelRestock, setCancelRestock] = useState(true);
+  const [cancelRefundMethod, setCancelRefundMethod] = useState("original_payment");
+
+  // Issue-refund dialog (initiate step of the two-step lifecycle).
+  const [refundOpen, setRefundOpen] = useState(false);
+  const [refundAmount, setRefundAmount] = useState("");
+  const [refundMethod, setRefundMethod] = useState("original_payment");
+  const [refundReason, setRefundReason] = useState("");
+  const [refundReference, setRefundReference] = useState("");
+  const [refundRemaining, setRefundRemaining] = useState(0);
 
   useEffect(() => { loadOrders(); }, []);
 
@@ -74,6 +139,7 @@ const AdminOrders = () => {
   const openDetail = (order) => {
     setSelectedOrder(order);
     setTrackingInput(order.trackingNumber || "");
+    setTrackingUrlInput(order.trackingUrl || "");
     setNotesInput(order.notes || "");
     setEditAddr(false);
     setAddrForm({ ...EMPTY_ADDR, ...(order.shippingAddress || {}) });
@@ -84,16 +150,22 @@ const AdminOrders = () => {
     Swal.fire({ icon, title, toast: true, position: "bottom-end", showConfirmButton: false, timer: 2500 });
 
   const handleFulfillmentUpdate = async (newStatus) => {
+    const trackingUrl = normalizeUrl(trackingUrlInput);
+    if (trackingUrl && !/^https?:\/\/[^\s.]+\.[^\s]+/i.test(trackingUrl)) {
+      toast("Enter a valid tracking URL (e.g. https://track.courier.com/ABC123)", "warning");
+      return;
+    }
     try {
       const firstFulfil = selectedOrder.fulfillmentStatus === "unfulfilled" && newStatus === "fulfilled";
       await apiService.admin.updateOrder(selectedOrder.id, {
         fulfillmentStatus: newStatus,
         shippingStatus: newStatus === "fulfilled" ? "shipped" : selectedOrder.shippingStatus,
-        trackingNumber: trackingInput || null,
+        trackingNumber: trackingInput.trim() || null,
+        trackingUrl: trackingUrl || null,
         notes: notesInput,
       }, {
         action: firstFulfil ? "Fulfilled & shipped" : "Tracking updated",
-        note: trackingInput ? `Tracking ${trackingInput}` : "",
+        note: [trackingInput.trim() ? `Tracking ${trackingInput.trim()}` : "", trackingUrl ? "tracking link added" : ""].filter(Boolean).join(" · "),
       });
       toast("Order updated");
       setDialogOpen(false);
@@ -127,49 +199,111 @@ const AdminOrders = () => {
     } catch (e) { Swal.fire({ icon: "error", title: "Error", text: e.message }); }
   };
 
-  // Full refund of whatever is still capturable. Routes through the linked
-  // payment record (refund history + partial-refund math) when one exists;
-  // legacy orders without a payment row fall back to a direct status stamp.
-  const handleIssueRefund = async () => {
+  // --- Issue Refund (step 1: initiate) ---
+  // Opens the refund dialog seeded with whatever is still refundable. Refunds
+  // are NOT instant: this records the refund as "processing"; the admin settles
+  // it once the money has actually reached the customer (see handleCompleteRefund).
+  const openRefundDialog = async () => {
+    let remaining = Number(selectedOrder.total) || 0;
     try {
       const payRows = await apiService.admin.getPayments({ orderId: selectedOrder.id });
       const payment = Array.isArray(payRows) && payRows.length > 0 ? payRows[0] : null;
-      if (payment) {
-        const remaining = (Number(payment.amount) || 0) - (Number(payment.refundAmount) || 0);
-        if (remaining <= 0) { toast("Nothing left to refund", "info"); return; }
-        await apiService.admin.issueRefund(payment.id, remaining, "Refunded from order");
-      } else {
-        await apiService.admin.updateOrder(
-          selectedOrder.id,
-          { paymentStatus: "refunded", notes: notesInput },
-          { action: "Refund issued" }
-        );
-      }
-      toast("Refund issued");
-      setDialogOpen(false);
-      loadOrders();
-    } catch (e) { Swal.fire({ icon: "error", title: "Error", text: e.message }); }
+      if (payment) remaining = Math.max(0, (Number(payment.amount) || 0) - (Number(payment.refundAmount) || 0));
+    } catch { /* fall back to order total */ }
+    if (remaining <= 0) { toast("Nothing left to refund", "info"); return; }
+    setRefundRemaining(remaining);
+    setRefundAmount(String(remaining));
+    setRefundMethod(isOnlinePayment(selectedOrder) ? "original_payment" : "bank_transfer");
+    setRefundReason("");
+    setRefundReference("");
+    setRefundOpen(true);
   };
 
-  const handleCancelOrder = async () => {
-    const { value: reason, isConfirmed } = await Swal.fire({
-      title: "Cancel this order?",
-      input: "text",
-      inputLabel: "Cancellation reason",
-      inputPlaceholder: "e.g., Out of stock, customer request…",
-      icon: "warning",
-      showCancelButton: true,
-      confirmButtonText: "Cancel Order",
-      cancelButtonText: "Keep Order",
-      inputValidator: (v) => (!v || !v.trim() ? "A reason is required" : undefined),
-    });
-    if (!isConfirmed) return;
+  const handleRefundInitiate = async () => {
+    const amt = parseFloat(refundAmount);
+    if (!amt || amt <= 0) { toast("Enter a valid refund amount", "warning"); return; }
+    if (amt > refundRemaining + 0.001) { toast(`Refund can't exceed ${fc(refundRemaining)}`, "warning"); return; }
+    if (!refundReason.trim()) { toast("A refund reason is required", "warning"); return; }
+    setActionBusy(true);
     try {
-      await apiService.admin.cancelOrder(selectedOrder.id, reason.trim());
-      toast("Order cancelled");
+      await apiService.admin.initiateOrderRefund(selectedOrder.id, {
+        amount: amt,
+        method: refundMethod,
+        reason: refundReason.trim(),
+        reference: refundReference.trim() || null,
+      });
+      toast("Refund initiated — awaiting settlement");
+      setRefundOpen(false);
       setDialogOpen(false);
       loadOrders();
     } catch (e) { Swal.fire({ icon: "error", title: "Error", text: e.message }); }
+    finally { setActionBusy(false); }
+  };
+
+  // --- Issue Refund (step 2: settle / fail) ---
+  const handleCompleteRefund = async () => {
+    const pending = selectedOrder.pendingRefund || {};
+    const result = await Swal.fire({
+      title: "Mark refund as completed?",
+      text: `Confirm ₹${Number(pending.amount || 0).toLocaleString("en-IN")} has settled to the customer.`,
+      icon: "question",
+      showCancelButton: true,
+      confirmButtonText: "Yes, completed",
+    });
+    if (!result.isConfirmed) return;
+    setActionBusy(true);
+    try {
+      await apiService.admin.completeOrderRefund(selectedOrder.id);
+      toast("Refund completed");
+      setDialogOpen(false);
+      loadOrders();
+    } catch (e) { Swal.fire({ icon: "error", title: "Error", text: e.message }); }
+    finally { setActionBusy(false); }
+  };
+
+  const handleFailRefund = async () => {
+    const result = await Swal.fire({
+      title: "Mark refund as failed?",
+      text: "Use this if the settlement bounced. You can re-initiate afterwards.",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#d32f2f",
+      confirmButtonText: "Mark Failed",
+    });
+    if (!result.isConfirmed) return;
+    setActionBusy(true);
+    try {
+      await apiService.admin.failOrderRefund(selectedOrder.id);
+      toast("Refund marked as failed", "info");
+      setDialogOpen(false);
+      loadOrders();
+    } catch (e) { Swal.fire({ icon: "error", title: "Error", text: e.message }); }
+    finally { setActionBusy(false); }
+  };
+
+  // --- Cancel Order (payment-method aware) ---
+  const openCancelDialog = () => {
+    setCancelReason("");
+    setCancelRestock(true);
+    setCancelRefundMethod(isOnlinePayment(selectedOrder) ? "original_payment" : "bank_transfer");
+    setCancelOpen(true);
+  };
+
+  const handleCancelSubmit = async () => {
+    if (!cancelReason.trim()) { toast("A cancellation reason is required", "warning"); return; }
+    const impl = refundImplication(selectedOrder);
+    const opts = { reason: cancelReason.trim(), restock: cancelRestock };
+    if (impl.kind === "refund") opts.refund = { method: cancelRefundMethod };
+    else if (impl.kind === "void") opts.voidPayment = true;
+    setActionBusy(true);
+    try {
+      await apiService.admin.cancelOrder(selectedOrder.id, opts);
+      toast(impl.kind === "refund" ? "Order cancelled — refund initiated" : "Order cancelled");
+      setCancelOpen(false);
+      setDialogOpen(false);
+      loadOrders();
+    } catch (e) { Swal.fire({ icon: "error", title: "Error", text: e.message }); }
+    finally { setActionBusy(false); }
   };
 
   const handleAddressSave = async () => {
@@ -263,7 +397,7 @@ const AdminOrders = () => {
 
   // Export exactly what the admin is looking at (current filters applied).
   const handleExportCsv = () => {
-    const header = ["Order #", "Date", "Customer", "Email", "Items", "Subtotal", "Discount", "Coupon", "Shipping", "Tax", "Total", "Payment Method", "Payment Status", "Fulfillment", "Shipping Status", "Tracking"];
+    const header = ["Order #", "Date", "Customer", "Email", "Items", "Subtotal", "Discount", "Coupon", "Shipping", "Tax", "Total", "Payment Method", "Payment Status", "Fulfillment", "Shipping Status", "Tracking", "Tracking URL", "Refund Status"];
     const lines = visible.map((o) => [
       o.orderNumber,
       o.createdAt ? new Date(o.createdAt).toISOString().slice(0, 10) : "",
@@ -273,7 +407,7 @@ const AdminOrders = () => {
       o.subtotal ?? "", o.discountAmount ?? "", o.couponCode || "",
       o.shippingAmount ?? "", o.taxAmount ?? "", o.total ?? "",
       o.paymentMethod || "", o.paymentStatus || "", o.fulfillmentStatus || "",
-      o.shippingStatus || "", o.trackingNumber || "",
+      o.shippingStatus || "", o.trackingNumber || "", o.trackingUrl || "", o.refundStatus || "",
     ]);
     const csv = [header, ...lines]
       .map((row) => row.map((v) => `"${String(v ?? "").replace(/"/g, '""')}"`).join(","))
@@ -389,15 +523,20 @@ const AdminOrders = () => {
         </TableContainer>
       </Paper>
 
-      {/* Order Detail Dialog */}
-      <Dialog open={dialogOpen} onClose={() => setDialogOpen(false)} maxWidth="md" fullWidth>
+      {/* Order Detail Dialog — disableEnforceFocus lets any overlay (e.g. a
+          SweetAlert confirm) receive focus instead of the dialog's focus trap
+          swallowing it, which is what blocked typing in the old cancel prompt. */}
+      <Dialog open={dialogOpen} onClose={() => setDialogOpen(false)} maxWidth="md" fullWidth disableEnforceFocus>
         {selectedOrder && (
           <>
             <DialogTitle sx={{ fontWeight: "bold" }}>
               Order {selectedOrder.orderNumber}
-              <Box component="span" sx={{ ml: 2 }}>
-                <Chip label={(PAYMENT_STATUS[selectedOrder.paymentStatus] || { label: selectedOrder.paymentStatus }).label} size="small" color={(PAYMENT_STATUS[selectedOrder.paymentStatus] || {}).color} sx={{ mr: 1 }} />
+              <Box component="span" sx={{ ml: 2, display: "inline-flex", flexWrap: "wrap", gap: 1, verticalAlign: "middle" }}>
+                <Chip label={(PAYMENT_STATUS[selectedOrder.paymentStatus] || { label: selectedOrder.paymentStatus }).label} size="small" color={(PAYMENT_STATUS[selectedOrder.paymentStatus] || {}).color} />
                 <Chip label={(FULFILLMENT_STATUS[selectedOrder.fulfillmentStatus] || { label: selectedOrder.fulfillmentStatus }).label} size="small" color={(FULFILLMENT_STATUS[selectedOrder.fulfillmentStatus] || {}).color} />
+                {selectedOrder.refundStatus && REFUND_STATUS[selectedOrder.refundStatus] && (
+                  <Chip icon={<Icon icon={REFUND_STATUS[selectedOrder.refundStatus].icon} />} label={REFUND_STATUS[selectedOrder.refundStatus].label} size="small" color={REFUND_STATUS[selectedOrder.refundStatus].color} variant="outlined" />
+                )}
               </Box>
             </DialogTitle>
             <DialogContent dividers>
@@ -476,21 +615,39 @@ const AdminOrders = () => {
                 {/* Shipping / Tracking */}
                 <Grid item xs={12}>
                   <Typography variant="subtitle2" fontWeight="bold" gutterBottom>Shipping & Tracking</Typography>
-                  <Box sx={{ display: "flex", gap: 2 }}>
+                  <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr" }, gap: 2 }}>
                     <TextField
                       label="Tracking Number"
                       value={trackingInput}
                       onChange={(e) => setTrackingInput(e.target.value)}
-                      size="small" sx={{ flex: 1 }}
+                      size="small" fullWidth
                       placeholder="e.g., SHIP1234567IN"
+                    />
+                    <TextField
+                      label="Tracking URL"
+                      value={trackingUrlInput}
+                      onChange={(e) => setTrackingUrlInput(e.target.value)}
+                      size="small" fullWidth
+                      placeholder="e.g., https://track.courier.com/SHIP1234567IN"
+                      type="url"
+                      helperText="Carrier link the customer taps to track the shipment"
                     />
                     <TextField
                       label="Admin Notes"
                       value={notesInput}
                       onChange={(e) => setNotesInput(e.target.value)}
-                      size="small" sx={{ flex: 1 }}
+                      size="small" fullWidth
+                      sx={{ gridColumn: { xs: "auto", sm: "1 / -1" } }}
                     />
                   </Box>
+                  {selectedOrder.trackingUrl && (
+                    <Link
+                      href={selectedOrder.trackingUrl} target="_blank" rel="noopener noreferrer"
+                      sx={{ mt: 1.25, display: "inline-flex", alignItems: "center", gap: 0.5, fontSize: "0.8rem" }}
+                    >
+                      <Icon icon="mdi:open-in-new" /> Open current tracking page
+                    </Link>
+                  )}
                   {selectedOrder.deliveredAt && (
                     <Typography variant="caption" color="success.main" sx={{ mt: 1, display: "block" }}>
                       Delivered on {formatDate(selectedOrder.deliveredAt)}
@@ -502,6 +659,28 @@ const AdminOrders = () => {
                     </Typography>
                   )}
                 </Grid>
+
+                {/* Refund status — shown once a refund is in flight or settled */}
+                {selectedOrder.refundStatus && REFUND_STATUS[selectedOrder.refundStatus] && (
+                  <Grid item xs={12}>
+                    <Typography variant="subtitle2" fontWeight="bold" gutterBottom>Refund</Typography>
+                    <Alert
+                      severity={selectedOrder.refundStatus === "completed" ? "success" : selectedOrder.refundStatus === "failed" ? "error" : "info"}
+                      icon={<Icon icon={REFUND_STATUS[selectedOrder.refundStatus].icon} />}
+                      sx={{ alignItems: "center" }}
+                    >
+                      {selectedOrder.refundStatus === "processing" && selectedOrder.pendingRefund && (
+                        <>Refund of <strong>{fc(selectedOrder.pendingRefund.amount)}</strong> via {(selectedOrder.pendingRefund.method || "").replace(/_/g, " ")} is being processed — initiated {formatDate(selectedOrder.pendingRefund.initiatedAt)}. Mark it completed once the customer has the money.</>
+                      )}
+                      {selectedOrder.refundStatus === "completed" && (
+                        <>Refund of <strong>{fc(selectedOrder.refundedAmount)}</strong> settled to the customer{selectedOrder.refundCompletedAt ? ` on ${formatDate(selectedOrder.refundCompletedAt)}` : ""}.</>
+                      )}
+                      {selectedOrder.refundStatus === "failed" && (
+                        <>The last refund attempt failed. Re-initiate the refund to try again.</>
+                      )}
+                    </Alert>
+                  </Grid>
+                )}
 
                 {/* Timeline */}
                 <Grid item xs={12}>
@@ -531,7 +710,7 @@ const AdminOrders = () => {
                 View Returns
               </Button>
               {selectedOrder.fulfillmentStatus === "unfulfilled" && (
-                <Button variant="outlined" color="error" startIcon={<Icon icon="mdi:close-circle-outline" />} onClick={handleCancelOrder}>
+                <Button variant="outlined" color="error" startIcon={<Icon icon="mdi:close-circle-outline" />} onClick={openCancelDialog} disabled={actionBusy}>
                   Cancel Order
                 </Button>
               )}
@@ -550,12 +729,118 @@ const AdminOrders = () => {
                   Update Tracking
                 </Button>
               )}
-              {selectedOrder.paymentStatus === "pending" && (
+              {selectedOrder.paymentStatus === "pending" && selectedOrder.fulfillmentStatus !== "cancelled" && (
                 <Button variant="contained" color="success" onClick={() => handlePaymentUpdate("paid")}>Mark as Paid</Button>
               )}
-              {["paid", "partially_refunded"].includes(selectedOrder.paymentStatus) && (
-                <Button variant="outlined" color="error" onClick={handleIssueRefund}>Issue Refund</Button>
+              {/* Refund settlement (step 2) takes priority while one is in flight */}
+              {selectedOrder.refundStatus === "processing" ? (
+                <>
+                  <Button variant="text" color="error" onClick={handleFailRefund} disabled={actionBusy}>Mark Failed</Button>
+                  <Button variant="contained" color="success" startIcon={<Icon icon="mdi:cash-check" />} onClick={handleCompleteRefund} disabled={actionBusy}>
+                    Complete Refund
+                  </Button>
+                </>
+              ) : (
+                ["paid", "partially_refunded"].includes(selectedOrder.paymentStatus) && (
+                  <Button variant="outlined" color="error" startIcon={<Icon icon="mdi:cash-refund" />} onClick={openRefundDialog} disabled={actionBusy}>
+                    Issue Refund
+                  </Button>
+                )
               )}
+            </DialogActions>
+          </>
+        )}
+      </Dialog>
+
+      {/* Cancel Order dialog — MUI-native (the reason field is typeable, unlike
+          the old SweetAlert prompt) and payment-method aware. */}
+      <Dialog open={cancelOpen} onClose={() => !actionBusy && setCancelOpen(false)} maxWidth="xs" fullWidth>
+        {selectedOrder && (() => {
+          const impl = refundImplication(selectedOrder);
+          const codCaptured = impl.kind === "refund" && !isOnlinePayment(selectedOrder);
+          const methodKeys = codCaptured ? COD_REFUND_METHODS : Object.keys(REFUND_METHODS);
+          return (
+            <>
+              <DialogTitle sx={{ fontWeight: "bold", display: "flex", alignItems: "center", gap: 1 }}>
+                <Icon icon="mdi:alert-circle-outline" style={{ color: "#ed6c02" }} />
+                Cancel order {selectedOrder.orderNumber}?
+              </DialogTitle>
+              <DialogContent dividers>
+                <Alert severity={impl.kind === "refund" ? "warning" : "info"} sx={{ mb: 2 }}>{impl.text}</Alert>
+                <TextField
+                  label="Cancellation reason" required autoFocus
+                  value={cancelReason} onChange={(e) => setCancelReason(e.target.value)}
+                  fullWidth multiline minRows={2} size="small"
+                  placeholder="e.g., Out of stock, customer request…"
+                  sx={{ mb: 2 }}
+                />
+                {impl.kind === "refund" && (
+                  <FormControl fullWidth size="small" sx={{ mb: 1.5 }}>
+                    <InputLabel>Refund method</InputLabel>
+                    <Select value={methodKeys.includes(cancelRefundMethod) ? cancelRefundMethod : methodKeys[0]} label="Refund method" onChange={(e) => setCancelRefundMethod(e.target.value)}>
+                      {methodKeys.map((m) => (<MenuItem key={m} value={m}>{REFUND_METHODS[m]}</MenuItem>))}
+                    </Select>
+                  </FormControl>
+                )}
+                <FormControlLabel
+                  control={<Checkbox checked={cancelRestock} onChange={(e) => setCancelRestock(e.target.checked)} size="small" />}
+                  label={<Typography variant="body2">Return items to inventory (restock)</Typography>}
+                />
+              </DialogContent>
+              <DialogActions sx={{ p: 2 }}>
+                <Button onClick={() => setCancelOpen(false)} disabled={actionBusy}>Keep Order</Button>
+                <Button variant="contained" color="error" onClick={handleCancelSubmit} disabled={actionBusy} startIcon={<Icon icon="mdi:close-circle-outline" />}>
+                  {impl.kind === "refund" ? "Cancel & Refund" : "Cancel Order"}
+                </Button>
+              </DialogActions>
+            </>
+          );
+        })()}
+      </Dialog>
+
+      {/* Issue Refund dialog — step 1 (initiate). Settlement is a separate,
+          explicit action so the flow mirrors a real async gateway refund. */}
+      <Dialog open={refundOpen} onClose={() => !actionBusy && setRefundOpen(false)} maxWidth="xs" fullWidth>
+        {selectedOrder && (
+          <>
+            <DialogTitle sx={{ fontWeight: "bold" }}>Issue refund — {selectedOrder.orderNumber}</DialogTitle>
+            <DialogContent dividers>
+              <Alert severity="info" sx={{ mb: 2 }}>
+                Refunds aren't instant. This records the refund as <strong>processing</strong>; settle it once the money reaches the customer.
+              </Alert>
+              <Box sx={{ display: "flex", justifyContent: "space-between", mb: 2 }}>
+                <Typography variant="body2" color="text.secondary">Refundable</Typography>
+                <Typography variant="body2" fontWeight={600}>{fc(refundRemaining)}</Typography>
+              </Box>
+              <TextField
+                label="Refund amount (₹)" type="number" value={refundAmount}
+                onChange={(e) => setRefundAmount(e.target.value)} fullWidth size="small"
+                sx={{ mb: 2 }} inputProps={{ min: 0, max: refundRemaining }}
+              />
+              <FormControl fullWidth size="small" sx={{ mb: 2 }}>
+                <InputLabel>Refund method</InputLabel>
+                <Select value={refundMethod} label="Refund method" onChange={(e) => setRefundMethod(e.target.value)}>
+                  {(isOnlinePayment(selectedOrder) ? Object.keys(REFUND_METHODS) : COD_REFUND_METHODS).map((m) => (
+                    <MenuItem key={m} value={m}>{REFUND_METHODS[m]}</MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+              <TextField
+                label="Reason" required value={refundReason}
+                onChange={(e) => setRefundReason(e.target.value)} fullWidth size="small"
+                sx={{ mb: 2 }} placeholder="e.g., Damaged item, price adjustment"
+              />
+              <TextField
+                label="Reference (optional)" value={refundReference}
+                onChange={(e) => setRefundReference(e.target.value)} fullWidth size="small"
+                placeholder="Gateway refund ID / bank UTR"
+              />
+            </DialogContent>
+            <DialogActions sx={{ p: 2 }}>
+              <Button onClick={() => setRefundOpen(false)} disabled={actionBusy}>Cancel</Button>
+              <Button variant="contained" color="warning" onClick={handleRefundInitiate} disabled={actionBusy} startIcon={<Icon icon="mdi:cash-refund" />}>
+                Initiate Refund
+              </Button>
             </DialogActions>
           </>
         )}
