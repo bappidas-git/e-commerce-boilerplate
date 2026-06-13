@@ -3,7 +3,8 @@ import {
   Box, Paper, Typography, Table, TableBody, TableCell, TableContainer,
   TableHead, TableRow, Chip, IconButton, Tooltip, Skeleton, TextField,
   InputAdornment, Select, MenuItem, FormControl, InputLabel, Dialog,
-  DialogTitle, DialogContent, DialogActions, Button, Grid, Divider,
+  DialogTitle, DialogContent, DialogActions, Button, Grid, Divider, Alert,
+  ToggleButtonGroup, ToggleButton,
 } from "@mui/material";
 import { Icon } from "@iconify/react";
 import Swal from "sweetalert2";
@@ -12,10 +13,27 @@ import apiService from "../../services/api";
 const PAYMENT_STATUS_CONFIG = {
   captured: { label: "Captured", color: "success" },
   pending: { label: "Pending", color: "warning" },
+  refund_pending: { label: "Refund Pending", color: "warning" },
   partially_refunded: { label: "Partially Refunded", color: "info" },
   failed: { label: "Failed", color: "error" },
   refunded: { label: "Refunded", color: "secondary" },
   voided: { label: "Voided", color: "default" },
+};
+
+// Refund-ledger record statuses (Admin → Payments · Refunds).
+const REFUND_STATUS_CONFIG = {
+  pending: { label: "Refund Pending", color: "warning" },
+  completed: { label: "Completed", color: "success" },
+  failed: { label: "Failed", color: "error" },
+};
+
+// Human labels for the ledger's refund origin.
+const REFUND_TYPE_LABEL = {
+  order_cancellation: "Cancellation",
+  recall_refund: "Recall",
+  order_refund: "Order refund",
+  return_refund: "Return",
+  payment_refund: "Payment refund",
 };
 
 // Money still capturable on a payment after the refunds issued so far.
@@ -31,6 +49,8 @@ const METHOD_ICONS = {
 
 const AdminPayments = () => {
   const [payments, setPayments] = useState([]);
+  const [refunds, setRefunds] = useState([]);
+  const [view, setView] = useState("transactions"); // "transactions" | "refunds"
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
@@ -44,8 +64,12 @@ const AdminPayments = () => {
   const loadPayments = async () => {
     try {
       setLoading(true);
-      const data = await apiService.admin.getPayments();
-      setPayments(data || []);
+      const [pay, refs] = await Promise.all([
+        apiService.admin.getPayments(),
+        apiService.admin.getRefunds().catch(() => []),
+      ]);
+      setPayments(pay || []);
+      setRefunds(refs || []);
     } catch (e) {
       console.error(e);
     } finally {
@@ -92,15 +116,21 @@ const AdminPayments = () => {
 
   // Captured = money currently held: the captured amount NET of any refunds
   // issued so far (a partially-refunded row keeps contributing its remainder;
-  // a fully-refunded row contributes nothing). Refunded sums the running
-  // refundAmount everywhere — falling back to the full amount for a
-  // legacy/full refund without the field. Both skip failed/pending/voided rows.
+  // a fully-refunded row contributes nothing). A "refund_pending" row is still
+  // holding the money — it hasn't been booked out yet — so it counts as held.
+  // Refunded sums the running refundAmount everywhere — falling back to the full
+  // amount for a legacy/full refund without the field.
   const totalRevenue = payments
-    .filter((p) => ["captured", "partially_refunded"].includes(p.status))
+    .filter((p) => ["captured", "partially_refunded", "refund_pending"].includes(p.status))
     .reduce((s, p) => s + remainingOf(p), 0);
   const totalRefunded = payments
     .filter((p) => ["refunded", "partially_refunded"].includes(p.status))
     .reduce((s, p) => s + (Number(p.refundAmount ?? p.amount) || 0), 0);
+  // Money on its way back to customers but not yet settled.
+  const refundPendingAmount = refunds
+    .filter((r) => r.status === "pending")
+    .reduce((s, r) => s + (Number(r.amount) || 0), 0);
+  const refundPendingCount = refunds.filter((r) => r.status === "pending").length;
 
   const filtered = payments.filter((p) => {
     const q = search.toLowerCase();
@@ -108,6 +138,14 @@ const AdminPayments = () => {
     const matchStatus = statusFilter === "all" || p.status === statusFilter;
     return matchSearch && matchStatus;
   });
+
+  const filteredRefunds = refunds.filter((r) => {
+    const q = search.toLowerCase();
+    return !q ||
+      (r.refundNumber || "").toLowerCase().includes(q) ||
+      (r.orderNumber || "").toLowerCase().includes(q) ||
+      (r.returnNumber || "").toLowerCase().includes(q);
+  }).sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
 
   return (
     <Box>
@@ -123,18 +161,20 @@ const AdminPayments = () => {
         {[
           { label: "Total Captured", value: formatCurrency(totalRevenue), icon: "mdi:cash-check", color: "#4caf50" },
           { label: "Total Refunded", value: formatCurrency(totalRefunded), icon: "mdi:cash-refund", color: "#ff9800" },
+          { label: "Refund Pending", value: formatCurrency(refundPendingAmount), icon: "mdi:progress-clock", color: "#f59e0b", sub: `${refundPendingCount} in flight` },
           { label: "Transactions", value: payments.length, icon: "mdi:swap-horizontal", color: "#6366f1" },
           { label: "Failed", value: payments.filter((p) => p.status === "failed").length, icon: "mdi:close-circle-outline", color: "#f44336" },
         ].map((card) => (
-          <Grid item xs={6} md={3} key={card.label}>
-            <Paper elevation={0} sx={{ p: 2.5, border: "1px solid", borderColor: "divider" }}>
+          <Grid item xs={6} md key={card.label}>
+            <Paper elevation={0} sx={{ p: 2.5, border: "1px solid", borderColor: "divider", height: "100%" }}>
               <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
                 <Box sx={{ p: 1, borderRadius: 1, bgcolor: `${card.color}1A`, display: "flex" }}>
                   <Icon icon={card.icon} style={{ fontSize: 24, color: card.color }} />
                 </Box>
-                <Box>
-                  <Typography variant="caption" color="text.secondary">{card.label}</Typography>
-                  <Typography variant="h6" fontWeight="bold">{card.value}</Typography>
+                <Box sx={{ minWidth: 0 }}>
+                  <Typography variant="caption" color="text.secondary" noWrap>{card.label}</Typography>
+                  <Typography variant="h6" fontWeight="bold" noWrap>{card.value}</Typography>
+                  {card.sub && <Typography variant="caption" color="text.secondary" sx={{ display: "block" }}>{card.sub}</Typography>}
                 </Box>
               </Box>
             </Paper>
@@ -142,24 +182,36 @@ const AdminPayments = () => {
         ))}
       </Grid>
 
+      {/* Transactions ⇆ Refunds ledger toggle */}
+      <ToggleButtonGroup
+        value={view} exclusive size="small" sx={{ mb: 2 }}
+        onChange={(e, v) => { if (v) { setView(v); setStatusFilter("all"); } }}
+      >
+        <ToggleButton value="transactions"><Icon icon="mdi:swap-horizontal" style={{ marginRight: 6 }} /> Transactions ({payments.length})</ToggleButton>
+        <ToggleButton value="refunds"><Icon icon="mdi:cash-refund" style={{ marginRight: 6 }} /> Refunds ({refunds.length})</ToggleButton>
+      </ToggleButtonGroup>
+
       <Paper elevation={0} sx={{ border: "1px solid", borderColor: "divider", overflow: "hidden" }}>
         <Box sx={{ p: 2, borderBottom: "1px solid", borderColor: "divider", display: "flex", gap: 2 }}>
           <TextField
-            placeholder="Search by transaction ID or order number..."
+            placeholder={view === "refunds" ? "Search by refund, order or return number..." : "Search by transaction ID or order number..."}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             size="small"
             sx={{ flex: 1, maxWidth: 360 }}
             InputProps={{ startAdornment: <InputAdornment position="start"><Icon icon="mdi:magnify" /></InputAdornment> }}
           />
-          <FormControl size="small" sx={{ minWidth: 150 }}>
-            <InputLabel>Status</InputLabel>
-            <Select value={statusFilter} label="Status" onChange={(e) => setStatusFilter(e.target.value)}>
-              <MenuItem value="all">All</MenuItem>
-              {Object.entries(PAYMENT_STATUS_CONFIG).map(([k, v]) => (<MenuItem key={k} value={k}>{v.label}</MenuItem>))}
-            </Select>
-          </FormControl>
+          {view === "transactions" && (
+            <FormControl size="small" sx={{ minWidth: 150 }}>
+              <InputLabel>Status</InputLabel>
+              <Select value={statusFilter} label="Status" onChange={(e) => setStatusFilter(e.target.value)}>
+                <MenuItem value="all">All</MenuItem>
+                {Object.entries(PAYMENT_STATUS_CONFIG).map(([k, v]) => (<MenuItem key={k} value={k}>{v.label}</MenuItem>))}
+              </Select>
+            </FormControl>
+          )}
         </Box>
+        {view === "transactions" && (
         <TableContainer>
           <Table>
             <TableHead>
@@ -213,6 +265,50 @@ const AdminPayments = () => {
             </TableBody>
           </Table>
         </TableContainer>
+        )}
+
+        {/* Refunds ledger — first-class refund records linked to order/return */}
+        {view === "refunds" && (
+        <TableContainer>
+          <Table sx={{ minWidth: 760 }}>
+            <TableHead>
+              <TableRow>
+                <TableCell>Refund #</TableCell>
+                <TableCell>Type</TableCell>
+                <TableCell>Order</TableCell>
+                <TableCell>Return</TableCell>
+                <TableCell>Amount</TableCell>
+                <TableCell>Method</TableCell>
+                <TableCell>Status</TableCell>
+                <TableCell>Date</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {loading ? (
+                [...Array(4)].map((_, i) => (<TableRow key={i}><TableCell colSpan={8}><Skeleton height={52} /></TableCell></TableRow>))
+              ) : filteredRefunds.length === 0 ? (
+                <TableRow><TableCell colSpan={8} align="center" sx={{ py: 6 }}><Typography color="text.secondary">No refunds yet</Typography></TableCell></TableRow>
+              ) : (
+                filteredRefunds.map((r) => {
+                  const sc = REFUND_STATUS_CONFIG[r.status] || { label: r.status, color: "default" };
+                  return (
+                    <TableRow key={r.id} hover>
+                      <TableCell><Typography variant="body2" fontWeight={500} sx={{ fontFamily: "monospace", fontSize: "0.8rem" }}>{r.refundNumber}</Typography></TableCell>
+                      <TableCell><Typography variant="body2">{REFUND_TYPE_LABEL[r.type] || r.type}</Typography></TableCell>
+                      <TableCell><Typography variant="body2">{r.orderNumber || "—"}</Typography></TableCell>
+                      <TableCell><Typography variant="body2" color={r.returnNumber ? "text.primary" : "text.secondary"}>{r.returnNumber || "—"}</Typography></TableCell>
+                      <TableCell><Typography variant="body2" fontWeight={500}>{formatCurrency(r.amount)}</Typography></TableCell>
+                      <TableCell><Typography variant="body2" sx={{ textTransform: "capitalize" }}>{(r.method || "").replace(/_/g, " ")}</Typography></TableCell>
+                      <TableCell><Chip label={sc.label} size="small" color={sc.color} /></TableCell>
+                      <TableCell><Typography variant="caption">{formatDate(r.createdAt)}</Typography></TableCell>
+                    </TableRow>
+                  );
+                })
+              )}
+            </TableBody>
+          </Table>
+        </TableContainer>
+        )}
       </Paper>
 
       {/* Payment Detail Dialog */}
@@ -241,6 +337,13 @@ const AdminPayments = () => {
                   </Box>
                 ))}
               </Box>
+              {selectedPayment.status === "refund_pending" && (
+                <Alert severity="warning" icon={<Icon icon="mdi:progress-clock" />} sx={{ mb: 2 }}>
+                  Refund of <strong>{formatCurrency(selectedPayment.pendingRefund?.amount ?? remainingOf(selectedPayment))}</strong>
+                  {selectedPayment.pendingRefund?.method ? ` via ${selectedPayment.pendingRefund.method.replace(/_/g, " ")}` : ""} is being processed.
+                  Settle it from the order's refund lifecycle once the money reaches the customer.
+                </Alert>
+              )}
               {["refunded", "partially_refunded"].includes(selectedPayment.status) && (
                 <Box sx={{ p: 2, borderRadius: 1, bgcolor: "action.hover", border: "1px solid", borderColor: "divider" }}>
                   <Typography variant="subtitle2" fontWeight="bold" gutterBottom>Refund History</Typography>

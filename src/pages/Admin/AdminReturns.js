@@ -4,7 +4,7 @@ import {
   TableHead, TableRow, Chip, IconButton, Tooltip, Skeleton, TextField,
   InputAdornment, Select, MenuItem, FormControl, InputLabel, Dialog,
   DialogTitle, DialogContent, DialogActions, Button, Divider, Checkbox,
-  FormControlLabel,
+  FormControlLabel, Link, Alert,
 } from "@mui/material";
 import { Icon } from "@iconify/react";
 import { useLocation } from "react-router-dom";
@@ -14,6 +14,8 @@ import apiService from "../../services/api";
 const STATUS_CONFIG = {
   requested: { label: "Requested", color: "warning" },
   approved: { label: "Approved", color: "info" },
+  pickup_scheduled: { label: "Pickup Scheduled", color: "info" },
+  in_transit: { label: "In Transit", color: "primary" },
   rejected: { label: "Rejected", color: "error" },
   received: { label: "Received", color: "secondary" },
   refunded: { label: "Refunded", color: "success" },
@@ -32,7 +34,26 @@ const REFUND_METHODS = [
   { value: "original_payment", label: "Original Payment Method" },
   { value: "store_credit", label: "Store Credit" },
   { value: "bank_transfer", label: "Bank Transfer" },
+  { value: "upi", label: "UPI" },
 ];
+
+// Allocate the order's coupon discount proportionally to the selected items so
+// the refund reflects what the customer actually PAID (net), not the pre-coupon
+// list price. A full return refunds the whole discount back out; a partial one
+// only the returned items' share. Returns { gross, discountShare, net }.
+const netRefundForItems = (order, picks, items) => {
+  const gross = (items || []).reduce((sum, it, i) => {
+    const pick = picks[i];
+    if (!pick?.checked) return sum;
+    return sum + (Number(it.price) || 0) * (Number(pick.quantity) || 0);
+  }, 0);
+  const orderSubtotal = Number(order?.subtotal) || 0;
+  const orderDiscount = Number(order?.discountAmount) || 0;
+  const discountShare = orderSubtotal > 0 && orderDiscount > 0
+    ? Math.min(gross, Math.round((gross / orderSubtotal) * orderDiscount))
+    : 0;
+  return { gross, discountShare, net: Math.max(0, gross - discountShare) };
+};
 
 const AdminReturns = () => {
   const location = useLocation();
@@ -42,11 +63,18 @@ const AdminReturns = () => {
   const [search, setSearch] = useState(location.state?.orderNumber || "");
   const [statusFilter, setStatusFilter] = useState("all");
   const [selectedReturn, setSelectedReturn] = useState(null);
+  const [returnOrder, setReturnOrder] = useState(null); // the return's source order (for coupon/full-return context)
   const [dialogOpen, setDialogOpen] = useState(false);
   const [notes, setNotes] = useState("");
   const [deduction, setDeduction] = useState("0");
   const [refundMethod, setRefundMethod] = useState("original_payment");
   const [restock, setRestock] = useState(true);
+  // Return-leg shipment (the parcel coming back). Manual tracking — no courier
+  // automation — mirroring the outbound tracking fields on the order.
+  const [retTracking, setRetTracking] = useState("");
+  const [retTrackingUrl, setRetTrackingUrl] = useState("");
+  const [retCarrier, setRetCarrier] = useState("");
+  const [pickupDate, setPickupDate] = useState("");
 
   // "New Return" dialog state
   const [createOpen, setCreateOpen] = useState(false);
@@ -82,7 +110,25 @@ const AdminReturns = () => {
     setDeduction(String(ret.deductionAmount || 0));
     setRefundMethod(ret.refundMethod || "original_payment");
     setRestock(true);
+    setRetTracking(ret.returnTrackingNumber || "");
+    setRetTrackingUrl(ret.returnTrackingUrl || "");
+    setRetCarrier(ret.returnCarrier || "");
+    setPickupDate(ret.pickupScheduledAt ? ret.pickupScheduledAt.slice(0, 10) : "");
+    setReturnOrder(null);
+    // Pull the source order so we can show coupon-restoration context and
+    // detect a full return (every ordered unit coming back).
+    if (ret.orderId != null) {
+      apiService.admin.getOrder(ret.orderId).then(setReturnOrder).catch(() => setReturnOrder(null));
+    }
     setDialogOpen(true);
+  };
+
+  // Does this return cover the whole order? Drives the coupon-restore note.
+  const isFullReturn = (ret, order) => {
+    if (!ret || !order) return false;
+    const ordered = (order.items || []).reduce((s, it) => s + (Number(it.quantity) || 0), 0);
+    const returned = (ret.items || []).reduce((s, it) => s + (Number(it.quantity) || 0), 0);
+    return ordered > 0 && returned >= ordered;
   };
 
   const handleStatusUpdate = async (newStatus) => {
@@ -94,6 +140,40 @@ const AdminReturns = () => {
         { event: { action: actions[newStatus] || `Status → ${newStatus}` } }
       );
       toast("Return updated");
+      setDialogOpen(false);
+      loadReturns();
+    } catch (e) {
+      Swal.fire({ icon: "error", title: "Error", text: e.message });
+    }
+  };
+
+  // Record the return-leg shipment (pickup / waybill) — the manual tracking the
+  // admin enters for the parcel coming back. Moves the return to "Pickup
+  // Scheduled" so the timeline reflects the reverse leg.
+  const handleSchedulePickup = async () => {
+    if (!retTracking.trim() && !pickupDate) {
+      toast("Add a return tracking number or a pickup date", "warning");
+      return;
+    }
+    try {
+      await apiService.admin.scheduleReturnPickup(selectedReturn.id, {
+        trackingNumber: retTracking.trim(),
+        trackingUrl: retTrackingUrl.trim(),
+        carrier: retCarrier.trim(),
+        pickupScheduledAt: pickupDate ? new Date(pickupDate).toISOString() : null,
+      });
+      toast("Return pickup scheduled");
+      setDialogOpen(false);
+      loadReturns();
+    } catch (e) {
+      Swal.fire({ icon: "error", title: "Error", text: e.message });
+    }
+  };
+
+  const handleMarkInTransit = async () => {
+    try {
+      await apiService.admin.markReturnInTransit(selectedReturn.id, retTracking.trim());
+      toast("Marked in transit");
       setDialogOpen(false);
       loadReturns();
     } catch (e) {
@@ -193,13 +273,12 @@ const AdminReturns = () => {
     }
   };
 
-  const createRefundTotal = sourceOrder
-    ? (sourceOrder.items || []).reduce((sum, it, i) => {
-        const pick = itemPicks[i];
-        if (!pick?.checked) return sum;
-        return sum + (Number(it.price) || 0) * (Number(pick.quantity) || 0);
-      }, 0)
-    : 0;
+  // Net of any coupon the order carried — the customer is refunded what they
+  // actually paid for the returned items, not the pre-discount list price.
+  const createRefund = sourceOrder
+    ? netRefundForItems(sourceOrder, itemPicks, sourceOrder.items)
+    : { gross: 0, discountShare: 0, net: 0 };
+  const createRefundTotal = createRefund.net;
 
   const handleCreateReturn = async () => {
     const items = (sourceOrder.items || [])
@@ -373,6 +452,27 @@ const AdminReturns = () => {
                 </Box>
               ))}
 
+              {/* Return shipment — manual return-leg tracking, approved → in-transit */}
+              {["approved", "pickup_scheduled", "in_transit"].includes(selectedReturn.status) && (
+                <Box sx={{ mt: 2, p: 2, borderRadius: 1, border: "1px solid", borderColor: "divider" }}>
+                  <Typography variant="subtitle2" fontWeight="bold" gutterBottom>Return Shipment</Typography>
+                  <Typography variant="caption" color="text.secondary" sx={{ display: "block", mb: 1.5 }}>
+                    Record how the parcel comes back to you — manual tracking, no courier automation.
+                  </Typography>
+                  <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr" }, gap: 1.5 }}>
+                    <TextField label="Return Tracking #" size="small" value={retTracking} onChange={(e) => setRetTracking(e.target.value)} placeholder="Reverse waybill" />
+                    <TextField label="Carrier" size="small" value={retCarrier} onChange={(e) => setRetCarrier(e.target.value)} placeholder="e.g., Shiprocket" />
+                    <TextField label="Return Tracking URL" size="small" type="url" value={retTrackingUrl} onChange={(e) => setRetTrackingUrl(e.target.value)} sx={{ gridColumn: { xs: "auto", sm: "1 / -1" } }} placeholder="https://track.courier.com/…" />
+                    <TextField label="Pickup Date" size="small" type="date" value={pickupDate} onChange={(e) => setPickupDate(e.target.value)} InputLabelProps={{ shrink: true }} />
+                  </Box>
+                  {selectedReturn.returnTrackingUrl && (
+                    <Link href={selectedReturn.returnTrackingUrl} target="_blank" rel="noopener noreferrer" sx={{ mt: 1, display: "inline-flex", alignItems: "center", gap: 0.5, fontSize: "0.8rem" }}>
+                      <Icon icon="mdi:open-in-new" /> Track the returning parcel
+                    </Link>
+                  )}
+                </Box>
+              )}
+
               {/* Refund worksheet — shown while processing the received items */}
               {selectedReturn.status === "received" && (
                 <Box sx={{ mt: 2, p: 2, borderRadius: 1, border: "1px solid", borderColor: "divider" }}>
@@ -394,6 +494,11 @@ const AdminReturns = () => {
                     control={<Checkbox checked={restock} onChange={(e) => setRestock(e.target.checked)} size="small" />}
                     label={<Typography variant="body2">Restock returned items to inventory</Typography>}
                   />
+                  {returnOrder?.couponCode && isFullReturn(selectedReturn, returnOrder) && (
+                    <Alert severity="info" icon={<Icon icon="mdi:ticket-percent-outline" />} sx={{ mt: 1.5 }}>
+                      Full return — coupon <strong>{returnOrder.couponCode}</strong>'s usage will be restored.
+                    </Alert>
+                  )}
                   <Box sx={{ display: "flex", justifyContent: "space-between", mt: 1, pt: 1, borderTop: "1px dashed", borderColor: "divider" }}>
                     <Typography variant="body2" fontWeight="bold">Payable to customer</Typography>
                     <Typography variant="body2" fontWeight="bold">{formatCurrency(payableOf(selectedReturn, deduction))}</Typography>
@@ -409,6 +514,12 @@ const AdminReturns = () => {
                     <Box><Typography variant="caption" color="text.secondary">Refunded</Typography><Typography variant="body2" fontWeight="bold">{formatCurrency(payableOf(selectedReturn, selectedReturn.deductionAmount))}</Typography></Box>
                     <Box><Typography variant="caption" color="text.secondary">Restocked</Typography><Typography variant="body2">{selectedReturn.restocked ? "Yes" : "No"}</Typography></Box>
                     <Box><Typography variant="caption" color="text.secondary">Method</Typography><Typography variant="body2" sx={{ textTransform: "capitalize" }}>{selectedReturn.refundMethod?.replace(/_/g, " ")}</Typography></Box>
+                    {selectedReturn.returnTrackingNumber && (
+                      <Box sx={{ gridColumn: "1 / -1" }}>
+                        <Typography variant="caption" color="text.secondary">Return Tracking</Typography>
+                        <Typography variant="body2">{selectedReturn.returnTrackingNumber}{selectedReturn.returnCarrier ? ` · ${selectedReturn.returnCarrier}` : ""}</Typography>
+                      </Box>
+                    )}
                   </Box>
                 </Box>
               )}
@@ -436,7 +547,15 @@ const AdminReturns = () => {
                 <Button variant="outlined" color="error" onClick={handleReject}>Reject</Button>
                 <Button variant="contained" color="info" onClick={() => handleStatusUpdate("approved")}>Approve</Button>
               </>)}
-              {selectedReturn.status === "approved" && (
+              {selectedReturn.status === "approved" && (<>
+                <Button variant="outlined" color="info" startIcon={<Icon icon="mdi:truck-fast-outline" />} onClick={handleSchedulePickup}>Schedule Pickup</Button>
+                <Button variant="contained" color="secondary" onClick={() => handleStatusUpdate("received")}>Mark as Received</Button>
+              </>)}
+              {selectedReturn.status === "pickup_scheduled" && (<>
+                <Button variant="outlined" color="primary" startIcon={<Icon icon="mdi:truck-outline" />} onClick={handleMarkInTransit}>Mark In Transit</Button>
+                <Button variant="contained" color="secondary" onClick={() => handleStatusUpdate("received")}>Mark as Received</Button>
+              </>)}
+              {selectedReturn.status === "in_transit" && (
                 <Button variant="contained" color="secondary" onClick={() => handleStatusUpdate("received")}>Mark as Received</Button>
               )}
               {selectedReturn.status === "received" && (
@@ -521,8 +640,24 @@ const AdminReturns = () => {
                 fullWidth multiline rows={2} size="small" sx={{ mt: 2 }}
                 placeholder="Customer's description of the problem…"
               />
-              <Box sx={{ display: "flex", justifyContent: "space-between", mt: 2, pt: 1.5, borderTop: "1px dashed", borderColor: "divider" }}>
-                <Typography variant="body2" fontWeight="bold">Refund to request</Typography>
+              {createRefund.discountShare > 0 && (
+                <Box sx={{ mt: 2 }}>
+                  <Box sx={{ display: "flex", justifyContent: "space-between" }}>
+                    <Typography variant="caption" color="text.secondary">Items (list price)</Typography>
+                    <Typography variant="caption">{formatCurrency(createRefund.gross)}</Typography>
+                  </Box>
+                  <Box sx={{ display: "flex", justifyContent: "space-between" }}>
+                    <Typography variant="caption" color="success.main">
+                      Coupon {sourceOrder.couponCode ? `(${sourceOrder.couponCode})` : ""} — items' share
+                    </Typography>
+                    <Typography variant="caption" color="success.main">−{formatCurrency(createRefund.discountShare)}</Typography>
+                  </Box>
+                </Box>
+              )}
+              <Box sx={{ display: "flex", justifyContent: "space-between", mt: createRefund.discountShare > 0 ? 1 : 2, pt: 1.5, borderTop: "1px dashed", borderColor: "divider" }}>
+                <Typography variant="body2" fontWeight="bold">
+                  Refund to request {createRefund.discountShare > 0 && <Typography component="span" variant="caption" color="text.secondary">(net of coupon)</Typography>}
+                </Typography>
                 <Typography variant="body2" fontWeight="bold">{formatCurrency(createRefundTotal)}</Typography>
               </Box>
             </>
