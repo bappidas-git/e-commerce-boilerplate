@@ -2085,6 +2085,80 @@
         }
       ],
       "deliveredAt": "2026-06-12T14:49:04.053Z"
+    },
+    {
+      "items": [
+        {
+          "productId": 9,
+          "variantId": "v1",
+          "name": "AirStride Running Shoes - UK 7 - Black",
+          "image": "https://placehold.co/600x400/607d8b/FFFFFF?text=Running+Shoes",
+          "sku": "",
+          "price": 3999,
+          "quantity": 1,
+          "subtotal": 3999
+        }
+      ],
+      "shippingAddress": {
+        "firstName": "Bappi",
+        "lastName": "Das",
+        "phone": "+919707112233",
+        "addressLine1": "Moutupuri, Barpeta",
+        "addressLine2": "Near BH College",
+        "city": "Howly",
+        "state": "Assam",
+        "postalCode": "781316",
+        "country": "India"
+      },
+      "billingAddress": {
+        "firstName": "Bappi",
+        "lastName": "Das",
+        "phone": "+919707112233",
+        "addressLine1": "Moutupuri, Barpeta",
+        "addressLine2": "Near BH College",
+        "city": "Howly",
+        "state": "Assam",
+        "postalCode": "781316",
+        "country": "India"
+      },
+      "subtotal": 3999,
+      "discountAmount": 0,
+      "couponCode": null,
+      "shippingAmount": 199,
+      "taxAmount": 720,
+      "total": 4918,
+      "paymentMethod": "cod",
+      "paymentStatus": "pending",
+      "fulfillmentStatus": "fulfilled",
+      "shippingStatus": "shipped",
+      "trackingNumber": "532352353252",
+      "notes": "Order Shipped",
+      "userId": 3,
+      "orderNumber": "ORD-MQC1HWSZ-CAN8",
+      "shiprocketOrderId": null,
+      "createdAt": "2026-06-13T07:34:20.243Z",
+      "updatedAt": "2026-06-13T07:38:00.452Z",
+      "statusHistory": [
+        {
+          "at": "2026-06-13T07:34:20.243Z",
+          "by": "Customer",
+          "action": "Order placed"
+        },
+        {
+          "at": "2026-06-13T07:36:12.080Z",
+          "by": "Admin User",
+          "action": "Fulfilled & shipped",
+          "note": "Tracking 532352353252 · tracking link added"
+        },
+        {
+          "at": "2026-06-13T07:38:00.486Z",
+          "by": "Admin User",
+          "action": "Tracking updated",
+          "note": "Tracking 532352353252 · tracking link added"
+        }
+      ],
+      "id": 8,
+      "trackingUrl": "https://www.indiapost.com/tracking"
     }
   ],
   "returns": [
@@ -2301,6 +2375,22 @@
       "refundReason": "",
       "createdAt": "2026-06-12T14:19:48.371Z",
       "updatedAt": "2026-06-12T14:19:48.371Z"
+    },
+    {
+      "orderId": 8,
+      "orderNumber": "ORD-MQC1HWSZ-CAN8",
+      "userId": 3,
+      "amount": 4918,
+      "currency": "INR",
+      "paymentMethod": "cod",
+      "gateway": "cod",
+      "transactionId": null,
+      "gatewayOrderId": null,
+      "status": "pending",
+      "gatewayResponse": {},
+      "createdAt": "2026-06-13T07:34:20.277Z",
+      "updatedAt": "2026-06-13T07:34:20.277Z",
+      "id": 6
     }
   ],
   "shipping_methods": [
