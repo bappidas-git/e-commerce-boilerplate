@@ -95,8 +95,8 @@
       ],
       "isActive": true,
       "createdAt": "2025-06-01T10:00:00.000Z",
-      "updatedAt": "2025-06-01T10:00:00.000Z",
-      "storeCredit": 4918
+      "updatedAt": "2026-06-13T14:44:33.946Z",
+      "storeCredit": 3918
     }
   ],
   "admins": [
@@ -2220,6 +2220,69 @@
       "pendingRefund": null,
       "refundedAmount": 4918,
       "refundCompletedAt": "2026-06-13T12:57:28.282Z"
+    },
+    {
+      "items": [
+        {
+          "productId": 1,
+          "variantId": "v1",
+          "name": "ProBook Ultra Laptop 15\" - 8GB RAM / 256GB SSD",
+          "image": "https://placehold.co/600x400/1a1a2e/FFFFFF?text=ProBook+Laptop",
+          "sku": "",
+          "price": 64999,
+          "quantity": 1,
+          "subtotal": 64999
+        }
+      ],
+      "shippingAddress": {
+        "firstName": "Bappi",
+        "lastName": "Das",
+        "phone": "+919707112233",
+        "addressLine1": "Moutupuri, Barpeta",
+        "addressLine2": "Near BH College",
+        "city": "Howly",
+        "state": "Assam",
+        "postalCode": "781316",
+        "country": "India"
+      },
+      "billingAddress": {
+        "firstName": "Bappi",
+        "lastName": "Das",
+        "phone": "+919707112233",
+        "addressLine1": "Moutupuri, Barpeta",
+        "addressLine2": "Near BH College",
+        "city": "Howly",
+        "state": "Assam",
+        "postalCode": "781316",
+        "country": "India"
+      },
+      "subtotal": 64999,
+      "discountAmount": 0,
+      "couponCode": null,
+      "shippingAmount": 0,
+      "taxAmount": 11700,
+      "total": 76699,
+      "storeCreditUsed": 1000,
+      "amountPayable": 75699,
+      "paymentMethod": "upi",
+      "paymentStatus": "paid",
+      "fulfillmentStatus": "unfulfilled",
+      "shippingStatus": "pending",
+      "trackingNumber": null,
+      "notes": "",
+      "userId": 3,
+      "orderNumber": "ORD-MQCGV6OM-Z965",
+      "shiprocketOrderId": null,
+      "createdAt": "2026-06-13T14:44:33.814Z",
+      "updatedAt": "2026-06-13T14:44:33.814Z",
+      "statusHistory": [
+        {
+          "at": "2026-06-13T14:44:33.814Z",
+          "by": "Customer",
+          "action": "Order placed"
+        }
+      ],
+      "id": 9
     }
   ],
   "returns": [
@@ -2472,6 +2535,23 @@
         }
       ],
       "pendingRefund": null
+    },
+    {
+      "orderId": 9,
+      "orderNumber": "ORD-MQCGV6OM-Z965",
+      "userId": 3,
+      "amount": 75699,
+      "currency": "INR",
+      "paymentMethod": "upi",
+      "gateway": "razorpay",
+      "transactionId": "pay_MOCKMQCGV6Q2",
+      "gatewayOrderId": "order_MOCKMQCGV6Q2",
+      "status": "captured",
+      "storeCreditApplied": 1000,
+      "gatewayResponse": {},
+      "createdAt": "2026-06-13T14:44:33.866Z",
+      "updatedAt": "2026-06-13T14:44:33.866Z",
+      "id": 7
     }
   ],
   "refunds": [
@@ -2848,6 +2928,20 @@
       "balanceBefore": 0,
       "balanceAfter": 4918,
       "createdAt": "2026-06-13T12:57:28.419Z"
+    },
+    {
+      "userId": 3,
+      "type": "debit",
+      "amount": 1000,
+      "reason": "Applied to order ORD-MQCGV6OM-Z965",
+      "orderId": 9,
+      "orderNumber": "ORD-MQCGV6OM-Z965",
+      "refundId": null,
+      "refundNumber": null,
+      "balanceBefore": 4918,
+      "balanceAfter": 3918,
+      "createdAt": "2026-06-13T14:44:33.927Z",
+      "id": 2
     }
   ]
 }
