@@ -1552,7 +1552,22 @@
       "updatedAt": "2026-06-12T06:57:43.733Z"
     }
   ],
-  "cart": [],
+  "cart": [
+    {
+      "productId": 1,
+      "variantId": "v1",
+      "variantName": "8GB RAM / 256GB SSD",
+      "name": "ProBook Ultra Laptop 15\"",
+      "image": "https://placehold.co/600x400/1a1a2e/FFFFFF?text=ProBook+Laptop",
+      "price": 64999,
+      "comparePrice": 89999,
+      "currency": "INR",
+      "quantity": 1,
+      "stock": 20,
+      "userId": 3,
+      "id": 1
+    }
+  ],
   "orders": [
     {
       "id": 1,
@@ -2128,16 +2143,16 @@
       "taxAmount": 720,
       "total": 4918,
       "paymentMethod": "cod",
-      "paymentStatus": "pending",
+      "paymentStatus": "refunded",
       "fulfillmentStatus": "fulfilled",
-      "shippingStatus": "shipped",
+      "shippingStatus": "delivered",
       "trackingNumber": "532352353252",
       "notes": "Order Shipped",
       "userId": 3,
       "orderNumber": "ORD-MQC1HWSZ-CAN8",
       "shiprocketOrderId": null,
       "createdAt": "2026-06-13T07:34:20.243Z",
-      "updatedAt": "2026-06-13T07:38:00.452Z",
+      "updatedAt": "2026-06-13T12:57:28.282Z",
       "statusHistory": [
         {
           "at": "2026-06-13T07:34:20.243Z",
@@ -2155,10 +2170,38 @@
           "by": "Admin User",
           "action": "Tracking updated",
           "note": "Tracking 532352353252 · tracking link added"
+        },
+        {
+          "at": "2026-06-13T12:49:23.385Z",
+          "by": "Admin User",
+          "action": "Marked delivered"
+        },
+        {
+          "at": "2026-06-13T12:49:44.526Z",
+          "by": "Admin User",
+          "action": "Payment marked as paid"
+        },
+        {
+          "at": "2026-06-13T12:55:11.832Z",
+          "by": "Admin User",
+          "action": "Refund initiated",
+          "note": "₹4,918 via store credit · ref ORDER ID - ORD-MQC1HWSZ-CAN8 — settlement pending"
+        },
+        {
+          "at": "2026-06-13T12:57:28.351Z",
+          "by": "Admin User",
+          "action": "Refund completed",
+          "note": "₹4,918 via store credit settled to customer"
         }
       ],
       "id": 8,
-      "trackingUrl": "https://www.indiapost.com/tracking"
+      "trackingUrl": "https://www.indiapost.com/tracking",
+      "deliveredAt": "2026-06-13T12:49:23.351Z",
+      "refundStatus": "completed",
+      "refundMethod": "store_credit",
+      "pendingRefund": null,
+      "refundedAmount": 4918,
+      "refundCompletedAt": "2026-06-13T12:57:28.282Z"
     }
   ],
   "returns": [
@@ -2394,11 +2437,23 @@
       "gateway": "cod",
       "transactionId": null,
       "gatewayOrderId": null,
-      "status": "pending",
+      "status": "refunded",
       "gatewayResponse": {},
       "createdAt": "2026-06-13T07:34:20.277Z",
-      "updatedAt": "2026-06-13T07:34:20.277Z",
-      "id": 6
+      "updatedAt": "2026-06-13T12:57:28.314Z",
+      "id": 6,
+      "refundAmount": 4918,
+      "refundReason": "AirStride Running Shoes - UK 7 - Black is returned",
+      "refunds": [
+        {
+          "id": "ref_mqcd1gqipep7",
+          "amount": 4918,
+          "reason": "AirStride Running Shoes - UK 7 - Black is returned",
+          "at": "2026-06-13T12:57:28.314Z",
+          "by": "Admin User"
+        }
+      ],
+      "pendingRefund": null
     }
   ],
   "refunds": [
@@ -2441,6 +2496,27 @@
       "by": "Admin User",
       "createdAt": "2026-06-13T06:13:05.674Z",
       "updatedAt": "2026-06-13T06:13:05.674Z"
+    },
+    {
+      "refundNumber": "REF-20260613-JQ3L",
+      "type": "order_refund",
+      "orderId": 8,
+      "orderNumber": "ORD-MQC1HWSZ-CAN8",
+      "returnId": null,
+      "returnNumber": null,
+      "paymentId": null,
+      "amount": 4918,
+      "method": "store_credit",
+      "reason": "AirStride Running Shoes - UK 7 - Black is returned",
+      "reference": "ORDER ID - ORD-MQC1HWSZ-CAN8",
+      "status": "completed",
+      "couponRestored": false,
+      "initiatedAt": "2026-06-13T12:55:11.910Z",
+      "settledAt": "2026-06-13T12:57:28.419Z",
+      "by": "Admin User",
+      "createdAt": "2026-06-13T12:55:11.910Z",
+      "updatedAt": "2026-06-13T12:57:28.419Z",
+      "id": 3
     }
   ],
   "shipping_methods": [
@@ -2665,6 +2741,21 @@
       "createdAt": "2026-03-18T10:30:00.000Z",
       "updatedAt": "2026-04-17T14:22:33.071Z",
       "notes": "fdsadfsafwe"
+    },
+    {
+      "type": "contact",
+      "name": "Bappi Das",
+      "email": "mail4bappidas@gmail.com",
+      "phone": "+919707112233",
+      "orderNumber": "ORD-MQC1HWSZ-CAN8",
+      "category": "returns",
+      "subject": "Want to return this AirStride Running Shoes - UK 7 - Black",
+      "message": "AirStride Running Shoes - UK 7 - Black is does not fit properly",
+      "status": "contacted",
+      "createdAt": "2026-06-13T12:52:25.021Z",
+      "updatedAt": "2026-06-13T12:53:14.953Z",
+      "notes": "Need to Cancel this order. ",
+      "id": 4
     }
   ],
   "settings": {
