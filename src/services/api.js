@@ -191,11 +191,12 @@ const reflectReturnRefund = async (ret) => {
   }
 };
 
-// Put returned items back into sellable inventory: bumps the product's stock
-// (and the matching variant's stock) by the returned quantity. Best-effort per
-// item — a deleted product must never fail the return. Mock-only; Laravel
-// restocks server-side when the refund request carries restock: true.
-const restockReturnItems = async (items = []) => {
+// Put items back into sellable inventory: bumps the product's stock (and the
+// matching variant's stock) by the item quantity. Shared by the return-refund
+// cascade and order cancellation. Best-effort per item — a deleted product must
+// never fail the caller. Mock-only; Laravel restocks server-side when the
+// request carries restock: true.
+const restockItems = async (items = []) => {
   for (const item of items) {
     if (item?.productId == null) continue;
     try {
@@ -1103,24 +1104,156 @@ const apiService = {
     },
 
     // Admin-side cancellation (customer cancellations use orders.cancel).
-    // Stamps the reason + cancelledAt and logs the timeline entry; payment
-    // changes (refunds) stay a separate, explicit admin action.
-    cancelOrder: async (id, reason = "") => {
+    // Payment-method aware: the second argument may be a bare reason string
+    // (back-compat) or an options object { reason, restock, refund, voidPayment }:
+    //   • refund: { amount?, method } — money was captured (online paid, or COD
+    //     collected); a refund is INITIATED (refundStatus → "processing", a
+    //     pendingRefund stub recorded) and settled later via completeOrderRefund,
+    //     mirroring how a real gateway processes refunds asynchronously.
+    //   • voidPayment: true — an online authorization that was never captured;
+    //     nothing to refund, so the payment is voided.
+    //   • neither — COD with no money collected: cancel only, no refund.
+    //   • restock: true — return the cancelled items to inventory.
+    cancelOrder: async (id, options = {}) => {
       try {
+        const opts = typeof options === "string" ? { reason: options } : (options || {});
+        const { reason = "", restock = false, refund = null, voidPayment = false } = opts;
         if (IS_MOCK_API) {
-          return apiService.admin.updateOrder(
-            id,
-            {
-              fulfillmentStatus: "cancelled",
-              cancelReason: reason || null,
-              cancelledAt: new Date().toISOString(),
-            },
-            { action: "Order cancelled", note: reason }
-          );
+          const current = (await api.get(`/orders/${id}`)).data;
+          const stamp = new Date().toISOString();
+          const events = [historyEvent("Order cancelled", reason)];
+          const patch = {
+            fulfillmentStatus: "cancelled",
+            cancelReason: reason || null,
+            cancelledAt: stamp,
+            updatedAt: stamp,
+          };
+          if (refund) {
+            const amount = Number(refund.amount) ||
+              Math.max(0, (Number(current.total) || 0) - (Number(current.refundedAmount) || 0));
+            const method = refund.method || "original_payment";
+            patch.refundStatus = "processing";
+            patch.refundMethod = method;
+            patch.pendingRefund = {
+              amount, method,
+              reason: reason || "Order cancelled",
+              reference: refund.reference || null,
+              initiatedAt: stamp,
+              by: currentAdminName(),
+            };
+            events.push(historyEvent(
+              "Refund initiated",
+              `₹${amount.toLocaleString("en-IN")} via ${method.replace(/_/g, " ")} — settlement pending`
+            ));
+          } else if (voidPayment) {
+            patch.paymentStatus = "voided";
+            events.push(historyEvent("Payment voided", "No captured payment to refund"));
+          }
+          patch.statusHistory = [...(current.statusHistory || []), ...events];
+          const response = await api.patch(`/orders/${id}`, patch);
+          if (restock) await restockItems(current.items);
+          return response.data;
         }
-        const response = await api.post(`/admin/orders/${id}/cancel`, { reason });
+        const response = await api.post(`/admin/orders/${id}/cancel`, opts);
         return extractData(response);
       } catch (error) { console.error("Admin cancel order error:", error); throw error; }
+    },
+
+    // --- Order refund lifecycle (real-world two-step settlement) ---
+    // A refund is INITIATED, then SETTLED. Gateways (and bank/UPI transfers for
+    // COD) don't return money instantly — it lands days later — so the order
+    // first carries refundStatus "processing" with a pendingRefund stub, and the
+    // money is only booked onto the payment record once the admin confirms it
+    // actually reached the customer. Storefront still shows the order as normal
+    // (paymentStatus untouched) until settlement, with a "refund in progress" note.
+
+    // Step 1 — record the refund as in-flight. Does NOT touch the payment record
+    // or paymentStatus, so Admin → Payments doesn't show the money as already
+    // returned while it's still processing.
+    initiateOrderRefund: async (id, { amount, method = "original_payment", reason = "", reference = null } = {}) => {
+      try {
+        if (IS_MOCK_API) {
+          const current = (await api.get(`/orders/${id}`)).data;
+          const amt = Number(amount) || 0;
+          const stamp = new Date().toISOString();
+          const response = await api.patch(`/orders/${id}`, {
+            refundStatus: "processing",
+            refundMethod: method,
+            pendingRefund: { amount: amt, method, reason: reason || "Refund", reference, initiatedAt: stamp, by: currentAdminName() },
+            statusHistory: [
+              ...(current.statusHistory || []),
+              historyEvent("Refund initiated", `₹${amt.toLocaleString("en-IN")} via ${method.replace(/_/g, " ")}${reference ? ` · ref ${reference}` : ""} — settlement pending`),
+            ],
+            updatedAt: stamp,
+          });
+          return response.data;
+        }
+        const response = await api.post(`/admin/orders/${id}/refund/initiate`, { amount, method, reason, reference });
+        return extractData(response);
+      } catch (error) { console.error("Initiate order refund error:", error); throw error; }
+    },
+
+    // Step 2 — settle the in-flight refund: book it onto the linked payment
+    // (refunds[] history + running total, flipping the payment to
+    // partially_refunded/refunded) and stamp the order paymentStatus to match.
+    // This is where the money is finally counted as returned.
+    completeOrderRefund: async (id) => {
+      try {
+        if (IS_MOCK_API) {
+          const current = (await api.get(`/orders/${id}`)).data;
+          const pending = current.pendingRefund || {};
+          const amt = Number(pending.amount) || 0;
+          const stamp = new Date().toISOString();
+          let newPaymentStatus = "refunded";
+          const payRes = await api.get("/payments", { params: { orderId: id } }).catch(() => ({ data: [] }));
+          const payment = Array.isArray(payRes.data) ? payRes.data[0] : payRes.data;
+          if (payment && payment.id != null) {
+            const remaining = (Number(payment.amount) || 0) - (Number(payment.refundAmount) || 0);
+            const settleAmt = Math.min(amt || remaining, remaining);
+            if (settleAmt > 0) {
+              const updated = await appendPaymentRefund(payment, settleAmt, pending.reason || "Refund completed");
+              newPaymentStatus = updated.status === "refunded" ? "refunded" : "partially_refunded";
+            }
+          }
+          const response = await api.patch(`/orders/${id}`, {
+            refundStatus: "completed",
+            paymentStatus: newPaymentStatus,
+            refundedAmount: (Number(current.refundedAmount) || 0) + amt,
+            refundCompletedAt: stamp,
+            pendingRefund: null,
+            statusHistory: [
+              ...(current.statusHistory || []),
+              historyEvent("Refund completed", `₹${amt.toLocaleString("en-IN")} via ${(pending.method || current.refundMethod || "original_payment").replace(/_/g, " ")} settled to customer`),
+            ],
+            updatedAt: stamp,
+          });
+          return response.data;
+        }
+        const response = await api.post(`/admin/orders/${id}/refund/complete`, {});
+        return extractData(response);
+      } catch (error) { console.error("Complete order refund error:", error); throw error; }
+    },
+
+    // A refund can bounce (closed card, wrong UPI). Flag it so the admin can
+    // re-initiate; leaves the money un-booked.
+    failOrderRefund: async (id, note = "") => {
+      try {
+        if (IS_MOCK_API) {
+          const current = (await api.get(`/orders/${id}`)).data;
+          const stamp = new Date().toISOString();
+          const response = await api.patch(`/orders/${id}`, {
+            refundStatus: "failed",
+            statusHistory: [
+              ...(current.statusHistory || []),
+              historyEvent("Refund failed", note || "Settlement failed — re-initiate the refund"),
+            ],
+            updatedAt: stamp,
+          });
+          return response.data;
+        }
+        const response = await api.post(`/admin/orders/${id}/refund/fail`, { note });
+        return extractData(response);
+      } catch (error) { console.error("Fail order refund error:", error); throw error; }
     },
 
     // --- Returns ---
@@ -1199,7 +1332,7 @@ const apiService = {
           // and restock the inventory when the admin opted in.
           if (ret && (ret.status === "refunded" || updates.refundStatus === "processed")) {
             await reflectReturnRefund(ret);
-            if (restock) await restockReturnItems(ret.items);
+            if (restock) await restockItems(ret.items);
           }
           return ret;
         }
