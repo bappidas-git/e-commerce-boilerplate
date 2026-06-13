@@ -1570,22 +1570,7 @@
       "updatedAt": "2026-06-12T06:57:43.733Z"
     }
   ],
-  "cart": [
-    {
-      "productId": 1,
-      "variantId": "v1",
-      "variantName": "8GB RAM / 256GB SSD",
-      "name": "ProBook Ultra Laptop 15\"",
-      "image": "https://placehold.co/600x400/1a1a2e/FFFFFF?text=ProBook+Laptop",
-      "price": 64999,
-      "comparePrice": 89999,
-      "currency": "INR",
-      "quantity": 1,
-      "stock": 20,
-      "userId": 3,
-      "id": 1
-    }
-  ],
+  "cart": [],
   "orders": [
     {
       "id": 1,
@@ -2849,9 +2834,9 @@
       "category": "returns",
       "subject": "Want to return this AirStride Running Shoes - UK 7 - Black",
       "message": "AirStride Running Shoes - UK 7 - Black is does not fit properly",
-      "status": "contacted",
+      "status": "resolved",
       "createdAt": "2026-06-13T12:52:25.021Z",
-      "updatedAt": "2026-06-13T12:53:14.953Z",
+      "updatedAt": "2026-06-13T15:55:02.925Z",
       "notes": "Need to Cancel this order. ",
       "id": 4
     }
