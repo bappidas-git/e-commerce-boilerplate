@@ -296,14 +296,6 @@ const ProductDetails = () => {
     navigate("/checkout");
   }, [handleAddToCart, navigate]);
 
-  // ── Write a review → jump to the Reviews tab ───────────────────────────
-  const handleWriteReview = () => {
-    setActiveTab("reviews");
-    requestAnimationFrame(() =>
-      tabsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })
-    );
-  };
-
   // ── Delivery check (mock) ──────────────────────────────────────────────
   const handleCheckDelivery = () => {
     if (pincode.length !== 6 || !/^\d+$/.test(pincode)) {
@@ -332,16 +324,20 @@ const ProductDetails = () => {
     star,
     count: reviews.filter((r) => Math.round(r.rating) === star).length,
   }));
-  const computedAvg =
-    reviews.length > 0
-      ? reviews.reduce((sum, r) => sum + (Number(r.rating) || 0), 0) / reviews.length
-      : null;
-  // Prefer the product's aggregate rating so the Reviews tab reconciles with the
-  // rating shown at the top of the page (that figure reflects *all* ratings, not
-  // just the written reviews we fetch here). Fall back to the computed average.
+  // Aggregate rating = a weighted blend of the seeded baseline
+  // (product.rating × product.totalReviews — the historical star average) and
+  // the APPROVED customer reviews we fetched here. So a newly approved review
+  // both increments the "Ratings & Reviews" count and nudges the average,
+  // staying consistent across the page top and the Reviews tab. (See PR notes.)
+  const baseRating = Number(product?.rating) || 0;
+  const baseCount = Number(product?.totalReviews) || 0;
+  const reviewSum = reviews.reduce((sum, r) => sum + (Number(r.rating) || 0), 0);
+  const totalRatingsCount = baseCount + reviews.length;
+  // Blend when there are any counted ratings; otherwise fall back to the
+  // product's own rating so a product with a rating but no review rows still
+  // shows it (rather than collapsing to 0.0).
   const displayAvg =
-    product?.rating != null ? Number(product.rating) : computedAvg || 0;
-  const totalRatingsCount = product?.totalReviews ?? reviews.length;
+    totalRatingsCount > 0 ? (baseRating * baseCount + reviewSum) / totalRatingsCount : baseRating;
 
   // ── Render ─────────────────────────────────────────────────────────────
   if (loading) return <Skeleton />;
@@ -451,18 +447,12 @@ const ProductDetails = () => {
             {/* 2. Rating */}
             <div className={styles.ratingRow}>
               <span className={styles.ratingBadge}>
-                {Number(product.rating || 0).toFixed(1)} &#9733;
+                {displayAvg.toFixed(1)} &#9733;
               </span>
-              <StarRating rating={product.rating || 0} />
+              <StarRating rating={displayAvg} />
               <span className={styles.reviewCount}>
-                {(product.totalReviews || reviews.length || 0).toLocaleString()} Ratings &amp; Reviews
+                {totalRatingsCount.toLocaleString()} Ratings &amp; Reviews
               </span>
-              <button
-                className={styles.writeReviewLink}
-                onClick={handleWriteReview}
-              >
-                Write a review
-              </button>
             </div>
 
             {/* 3. Price section */}
@@ -892,7 +882,7 @@ const ProductDetails = () => {
                   </div>
                 ) : reviews.length === 0 ? (
                   <div className={styles.noReviews}>
-                    <p>No reviews yet. Be the first to review this product!</p>
+                    <p>No written reviews yet.</p>
                   </div>
                 ) : (
                   <div className={styles.reviewsList}>
@@ -909,7 +899,7 @@ const ProductDetails = () => {
                               <span className={styles.reviewUserName}>
                                 {review.userName || review.name || "Anonymous"}
                               </span>
-                              {review.verified && (
+                              {(review.isVerifiedPurchase || review.verified) && (
                                 <span className={styles.verifiedBadge}>
                                   &#10003; Verified Purchase
                                 </span>

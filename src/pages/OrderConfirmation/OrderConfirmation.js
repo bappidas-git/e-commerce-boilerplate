@@ -351,6 +351,18 @@ const OrderConfirmation = () => {
                     <span>Total</span>
                     <span>{formatCurrency(order.total)}</span>
                   </div>
+                  {(order.storeCreditUsed ?? 0) > 0 && (
+                    <>
+                      <div className={styles.totalsRow}>
+                        <span>Store Credit</span>
+                        <span>-{formatCurrency(order.storeCreditUsed)}</span>
+                      </div>
+                      <div className={`${styles.totalsRow} ${styles.totalsRowFinal}`}>
+                        <span>Amount Paid</span>
+                        <span>{formatCurrency(order.amountPayable ?? Math.max(0, order.total - order.storeCreditUsed))}</span>
+                      </div>
+                    </>
+                  )}
                 </div>
               </div>
             </motion.div>

@@ -213,7 +213,7 @@ const reflectReturnRefund = async (ret) => {
     }
 
     // First-class, settled refund ledger record linked to the return + order.
-    await createRefundRecord({
+    const refundRec = await createRefundRecord({
       type: "return_refund",
       orderId: ret.orderId ?? null, orderNumber: ret.orderNumber ?? null,
       returnId: ret.id ?? null, returnNumber: ret.returnNumber ?? null,
@@ -221,6 +221,20 @@ const reflectReturnRefund = async (ret) => {
       reason: ret.returnNumber ? `Return ${ret.returnNumber}` : "Return refund",
       status: "completed", couponRestored,
     });
+
+    // When the return is refunded TO store credit, deposit it into the
+    // customer's wallet (a credit ledger entry) so the money is actually usable.
+    // Idempotent via storeCreditCredited so a retried/duplicate refund call
+    // can't double-credit the wallet (the cancel path guards the same way).
+    if ((ret.refundMethod || "") === "store_credit" && payable > 0 && order && order.userId != null && !ret.storeCreditCredited) {
+      await creditWallet(order.userId, {
+        amount: payable,
+        reason: ret.returnNumber ? `Refund for return ${ret.returnNumber}` : `Refund for order ${ret.orderNumber || ret.orderId}`,
+        orderId: ret.orderId ?? null, orderNumber: ret.orderNumber ?? null,
+        refundId: refundRec?.id ?? null, refundNumber: refundRec?.refundNumber ?? null,
+      });
+      await api.patch(`/returns/${ret.id}`, { storeCreditCredited: true, updatedAt: new Date().toISOString() }).catch(() => {});
+    }
   } catch (e) {
     console.error("Reflect return refund error:", e);
   }
@@ -264,19 +278,27 @@ const createPaymentForOrder = async (order) => {
   if (!order || order.id == null) return;
   try {
     const stamp = new Date().toISOString();
-    const isCod = order.paymentMethod === "cod";
     const ref = Date.now().toString(36).toUpperCase();
+    const storeCreditApplied = Number(order.storeCreditUsed) || 0;
+    // What the external gateway actually charged: the order total minus any
+    // store credit applied. A fully store-credit order has nothing payable, so
+    // the transaction is recorded against the wallet, not a card/COD gateway.
+    const payable = order.amountPayable != null ? Number(order.amountPayable) : (Number(order.total) || 0);
+    const fullyCredit = storeCreditApplied > 0 && payable <= 0;
+    const isCod = order.paymentMethod === "cod";
     await api.post("/payments", {
       orderId: order.id,
       orderNumber: order.orderNumber || null,
       userId: order.userId ?? null,
-      amount: order.total ?? 0,
+      amount: fullyCredit ? (Number(order.total) || 0) : payable,
       currency: "INR",
-      paymentMethod: order.paymentMethod || "card",
-      gateway: isCod ? "cod" : "razorpay",
-      transactionId: isCod ? null : `pay_MOCK${ref}`,
-      gatewayOrderId: isCod ? null : `order_MOCK${ref}`,
-      status: order.paymentStatus === "paid" ? "captured" : "pending",
+      paymentMethod: fullyCredit ? "store_credit" : (order.paymentMethod || "card"),
+      gateway: fullyCredit ? "store_credit" : (isCod ? "cod" : "razorpay"),
+      transactionId: fullyCredit ? `wallet_${ref}` : (isCod ? null : `pay_MOCK${ref}`),
+      gatewayOrderId: fullyCredit || isCod ? null : `order_MOCK${ref}`,
+      status: fullyCredit ? "captured" : (order.paymentStatus === "paid" ? "captured" : "pending"),
+      // How much of the order was settled with store credit (0 when none).
+      storeCreditApplied,
       gatewayResponse: {},
       createdAt: stamp,
       updatedAt: stamp,
@@ -348,6 +370,84 @@ const isFullReturnOfOrder = (order, ret) => {
   const returnedQty = (ret.items || []).reduce((s, it) => s + (Number(it.quantity) || 0), 0);
   return orderedQty > 0 && returnedQty >= orderedQty;
 };
+
+// =============================================================================
+// Store-credit wallet (mock mode)
+// =============================================================================
+// The wallet is a ledger: every credit (a refund issued to store credit) and
+// every debit (store credit spent at checkout) is one walletTransactions row,
+// linked to the order/refund with a running balanceAfter and a timestamp. The
+// ledger is the SOURCE OF TRUTH; users[].storeCredit is a denormalised cache
+// kept equal to the ledger balance on every write, so the My Account wallet and
+// checkout can read a balance cheaply. Mock-only — the Laravel branch owns the
+// wallet server-side and exposes the same endpoints, so callers are identical.
+
+// Sum a user's ledger → the authoritative available balance.
+const computeWalletBalance = async (userId) => {
+  if (userId == null) return 0;
+  try {
+    const res = await api.get("/walletTransactions", { params: { userId } });
+    const rows = Array.isArray(res.data) ? res.data : [];
+    const bal = rows.reduce(
+      (sum, t) => sum + (t.type === "credit" ? Number(t.amount) || 0 : -(Number(t.amount) || 0)),
+      0
+    );
+    return Math.max(0, Math.round(bal));
+  } catch (e) {
+    console.error("Compute wallet balance error:", e);
+    return 0;
+  }
+};
+
+// Keep the user's denormalised storeCredit cache equal to the ledger balance.
+const syncUserStoreCredit = async (userId, balance) => {
+  if (userId == null) return;
+  try {
+    await api.patch(`/users/${userId}`, {
+      storeCredit: Math.max(0, Math.round(balance)),
+      updatedAt: new Date().toISOString(),
+    });
+  } catch (e) {
+    console.error("Sync user store credit error:", e);
+  }
+};
+
+// Append one ledger entry (credit or debit) and refresh the cache. Debits are
+// guarded against overspend — the amount is capped at the live balance so the
+// wallet can never go negative — and a debit with no balance is a no-op.
+// Returns the created row (or null when nothing was written).
+const writeWalletTransaction = async (
+  userId,
+  { type, amount, reason = "", orderId = null, orderNumber = null, refundId = null, refundNumber = null } = {}
+) => {
+  if (userId == null) return null;
+  const requested = Math.max(0, Math.round(Number(amount) || 0));
+  if (requested <= 0) return null;
+  try {
+    const balanceBefore = await computeWalletBalance(userId);
+    let applied = requested;
+    if (type === "debit") {
+      if (balanceBefore <= 0) return null;
+      applied = Math.min(requested, balanceBefore); // never overspend
+    }
+    const balanceAfter = type === "credit" ? balanceBefore + applied : balanceBefore - applied;
+    const stamp = new Date().toISOString();
+    const res = await api.post("/walletTransactions", {
+      userId, type, amount: applied,
+      reason, orderId, orderNumber, refundId, refundNumber,
+      balanceBefore, balanceAfter,
+      createdAt: stamp,
+    });
+    await syncUserStoreCredit(userId, balanceAfter);
+    return res.data;
+  } catch (e) {
+    console.error("Write wallet transaction error:", e);
+    return null;
+  }
+};
+
+const creditWallet = (userId, opts) => writeWalletTransaction(userId, { ...opts, type: "credit" });
+const debitWallet = (userId, opts) => writeWalletTransaction(userId, { ...opts, type: "debit" });
 
 // First-class refund ledger (the `refunds` collection). Every refund — from an
 // order cancellation, an order-level refund, a recall, or a processed return —
@@ -520,8 +620,14 @@ const performCancel = async (id, opts = {}, actor = null) => {
 
   let refundOpened = null;
   if (refund) {
+    // Refund only the EXTERNALLY captured amount (total minus any store credit
+    // that was applied) — the store-credit portion is returned to the wallet
+    // separately below, never double-refunded to the card/UPI.
+    const externalCaptured = current.amountPayable != null
+      ? Number(current.amountPayable)
+      : (Number(current.total) || 0);
     const amount = Number(refund.amount) ||
-      Math.max(0, (Number(current.total) || 0) - (Number(current.refundedAmount) || 0));
+      Math.max(0, externalCaptured - (Number(current.refundedAmount) || 0));
     const method = refund.method || "original_payment";
     patch.refundStatus = "processing";
     patch.refundMethod = method;
@@ -550,6 +656,41 @@ const performCancel = async (id, opts = {}, actor = null) => {
     patch.paymentStatus = "voided";
     events.push(historyEvent("Payment voided", "Cash on delivery not collected", actor));
     await voidPaymentForOrder(id, reason || "Order cancelled");
+  }
+
+  // If the order was paid (partly or fully) with store credit, return exactly
+  // what was DEBITED for it — summed from the ledger, so a capped/partial debit
+  // can never be over-refunded — to the wallet (instant, unlike the external
+  // refund). Idempotent via storeCreditReturned so a re-cancel can't double-credit.
+  if ((Number(current.storeCreditUsed) || 0) > 0 && !current.storeCreditReturned && current.userId != null) {
+    const dRes = await api
+      .get("/walletTransactions", { params: { userId: current.userId, orderId: current.id, type: "debit" } })
+      .catch(() => ({ data: [] }));
+    const spent = (Array.isArray(dRes.data) ? dRes.data : []).reduce((s, t) => s + (Number(t.amount) || 0), 0);
+    if (spent > 0) {
+      const returned = await creditWallet(current.userId, {
+        amount: spent,
+        reason: `Store credit returned — ${current.orderNumber || current.id} cancelled`,
+        orderId: current.id, orderNumber: current.orderNumber,
+      });
+      if (returned) {
+        patch.storeCreditReturned = true;
+        events.push(historyEvent("Store credit returned", `₹${spent.toLocaleString("en-IN")} added back to your wallet`, actor));
+        // A fully-store-credit order's captured store_credit payment must be
+        // reversed too, so Admin → Payments doesn't show captured money against
+        // a cancelled order. (Partial orders reverse the EXTERNAL payment via the
+        // refund path above; the credit portion isn't booked as a separate payment.)
+        try {
+          const pRes = await api.get("/payments", { params: { orderId: current.id } });
+          const pay = Array.isArray(pRes.data) ? pRes.data[0] : pRes.data;
+          if (pay && pay.id != null && pay.paymentMethod === "store_credit" && ["captured", "partially_refunded"].includes(pay.status)) {
+            await appendPaymentRefund(pay, spent, `Store credit returned — ${current.orderNumber || current.id} cancelled`);
+          }
+        } catch (e) {
+          console.error("Reverse store-credit payment error:", e);
+        }
+      }
+    }
   }
 
   let couponRestored = false;
@@ -912,8 +1053,19 @@ const apiService = {
         // so Admin → Payments / Coupons reflect the order immediately.
         // Best-effort — never block a saved order.
         if (IS_MOCK_API) {
-          await createPaymentForOrder(extractData(response));
+          const saved = extractData(response);
+          await createPaymentForOrder(saved);
           if (orderData?.couponCode) await redeemCouponByCode(orderData.couponCode);
+          // Debit the wallet for any store credit applied at checkout (guarded
+          // against overspend in writeWalletTransaction) and write the ledger entry.
+          if (Number(saved.storeCreditUsed) > 0) {
+            await debitWallet(saved.userId, {
+              amount: Number(saved.storeCreditUsed),
+              reason: `Applied to order ${saved.orderNumber || saved.id}`,
+              orderId: saved.id, orderNumber: saved.orderNumber,
+            });
+          }
+          return saved;
         }
         return extractData(response);
       } catch (error) { console.error("Create order error:", error); throw error; }
@@ -963,21 +1115,105 @@ const apiService = {
       try {
         if (IS_MOCK_API) {
           const current = (await api.get(`/orders/${id}`)).data;
-          const isOnline = current.paymentMethod && current.paymentMethod !== "cod";
+          // Only the externally captured amount needs a gateway/bank refund; the
+          // store-credit portion (if any) is returned to the wallet inside
+          // performCancel. A fully store-credit order has nothing external to do.
+          const externalPayable = current.amountPayable != null
+            ? Number(current.amountPayable)
+            : (Number(current.total) || 0);
+          const isOnline = current.paymentMethod && !["cod", "store_credit"].includes(current.paymentMethod);
           const captured = ["paid", "partially_refunded"].includes(current.paymentStatus);
           const opts = { reason, restock: true };
-          if (captured) {
-            opts.refund = { method: isOnline ? "original_payment" : "bank_transfer" };
-          } else if (isOnline) {
-            opts.voidPayment = true; // online authorization never captured
-          } else {
-            opts.voidPayment = true; // COD not yet collected — void the pending row
+          if (externalPayable > 0) {
+            if (captured) {
+              opts.refund = { method: isOnline ? "original_payment" : "bank_transfer" };
+            } else {
+              opts.voidPayment = true; // online never captured / COD not collected
+            }
           }
           return await performCancel(id, opts, "Customer");
         }
         const response = await api.post(`/orders/${id}/cancel`, { reason });
         return extractData(response);
       } catch (error) { console.error("Cancel order error:", error); throw error; }
+    },
+  },
+
+  // ===========================================================================
+  // Store-credit Wallet (Storefront)
+  // ===========================================================================
+  wallet: {
+    // Available balance — summed from the ledger (the source of truth), so it
+    // can never drift from the recorded credits/debits.
+    getBalance: async (userId) => {
+      try {
+        if (IS_MOCK_API) return await computeWalletBalance(userId);
+        const response = await api.get("/wallet/balance");
+        const data = extractData(response);
+        return Number(data?.balance ?? data) || 0;
+      } catch (error) { console.error("Get wallet balance error:", error); return 0; }
+    },
+
+    // Full transaction history (newest first) for the My Account wallet view.
+    getTransactions: async (userId) => {
+      try {
+        if (IS_MOCK_API) {
+          const response = await api.get("/walletTransactions", {
+            params: { userId, _sort: "createdAt", _order: "desc" },
+          });
+          return Array.isArray(response.data) ? response.data : [];
+        }
+        const response = await api.get("/wallet/transactions");
+        return extractData(response);
+      } catch (error) { console.error("Get wallet transactions error:", error); return []; }
+    },
+  },
+
+  // ===========================================================================
+  // Reviews (Storefront — purchase-gated)
+  // ===========================================================================
+  reviews: {
+    // Every review authored by a customer (any status) — drives the
+    // order-history "your review" state (Pending / Approved / Rejected) and the
+    // edit flow. Storefront product pages read only APPROVED ones via
+    // products.getReviews.
+    getMine: async (userId) => {
+      try {
+        if (IS_MOCK_API) {
+          const response = await api.get("/reviews", { params: { userId } });
+          return Array.isArray(response.data) ? response.data : [];
+        }
+        const response = await api.get("/reviews/mine");
+        return extractData(response);
+      } catch (error) { console.error("Get my reviews error:", error); return []; }
+    },
+
+    // Create or update a purchase-gated review. One review per (user, product):
+    // a repeat submission for the same product updates the existing row. Every
+    // create/edit (re)enters the `pending` state for admin moderation, so an
+    // edited approved review drops off the storefront until re-approved.
+    submit: async ({ productId, userId, userName, rating, title = "", body = "", orderId = null, orderNumber = null, isVerifiedPurchase = true }) => {
+      try {
+        if (IS_MOCK_API) {
+          const now = new Date().toISOString();
+          const existingRes = await api.get("/reviews", { params: { userId, productId } });
+          const existing = Array.isArray(existingRes.data) ? existingRes.data[0] : null;
+          const base = {
+            productId: Number(productId), userId, userName,
+            rating: Number(rating), title, body,
+            status: "pending", isVerifiedPurchase,
+            orderId, orderNumber, updatedAt: now,
+          };
+          if (existing) {
+            const response = await api.patch(`/reviews/${existing.id}`, base);
+            return response.data;
+          }
+          const response = await api.post("/reviews", { ...base, helpfulCount: 0, createdAt: now });
+          return response.data;
+        }
+        const response = await api.post(`/products/${productId}/reviews`, { rating, title, body, orderId });
+        return extractData(response);
+      } catch (error) { console.error("Submit review error:", error); throw error; }
     },
   },
 
@@ -1498,11 +1734,13 @@ const apiService = {
           const amt = Number(pending.amount) || 0;
           const stamp = new Date().toISOString();
           let newPaymentStatus = "refunded";
+          let creditableAmt = amt; // amount to deposit if the method is store credit
           const payRes = await api.get("/payments", { params: { orderId: id } }).catch(() => ({ data: [] }));
           const payment = Array.isArray(payRes.data) ? payRes.data[0] : payRes.data;
           if (payment && payment.id != null) {
             const remaining = (Number(payment.amount) || 0) - (Number(payment.refundAmount) || 0);
             const settleAmt = Math.min(amt || remaining, remaining);
+            creditableAmt = settleAmt; // never deposit more than the payment can settle
             if (settleAmt > 0) {
               const updated = await appendPaymentRefund(payment, settleAmt, pending.reason || "Refund completed");
               newPaymentStatus = updated.status === "refunded" ? "refunded" : "partially_refunded";
@@ -1522,6 +1760,16 @@ const apiService = {
           });
           // Settle the in-flight ledger record for this order.
           await finalizeRefundRecord(id, "completed", { settledAmount: amt });
+          // When the refund method is store credit, deposit the settled amount
+          // (capped at what the payment could actually return) into the
+          // customer's wallet so it's usable at checkout.
+          if ((pending.method || current.refundMethod) === "store_credit" && creditableAmt > 0 && current.userId != null) {
+            await creditWallet(current.userId, {
+              amount: creditableAmt,
+              reason: `Refund for order ${current.orderNumber || current.id}`,
+              orderId: current.id, orderNumber: current.orderNumber,
+            });
+          }
           return response.data;
         }
         const response = await api.post(`/admin/orders/${id}/refund/complete`, {});
@@ -1859,6 +2107,35 @@ const apiService = {
         const response = await api.get("/admin/reviews", { params });
         return extractData(response);
       } catch (error) { console.error("Admin get reviews error:", error); throw error; }
+    },
+
+    // Admin-authored review for any product, under a (mock) customer name. These
+    // behave like normal reviews: default to "approved" so they surface on the
+    // storefront immediately, but the status is caller-controlled. userId is
+    // null (not tied to a real account) and the row is flagged source: "admin".
+    createReview: async (data) => {
+      try {
+        if (IS_MOCK_API) {
+          const now = new Date().toISOString();
+          const response = await api.post("/reviews", {
+            productId: Number(data.productId),
+            userId: null,
+            userName: data.userName,
+            rating: Number(data.rating),
+            title: data.title || "",
+            body: data.body || "",
+            status: data.status || "approved",
+            isVerifiedPurchase: !!data.isVerifiedPurchase,
+            helpfulCount: 0,
+            source: "admin",
+            createdAt: now,
+            updatedAt: now,
+          });
+          return response.data;
+        }
+        const response = await api.post("/admin/reviews", data);
+        return extractData(response);
+      } catch (error) { console.error("Admin create review error:", error); throw error; }
     },
 
     updateReview: async (id, updates) => {

@@ -195,3 +195,31 @@
 .emptyState h2 { font-size: 1.5rem; margin-bottom: 8px; }
 .emptyState p { color: #64748b; margin-bottom: 24px; }
 .dark .emptyState p { color: #94a3b8; }
+
+/* ── Store Credit (Payment step) ─────────────────────────────────────────── */
+.storeCreditSection { padding: 16px; border-radius: 10px; background: #f5f3ff; border: 1px solid #ddd6fe; margin-bottom: 20px; }
+.dark .storeCreditSection { background: #2e1065; border-color: #5b21b6; }
+.storeCreditHeader { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
+.storeCreditInfo { display: flex; align-items: center; gap: 10px; }
+.storeCreditWalletIcon { font-size: 1.5rem; }
+.storeCreditSection h3 { font-size: 0.95rem; font-weight: 600; margin: 0; }
+.storeCreditBalance { font-size: 0.85rem; color: #6d28d9; margin: 2px 0 0; }
+.dark .storeCreditBalance { color: #c4b5fd; }
+.storeCreditToggle { display: inline-flex; align-items: center; gap: 8px; font-size: 0.875rem; font-weight: 600; color: #6d28d9; cursor: pointer; }
+.dark .storeCreditToggle { color: #c4b5fd; }
+.storeCreditToggle input { width: 16px; height: 16px; accent-color: #7c3aed; cursor: pointer; }
+.storeCreditApply { margin-top: 14px; padding-top: 14px; border-top: 1px dashed #c4b5fd; }
+.dark .storeCreditApply { border-top-color: #6d28d9; }
+.storeCreditAmountRow { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 12px; flex-wrap: wrap; }
+.storeCreditAmountRow label { font-size: 0.85rem; font-weight: 500; }
+.storeCreditInputWrap { display: flex; align-items: center; gap: 6px; background: #fff; border: 1px solid #d1d5db; border-radius: 8px; padding: 4px 4px 4px 10px; }
+.dark .storeCreditInputWrap { background: #1e293b; border-color: #475569; }
+.storeCreditCurrency { color: #6b7280; font-weight: 600; }
+.storeCreditInputWrap input { width: 110px; border: none; outline: none; font-size: 0.9rem; background: transparent; font-family: inherit; color: inherit; }
+.storeCreditInputWrap button { padding: 6px 12px; border: none; border-radius: 6px; background: #7c3aed; color: #fff; font-size: 0.8rem; font-weight: 600; cursor: pointer; font-family: inherit; }
+.storeCreditSummaryRow { display: flex; justify-content: space-between; font-size: 0.875rem; padding: 4px 0; }
+.storeCreditApplied { font-weight: 600; color: #059669; }
+.dark .storeCreditApplied { color: #6ee7b7; }
+.storeCreditPayable { font-weight: 700; }
+.fullyCoveredNote { padding: 14px 16px; border-radius: 10px; background: #ecfdf5; color: #047857; font-size: 0.9rem; font-weight: 600; margin-bottom: 20px; display: flex; align-items: center; gap: 8px; }
+.dark .fullyCoveredNote { background: #064e3b; color: #6ee7b7; }

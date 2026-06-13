@@ -4,6 +4,7 @@ import {
   TableHead, TableRow, Chip, IconButton, Tooltip, Skeleton, TextField,
   InputAdornment, Select, MenuItem, FormControl, InputLabel, Avatar,
   Rating, Dialog, DialogTitle, DialogContent, DialogActions, Button,
+  Checkbox, FormControlLabel, Stack,
 } from "@mui/material";
 import { Icon } from "@iconify/react";
 import Swal from "sweetalert2";
@@ -15,6 +16,17 @@ const STATUS_CONFIG = {
   rejected: { label: "Rejected", color: "error" },
 };
 
+// Quick-pick mock shoppers so the admin can post varied reviews fast.
+const MOCK_REVIEWERS = [
+  "Aarav Sharma", "Priya Menon", "Rahul Verma", "Sneha Iyer",
+  "Vikram Singh", "Ananya Reddy", "Karan Mehta", "Divya Nair",
+];
+
+const EMPTY_REVIEW = {
+  productId: "", userName: "", rating: 5, title: "", body: "",
+  isVerifiedPurchase: false, status: "approved",
+};
+
 const AdminReviews = () => {
   const [reviews, setReviews] = useState([]);
   const [products, setProducts] = useState([]);
@@ -23,6 +35,9 @@ const AdminReviews = () => {
   const [statusFilter, setStatusFilter] = useState("all");
   const [selectedReview, setSelectedReview] = useState(null);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [createOpen, setCreateOpen] = useState(false);
+  const [form, setForm] = useState(EMPTY_REVIEW);
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => { loadData(); }, []);
 
@@ -67,6 +82,25 @@ const AdminReviews = () => {
     }
   };
 
+  const openCreate = () => { setForm(EMPTY_REVIEW); setCreateOpen(true); };
+
+  const handleCreate = async () => {
+    if (!form.productId) { Swal.fire({ icon: "warning", title: "Select a product" }); return; }
+    if (!form.userName.trim()) { Swal.fire({ icon: "warning", title: "Enter a reviewer name" }); return; }
+    if (!form.rating) { Swal.fire({ icon: "warning", title: "Pick a rating" }); return; }
+    setSaving(true);
+    try {
+      await apiService.admin.createReview({ ...form, userName: form.userName.trim() });
+      Swal.fire({ icon: "success", title: "Review added", toast: true, position: "bottom-end", showConfirmButton: false, timer: 2000 });
+      setCreateOpen(false);
+      loadData();
+    } catch (e) {
+      Swal.fire({ icon: "error", title: "Error", text: e.message });
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const formatDate = (d) => d ? new Date(d).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" }) : "—";
 
   const filtered = reviews.filter((r) => {
@@ -85,9 +119,14 @@ const AdminReviews = () => {
           <Typography variant="h5" fontWeight="bold">Reviews</Typography>
           <Typography variant="body2" color="text.secondary">Moderate and manage product reviews</Typography>
         </Box>
-        {pendingCount > 0 && (
-          <Chip label={`${pendingCount} pending review${pendingCount > 1 ? "s" : ""}`} color="warning" icon={<Icon icon="mdi:clock-outline" />} />
-        )}
+        <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
+          {pendingCount > 0 && (
+            <Chip label={`${pendingCount} pending review${pendingCount > 1 ? "s" : ""}`} color="warning" icon={<Icon icon="mdi:clock-outline" />} />
+          )}
+          <Button variant="contained" startIcon={<Icon icon="mdi:plus" />} onClick={openCreate}>
+            Add Review
+          </Button>
+        </Box>
       </Box>
 
       <Paper elevation={0} sx={{ border: "1px solid", borderColor: "divider", overflow: "hidden" }}>
@@ -213,6 +252,99 @@ const AdminReviews = () => {
             </DialogActions>
           </>
         )}
+      </Dialog>
+
+      {/* Add Review Dialog (admin-authored, mock customer names) */}
+      <Dialog open={createOpen} onClose={() => setCreateOpen(false)} maxWidth="sm" fullWidth>
+        <DialogTitle sx={{ fontWeight: "bold" }}>Add a Review</DialogTitle>
+        <DialogContent dividers>
+          <Stack spacing={2.5} sx={{ pt: 1 }}>
+            <FormControl fullWidth size="small">
+              <InputLabel>Product</InputLabel>
+              <Select
+                label="Product"
+                value={form.productId}
+                onChange={(e) => setForm((f) => ({ ...f, productId: e.target.value }))}
+              >
+                {products.map((p) => (
+                  <MenuItem key={p.id} value={p.id}>{p.name}</MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+
+            <Box>
+              <TextField
+                fullWidth size="small" label="Reviewer name"
+                value={form.userName}
+                onChange={(e) => setForm((f) => ({ ...f, userName: e.target.value }))}
+              />
+              <Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.75, mt: 1 }}>
+                {MOCK_REVIEWERS.map((name) => (
+                  <Chip
+                    key={name}
+                    label={name}
+                    size="small"
+                    variant={form.userName === name ? "filled" : "outlined"}
+                    color={form.userName === name ? "primary" : "default"}
+                    onClick={() => setForm((f) => ({ ...f, userName: name }))}
+                  />
+                ))}
+              </Box>
+            </Box>
+
+            <Box>
+              <Typography variant="caption" color="text.secondary">Rating</Typography>
+              <Rating
+                value={form.rating}
+                onChange={(_, v) => setForm((f) => ({ ...f, rating: v || 0 }))}
+              />
+            </Box>
+
+            <TextField
+              fullWidth size="small" label="Title"
+              value={form.title}
+              onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))}
+            />
+            <TextField
+              fullWidth size="small" label="Review" multiline minRows={3}
+              value={form.body}
+              onChange={(e) => setForm((f) => ({ ...f, body: e.target.value }))}
+            />
+
+            <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 2, flexWrap: "wrap" }}>
+              <FormControlLabel
+                control={
+                  <Checkbox
+                    checked={form.isVerifiedPurchase}
+                    onChange={(e) => setForm((f) => ({ ...f, isVerifiedPurchase: e.target.checked }))}
+                  />
+                }
+                label="Verified purchase"
+              />
+              <FormControl size="small" sx={{ minWidth: 150 }}>
+                <InputLabel>Status</InputLabel>
+                <Select
+                  label="Status"
+                  value={form.status}
+                  onChange={(e) => setForm((f) => ({ ...f, status: e.target.value }))}
+                >
+                  {Object.entries(STATUS_CONFIG).map(([k, v]) => (
+                    <MenuItem key={k} value={k}>{v.label}</MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            </Box>
+            <Typography variant="caption" color="text.secondary">
+              Approved reviews appear on the storefront product page immediately.
+            </Typography>
+          </Stack>
+        </DialogContent>
+        <DialogActions sx={{ p: 2, gap: 1 }}>
+          <Button onClick={() => setCreateOpen(false)} disabled={saving}>Cancel</Button>
+          <Button variant="contained" onClick={handleCreate} disabled={saving}>
+            {saving ? "Saving…" : "Add Review"}
+          </Button>
+        </DialogActions>
       </Dialog>
     </Box>
   );

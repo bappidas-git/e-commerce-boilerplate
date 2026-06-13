@@ -51,6 +51,11 @@ const Checkout = () => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [orderPlaced, setOrderPlaced] = useState(null);
 
+  // Store-credit wallet
+  const [walletBalance, setWalletBalance] = useState(0);
+  const [applyStoreCredit, setApplyStoreCredit] = useState(false);
+  const [creditAmount, setCreditAmount] = useState(0); // amount the customer chose to apply
+
   const [shippingAddress, setShippingAddress] = useState({
     firstName: user?.firstName || "", lastName: user?.lastName || "",
     phone: user?.phone || "", addressLine1: "", addressLine2: "",
@@ -79,6 +84,19 @@ const Checkout = () => {
     loadShipping();
     loadSettings();
   }, []);
+
+  // Load the signed-in customer's store-credit balance so it can be applied here.
+  useEffect(() => {
+    if (!user?.id) { setWalletBalance(0); return; }
+    let active = true;
+    (async () => {
+      try {
+        const balance = await apiService.wallet.getBalance(user.id);
+        if (active) setWalletBalance(Number(balance) || 0);
+      } catch (e) { console.error("Load wallet balance error:", e); }
+    })();
+    return () => { active = false; };
+  }, [user]);
 
   useEffect(() => {
     if (user) {
@@ -112,18 +130,40 @@ const Checkout = () => {
   const taxAmount = Math.round(Math.max(0, subtotal - couponDiscount) * (taxRatePct / 100));
   const total = subtotal - couponDiscount + shippingCost + taxAmount;
 
-  // COD availability comes from store settings, bounded by the payable total.
+  // Store credit is applied LAST, against the grand total (it behaves like a
+  // prepaid gift card — after discounts, shipping and tax). The customer can
+  // apply up to their balance, capped by the order total; the remainder, if
+  // any, is collected via the chosen payment method. (See PR notes.)
+  const maxApplicableCredit = Math.min(walletBalance, total);
+  const storeCreditApplied = applyStoreCredit
+    ? Math.min(Math.max(0, Math.round(creditAmount)), maxApplicableCredit)
+    : 0;
+  const amountPayable = Math.max(0, total - storeCreditApplied);
+  const fullyCovered = storeCreditApplied > 0 && amountPayable === 0;
+
+  // COD availability comes from store settings, bounded by the amount actually
+  // collected on delivery (the payable remainder after store credit).
   const paymentCfg = storeSettings?.payment;
   const codEnabled = paymentCfg?.codEnabled !== false;
   const codMinOrder = paymentCfg?.codMinOrder ?? 0;
   const codMaxOrder = paymentCfg?.codMaxOrder ?? null;
-  const codAvailable = codEnabled && total >= codMinOrder && (codMaxOrder == null || total <= codMaxOrder);
+  const codAvailable = codEnabled && amountPayable > 0 &&
+    amountPayable >= codMinOrder && (codMaxOrder == null || amountPayable <= codMaxOrder);
 
   // If totals shift (qty/coupon/shipping) and COD falls out of range, move the
   // selection back to card rather than letting an invalid method be submitted.
   useEffect(() => {
     if (paymentMethod === "cod" && !codAvailable) setPaymentMethod("card");
   }, [paymentMethod, codAvailable]);
+
+  // Keep the chosen credit amount within the current applicable maximum — e.g.
+  // when the cart total drops after removing an item or a coupon — so the input
+  // never displays (or submits) more than can actually be applied.
+  useEffect(() => {
+    if (applyStoreCredit && creditAmount > maxApplicableCredit) {
+      setCreditAmount(maxApplicableCredit);
+    }
+  }, [applyStoreCredit, creditAmount, maxApplicableCredit]);
 
   // A coupon only stays applied while the cart still meets its minimum.
   useEffect(() => {
@@ -204,8 +244,13 @@ const Checkout = () => {
         shippingAmount: shippingCost,
         taxAmount,
         total,
-        paymentMethod,
-        paymentStatus: paymentMethod === "cod" ? "pending" : "paid",
+        // Store credit applied at checkout, and what's left for the gateway.
+        storeCreditUsed: storeCreditApplied,
+        amountPayable,
+        // A fully store-credit order needs no further payment, so it is "paid"
+        // via store credit; otherwise the chosen method settles the remainder.
+        paymentMethod: fullyCovered ? "store_credit" : paymentMethod,
+        paymentStatus: fullyCovered ? "paid" : paymentMethod === "cod" ? "pending" : "paid",
         fulfillmentStatus: "unfulfilled",
         shippingStatus: "pending",
         trackingNumber: null,
@@ -433,6 +478,75 @@ const Checkout = () => {
             {step === 2 && (
               <motion.div key="payment" initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }}>
                 <h2 className={styles.sectionTitle}>Payment Method</h2>
+
+                {/* Store credit */}
+                {walletBalance > 0 && (
+                  <div className={styles.storeCreditSection}>
+                    <div className={styles.storeCreditHeader}>
+                      <div className={styles.storeCreditInfo}>
+                        <span className={styles.storeCreditWalletIcon} aria-hidden>👛</span>
+                        <div>
+                          <h3>Store Credit</h3>
+                          <p className={styles.storeCreditBalance}>
+                            Available balance: <strong>{formatCurrency(walletBalance)}</strong>
+                          </p>
+                        </div>
+                      </div>
+                      <label className={styles.storeCreditToggle}>
+                        <input
+                          type="checkbox"
+                          checked={applyStoreCredit}
+                          onChange={(e) => {
+                            const on = e.target.checked;
+                            setApplyStoreCredit(on);
+                            setCreditAmount(on ? maxApplicableCredit : 0);
+                          }}
+                        />
+                        <span>Apply to this order</span>
+                      </label>
+                    </div>
+
+                    {applyStoreCredit && (
+                      <div className={styles.storeCreditApply}>
+                        <div className={styles.storeCreditAmountRow}>
+                          <label>Amount to apply</label>
+                          <div className={styles.storeCreditInputWrap}>
+                            <span className={styles.storeCreditCurrency}>₹</span>
+                            <input
+                              type="number"
+                              min="0"
+                              max={maxApplicableCredit}
+                              value={creditAmount}
+                              onChange={(e) => {
+                                const n = Number(e.target.value);
+                                setCreditAmount(Number.isFinite(n) ? Math.max(0, n) : 0);
+                              }}
+                            />
+                            <button type="button" onClick={() => setCreditAmount(maxApplicableCredit)}>
+                              Use Max
+                            </button>
+                          </div>
+                        </div>
+                        <div className={styles.storeCreditSummaryRow}>
+                          <span>Store credit applied</span>
+                          <span className={styles.storeCreditApplied}>-{formatCurrency(storeCreditApplied)}</span>
+                        </div>
+                        <div className={styles.storeCreditSummaryRow}>
+                          <span>Remaining to pay</span>
+                          <span className={styles.storeCreditPayable}>{formatCurrency(amountPayable)}</span>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {fullyCovered && (
+                  <div className={styles.fullyCoveredNote}>
+                    <span aria-hidden>✓</span> Your store credit covers this order in full — no further payment needed.
+                  </div>
+                )}
+
+                {!fullyCovered && (<>
                 <div className={styles.paymentMethods}>
                   {PAYMENT_OPTIONS.map((pm) => {
                     const isCod = pm.id === "cod";
@@ -498,6 +612,7 @@ const Checkout = () => {
                     </p>
                   </div>
                 )}
+                </>)}
               </motion.div>
             )}
 
@@ -548,11 +663,23 @@ const Checkout = () => {
                       <h3>Payment</h3>
                       <button type="button" onClick={() => setStep(2)}>Edit</button>
                     </div>
-                    <p className={styles.reviewName}>{selectedPaymentOption?.icon} {selectedPaymentOption?.label}</p>
-                    {paymentMethod === "cod" ? (
-                      <p>Pay {formatCurrency(total)} in cash on delivery.</p>
+                    {fullyCovered ? (
+                      <>
+                        <p className={styles.reviewName}>👛 Store Credit</p>
+                        <p>Paid in full with store credit ({formatCurrency(storeCreditApplied)}).</p>
+                      </>
                     ) : (
-                      <p>You will be charged {formatCurrency(total)}.</p>
+                      <>
+                        <p className={styles.reviewName}>{selectedPaymentOption?.icon} {selectedPaymentOption?.label}</p>
+                        {storeCreditApplied > 0 && (
+                          <p>Store credit applied: -{formatCurrency(storeCreditApplied)}</p>
+                        )}
+                        {paymentMethod === "cod" ? (
+                          <p>Pay {formatCurrency(amountPayable)} in cash on delivery.</p>
+                        ) : (
+                          <p>You will be charged {formatCurrency(amountPayable)}.</p>
+                        )}
+                      </>
                     )}
                   </div>
                 </div>
@@ -568,7 +695,15 @@ const Checkout = () => {
               onClick={handleNext}
               disabled={isProcessing || cartItems.length === 0}
             >
-              {isProcessing ? "Processing..." : step === 3 ? `Place Order - ${formatCurrency(total)}` : step === 0 && !isAuthenticated ? "Login to Continue" : "Continue"}
+              {isProcessing
+                ? "Processing..."
+                : step === 3
+                ? fullyCovered
+                  ? "Place Order"
+                  : `Place Order - ${formatCurrency(amountPayable)}`
+                : step === 0 && !isAuthenticated
+                ? "Login to Continue"
+                : "Continue"}
             </button>
           </div>
         </div>
@@ -593,6 +728,13 @@ const Checkout = () => {
             <div className={styles.summaryRow}><span>Tax ({taxRatePct}% GST)</span><span>{formatCurrency(taxAmount)}</span></div>
             <div className={styles.summaryDivider} />
             <div className={`${styles.summaryRow} ${styles.totalRow}`}><span>Total</span><span>{formatCurrency(total)}</span></div>
+            {storeCreditApplied > 0 && (
+              <>
+                <div className={`${styles.summaryRow} ${styles.discount}`}><span>Store Credit</span><span>-{formatCurrency(storeCreditApplied)}</span></div>
+                <div className={styles.summaryDivider} />
+                <div className={`${styles.summaryRow} ${styles.totalRow}`}><span>Amount Payable</span><span>{formatCurrency(amountPayable)}</span></div>
+              </>
+            )}
           </div>
 
           <div className={styles.trustBadges}>
