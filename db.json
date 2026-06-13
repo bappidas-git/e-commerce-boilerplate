@@ -52,7 +52,8 @@
       ],
       "isActive": true,
       "createdAt": "2025-01-15T10:00:00.000Z",
-      "updatedAt": "2025-01-15T10:00:00.000Z"
+      "updatedAt": "2025-01-15T10:00:00.000Z",
+      "storeCredit": 0
     },
     {
       "id": 2,
@@ -65,7 +66,8 @@
       "addresses": [],
       "isActive": true,
       "createdAt": "2025-02-01T09:00:00.000Z",
-      "updatedAt": "2025-02-01T09:00:00.000Z"
+      "updatedAt": "2025-02-01T09:00:00.000Z",
+      "storeCredit": 0
     },
     {
       "id": 3,
@@ -75,10 +77,26 @@
       "lastName": "Das",
       "phone": "",
       "avatar": null,
-      "addresses": [],
+      "addresses": [
+        {
+          "id": 1,
+          "label": "Home",
+          "firstName": "Bappi",
+          "lastName": "Das",
+          "phone": "+919707112233",
+          "addressLine1": "Moutupuri, Barpeta",
+          "addressLine2": "Near BH College",
+          "city": "Howly",
+          "state": "Assam",
+          "postalCode": "781316",
+          "country": "India",
+          "isDefault": true
+        }
+      ],
       "isActive": true,
       "createdAt": "2025-06-01T10:00:00.000Z",
-      "updatedAt": "2025-06-01T10:00:00.000Z"
+      "updatedAt": "2025-06-01T10:00:00.000Z",
+      "storeCredit": 4918
     }
   ],
   "admins": [
@@ -2815,5 +2833,21 @@
       "youtube": "",
       "whatsapp": ""
     }
-  }
+  },
+  "walletTransactions": [
+    {
+      "id": 1,
+      "userId": 3,
+      "type": "credit",
+      "amount": 4918,
+      "reason": "Refund for order ORD-MQC1HWSZ-CAN8",
+      "orderId": 8,
+      "orderNumber": "ORD-MQC1HWSZ-CAN8",
+      "refundId": 3,
+      "refundNumber": "REF-20260613-JQ3L",
+      "balanceBefore": 0,
+      "balanceAfter": 4918,
+      "createdAt": "2026-06-13T12:57:28.419Z"
+    }
+  ]
 }

@@ -6,7 +6,23 @@ import { useTheme } from "../../context/ThemeContext";
 import { useAuth } from "../../hooks/useAuth";
 import apiService from "../../services/api";
 import { formatCurrency, formatDate, normalizeOrderAddress } from "../../utils/helpers";
+import ReviewModal from "../../components/ReviewModal/ReviewModal";
 import styles from "./OrderHistory.module.css";
+
+// Short, privacy-friendly display name for a review, e.g. "Bappi D." — matches
+// the style of the seeded reviews.
+const reviewDisplayName = (user) => {
+  const first = user?.firstName?.trim() || "";
+  const last = user?.lastName?.trim() || "";
+  if (first && last) return `${first} ${last[0].toUpperCase()}.`;
+  return first || user?.email?.split("@")[0] || "Customer";
+};
+
+const REVIEW_STATUS = {
+  pending: { label: "Review pending approval", className: "reviewPending" },
+  approved: { label: "Review published", className: "reviewApproved" },
+  rejected: { label: "Review not approved", className: "reviewRejected" },
+};
 
 const STATUS_CONFIG = {
   processing: { label: "Processing", className: "statusProcessing" },
@@ -63,6 +79,11 @@ const OrderHistory = () => {
   const [copiedId, setCopiedId] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
 
+  // Reviews authored by this customer (any status), keyed by productId for the
+  // per-item "your review" state, plus the rate/review modal.
+  const [myReviews, setMyReviews] = useState([]);
+  const [reviewModal, setReviewModal] = useState({ open: false, product: null, existing: null, orderId: null, orderNumber: null });
+
   useEffect(() => {
     if (authLoading) return; // session restore in progress — keep the loader up
     if (isAuthenticated) {
@@ -77,10 +98,14 @@ const OrderHistory = () => {
     setLoading(true);
     setFetchError(false);
     try {
-      const response = await apiService.orders.getByUserId(user?.id);
+      const [response, reviews] = await Promise.all([
+        apiService.orders.getByUserId(user?.id),
+        apiService.reviews.getMine(user?.id).catch(() => []),
+      ]);
       const data = Array.isArray(response) ? response : response?.data || response?.orders || [];
       const sorted = [...data].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
       setOrders(sorted);
+      setMyReviews(Array.isArray(reviews) ? reviews : []);
     } catch (err) {
       // Keep "No Orders Yet" honest: a failed fetch renders the error state,
       // never the empty state.
@@ -116,6 +141,57 @@ const OrderHistory = () => {
   // Orders can be cancelled until they ship — i.e. while the derived status
   // is still "processing" (covers pending-payment and unfulfilled orders).
   const isCancellable = (order) => deriveOrderStatus(order) === "processing";
+
+  // Purchase-gated reviews: a product is reviewable only from an order the
+  // customer kept — derived status "delivered" (delivered, and NOT cancelled,
+  // returned or refunded).
+  const isReviewable = (order) => deriveOrderStatus(order) === "delivered";
+
+  // The customer's existing review for a product (if any), to drive the
+  // edit flow and the "your review" status chip.
+  const reviewFor = (productId) =>
+    myReviews.find((r) => Number(r.productId) === Number(productId)) || null;
+
+  const openReviewModal = (order, item) => {
+    setReviewModal({
+      open: true,
+      orderId: order.id,
+      orderNumber: order.orderNumber,
+      product: { productId: item.productId, name: item.name, image: item.image },
+      existing: reviewFor(item.productId),
+    });
+  };
+
+  const closeReviewModal = () => setReviewModal((m) => ({ ...m, open: false }));
+
+  const handleSubmitReview = async ({ rating, title, body }) => {
+    const { product, existing, orderId, orderNumber } = reviewModal;
+    await apiService.reviews.submit({
+      productId: product.productId,
+      userId: user.id,
+      userName: reviewDisplayName(user),
+      rating,
+      title,
+      body,
+      orderId,
+      orderNumber,
+      isVerifiedPurchase: true,
+    });
+    // Refresh the customer's reviews so the chip reflects the new pending state.
+    const refreshed = await apiService.reviews.getMine(user.id).catch(() => myReviews);
+    setMyReviews(Array.isArray(refreshed) ? refreshed : []);
+    closeReviewModal();
+    Swal.fire({
+      icon: "success",
+      title: existing ? "Review updated" : "Review submitted",
+      text: "Thanks! Your review will appear on the product page once it's approved.",
+      toast: true,
+      position: "bottom-end",
+      showConfirmButton: false,
+      timer: 3000,
+      timerProgressBar: true,
+    });
+  };
 
   const handleCancelOrder = async (order) => {
     if (cancellingId) return;
@@ -617,6 +693,29 @@ const OrderHistory = () => {
                                         <span className={styles.detailItemVariant}>{item.variantName}</span>
                                       )}
                                       <span className={styles.detailItemQty}>Qty: {item.quantity}</span>
+                                      {isReviewable(order) && item.productId != null && (() => {
+                                        const existing = reviewFor(item.productId);
+                                        const sc = existing ? REVIEW_STATUS[existing.status] : null;
+                                        return (
+                                          <div className={styles.reviewControl}>
+                                            {existing && sc && (
+                                              <span className={`${styles.reviewStatusChip} ${styles[sc.className]}`}>
+                                                {sc.label}
+                                              </span>
+                                            )}
+                                            <button
+                                              type="button"
+                                              className={styles.btnReview}
+                                              onClick={() => openReviewModal(order, item)}
+                                            >
+                                              <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                                                <polygon points="12 2 15 9 22 9.5 17 14.5 18.5 22 12 18 5.5 22 7 14.5 2 9.5 9 9" />
+                                              </svg>
+                                              {existing ? "Edit Review" : "Rate & Review"}
+                                            </button>
+                                          </div>
+                                        );
+                                      })()}
                                     </div>
                                     <div className={styles.detailItemPrice}>
                                       {formatCurrency(item.price * item.quantity, item.currency)}
@@ -742,6 +841,15 @@ const OrderHistory = () => {
           </div>
         )}
       </div>
+
+      <ReviewModal
+        open={reviewModal.open}
+        onClose={closeReviewModal}
+        product={reviewModal.product}
+        existing={reviewModal.existing}
+        onSubmit={handleSubmitReview}
+        isDarkMode={isDarkMode}
+      />
     </div>
   );
 };
