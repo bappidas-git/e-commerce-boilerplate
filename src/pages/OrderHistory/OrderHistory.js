@@ -13,6 +13,7 @@ const STATUS_CONFIG = {
   shipped: { label: "Shipped", className: "statusShipped" },
   delivered: { label: "Delivered", className: "statusDelivered" },
   cancelled: { label: "Cancelled", className: "statusCancelled" },
+  returned: { label: "Returned", className: "statusCancelled" },
   pending: { label: "Processing", className: "statusProcessing" },
   completed: { label: "Delivered", className: "statusDelivered" },
   failed: { label: "Cancelled", className: "statusCancelled" },
@@ -29,6 +30,9 @@ const RETURN_WINDOW_DAYS = 7; // per the 7-day return policy (see /refund-policy
 // honoured when none of the canonical fields exist.
 const deriveOrderStatus = (order) => {
   if (order.paymentStatus || order.fulfillmentStatus || order.shippingStatus) {
+    // A returned order is its own outcome — show it honestly rather than
+    // collapsing it into "Cancelled" (full refund) or "Delivered" (partial).
+    if (order.fulfillmentStatus === "returned") return "returned";
     if (
       order.fulfillmentStatus === "cancelled" ||
       order.paymentStatus === "failed" ||
@@ -115,9 +119,16 @@ const OrderHistory = () => {
 
   const handleCancelOrder = async (order) => {
     if (cancellingId) return;
+    // Payment-aware messaging: a prepaid order gets a refund; a COD order has
+    // nothing collected yet, so there's nothing to refund.
+    const isOnline = order.paymentMethod && order.paymentMethod !== "cod";
+    const captured = ["paid", "partially_refunded"].includes(order.paymentStatus);
+    const refundLine = captured
+      ? ` A full refund of ${formatCurrency(order.total)} will be initiated to your ${isOnline ? "original payment method" : "bank / UPI"}.`
+      : " No payment has been collected, so there's nothing to refund.";
     const result = await Swal.fire({
       title: "Cancel this order?",
-      text: `Order ${order.orderNumber || `#${order.id}`} will be cancelled. This cannot be undone.`,
+      html: `Order <strong>${order.orderNumber || `#${order.id}`}</strong> will be cancelled.${refundLine}`,
       icon: "warning",
       showCancelButton: true,
       confirmButtonColor: "#d32f2f",

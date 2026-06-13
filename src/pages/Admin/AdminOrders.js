@@ -79,6 +79,22 @@ const refundImplication = (o) => {
   return { kind: "none", text: `Cash on Delivery — no payment has been collected yet. No refund is required.` };
 };
 
+// What kind of cancellation THIS order's state allows (the guard rules):
+//   • "direct"  — not yet fulfilled: cancel outright, nothing has shipped.
+//   • "recall"  — fulfilled & shipped but NOT delivered: cancel AND recall the
+//                 parcel to the warehouse; the admin records the return-leg
+//                 tracking manually (no courier automation).
+//   • "blocked" — delivered: cancellation isn't valid; a delivered order is
+//                 handled through Returns (return pickup → refund) instead.
+//   • null      — already cancelled/returned: nothing to do.
+const cancelKind = (o) => {
+  if (!o) return null;
+  if (["cancelled", "returned"].includes(o.fulfillmentStatus)) return null;
+  if (["unfulfilled", "partially_fulfilled"].includes(o.fulfillmentStatus)) return "direct";
+  if (o.shippingStatus === "delivered") return "blocked";
+  return "recall";
+};
+
 const SORT_OPTIONS = {
   date_desc: { label: "Newest first", cmp: (a, b) => new Date(b.createdAt) - new Date(a.createdAt) },
   date_asc: { label: "Oldest first", cmp: (a, b) => new Date(a.createdAt) - new Date(b.createdAt) },
@@ -116,6 +132,10 @@ const AdminOrders = () => {
   const [cancelReason, setCancelReason] = useState("");
   const [cancelRestock, setCancelRestock] = useState(true);
   const [cancelRefundMethod, setCancelRefundMethod] = useState("original_payment");
+  // Recall (cancelling an already-shipped order): the admin records the
+  // return-leg tracking for the parcel coming back to the warehouse.
+  const [recallTracking, setRecallTracking] = useState("");
+  const [recallTrackingUrl, setRecallTrackingUrl] = useState("");
 
   // Issue-refund dialog (initiate step of the two-step lifecycle).
   const [refundOpen, setRefundOpen] = useState(false);
@@ -286,19 +306,36 @@ const AdminOrders = () => {
     setCancelReason("");
     setCancelRestock(true);
     setCancelRefundMethod(isOnlinePayment(selectedOrder) ? "original_payment" : "bank_transfer");
+    // Pre-fill the recall tracking from whatever's already on the order (the
+    // admin can reuse the same waybill for the reverse leg, then edit it).
+    setRecallTracking(selectedOrder.trackingNumber || "");
+    setRecallTrackingUrl(selectedOrder.trackingUrl || "");
     setCancelOpen(true);
   };
 
   const handleCancelSubmit = async () => {
     if (!cancelReason.trim()) { toast("A cancellation reason is required", "warning"); return; }
     const impl = refundImplication(selectedOrder);
+    const isRecall = cancelKind(selectedOrder) === "recall";
     const opts = { reason: cancelReason.trim(), restock: cancelRestock };
     if (impl.kind === "refund") opts.refund = { method: cancelRefundMethod };
     else if (impl.kind === "void") opts.voidPayment = true;
+    if (isRecall) {
+      const url = normalizeUrl(recallTrackingUrl);
+      if (url && !/^https?:\/\/[^\s.]+\.[^\s]+/i.test(url)) {
+        toast("Enter a valid return tracking URL", "warning");
+        return;
+      }
+      opts.recall = { trackingNumber: recallTracking.trim() || null, trackingUrl: url || null };
+    }
     setActionBusy(true);
     try {
       await apiService.admin.cancelOrder(selectedOrder.id, opts);
-      toast(impl.kind === "refund" ? "Order cancelled — refund initiated" : "Order cancelled");
+      toast(
+        isRecall
+          ? (impl.kind === "refund" ? "Order cancelled — recall & refund initiated" : "Order cancelled — shipment recalled")
+          : (impl.kind === "refund" ? "Order cancelled — refund initiated" : "Order cancelled")
+      );
       setCancelOpen(false);
       setDialogOpen(false);
       loadOrders();
@@ -658,6 +695,26 @@ const AdminOrders = () => {
                       Shiprocket Order ID: {selectedOrder.shiprocketOrderId}
                     </Typography>
                   )}
+                  {selectedOrder.recall && (
+                    <Alert severity="warning" icon={<Icon icon="mdi:truck-alert-outline" />} sx={{ mt: 1.5 }}>
+                      <Typography variant="body2" fontWeight={600}>Shipment recalled to warehouse</Typography>
+                      {selectedOrder.recall.trackingNumber && (
+                        <Typography variant="caption" sx={{ display: "block" }}>
+                          Return tracking: {selectedOrder.recall.trackingNumber}
+                        </Typography>
+                      )}
+                      {selectedOrder.recall.trackingUrl && (
+                        <Link href={selectedOrder.recall.trackingUrl} target="_blank" rel="noopener noreferrer" sx={{ display: "inline-flex", alignItems: "center", gap: 0.5, fontSize: "0.78rem", mt: 0.25 }}>
+                          <Icon icon="mdi:open-in-new" /> Track the returning parcel
+                        </Link>
+                      )}
+                    </Alert>
+                  )}
+                  {cancelKind(selectedOrder) === "blocked" && (
+                    <Alert severity="info" icon={<Icon icon="mdi:information-outline" />} sx={{ mt: 1.5 }}>
+                      Delivered orders can't be cancelled — use <strong>Returns</strong> to record a return pickup and refund.
+                    </Alert>
+                  )}
                 </Grid>
 
                 {/* Refund status — shown once a refund is in flight or settled */}
@@ -709,9 +766,14 @@ const AdminOrders = () => {
               <Button variant="outlined" startIcon={<Icon icon="mdi:package-variant-return" />} onClick={() => { setDialogOpen(false); navigate("/admin/returns", { state: { orderNumber: selectedOrder.orderNumber } }); }}>
                 View Returns
               </Button>
-              {selectedOrder.fulfillmentStatus === "unfulfilled" && (
+              {cancelKind(selectedOrder) === "direct" && (
                 <Button variant="outlined" color="error" startIcon={<Icon icon="mdi:close-circle-outline" />} onClick={openCancelDialog} disabled={actionBusy}>
                   Cancel Order
+                </Button>
+              )}
+              {cancelKind(selectedOrder) === "recall" && (
+                <Button variant="outlined" color="error" startIcon={<Icon icon="mdi:truck-alert-outline" />} onClick={openCancelDialog} disabled={actionBusy}>
+                  Cancel &amp; Recall
                 </Button>
               )}
               {selectedOrder.fulfillmentStatus === "unfulfilled" && (
@@ -752,28 +814,48 @@ const AdminOrders = () => {
         )}
       </Dialog>
 
-      {/* Cancel Order dialog — MUI-native (the reason field is typeable, unlike
-          the old SweetAlert prompt) and payment-method aware. */}
+      {/* Cancel / Recall dialog — MUI-native (the reason field is typeable),
+          payment-method aware, and recall-aware for already-shipped orders. */}
       <Dialog open={cancelOpen} onClose={() => !actionBusy && setCancelOpen(false)} maxWidth="xs" fullWidth>
         {selectedOrder && (() => {
           const impl = refundImplication(selectedOrder);
           const codCaptured = impl.kind === "refund" && !isOnlinePayment(selectedOrder);
           const methodKeys = codCaptured ? COD_REFUND_METHODS : Object.keys(REFUND_METHODS);
+          const isRecall = cancelKind(selectedOrder) === "recall";
           return (
             <>
               <DialogTitle sx={{ fontWeight: "bold", display: "flex", alignItems: "center", gap: 1 }}>
-                <Icon icon="mdi:alert-circle-outline" style={{ color: "#ed6c02" }} />
-                Cancel order {selectedOrder.orderNumber}?
+                <Icon icon={isRecall ? "mdi:truck-alert-outline" : "mdi:alert-circle-outline"} style={{ color: "#ed6c02" }} />
+                {isRecall ? "Cancel & recall" : "Cancel order"} {selectedOrder.orderNumber}?
               </DialogTitle>
               <DialogContent dividers>
+                {isRecall && (
+                  <Alert severity="warning" icon={<Icon icon="mdi:truck-fast-outline" />} sx={{ mb: 2 }}>
+                    This order has already shipped. Cancelling will <strong>recall the parcel</strong> to the warehouse — record the return tracking below so the customer can send it back.
+                  </Alert>
+                )}
                 <Alert severity={impl.kind === "refund" ? "warning" : "info"} sx={{ mb: 2 }}>{impl.text}</Alert>
                 <TextField
                   label="Cancellation reason" required autoFocus
                   value={cancelReason} onChange={(e) => setCancelReason(e.target.value)}
                   fullWidth multiline minRows={2} size="small"
-                  placeholder="e.g., Out of stock, customer request…"
+                  placeholder={isRecall ? "e.g., Customer unreachable, address issue…" : "e.g., Out of stock, customer request…"}
                   sx={{ mb: 2 }}
                 />
+                {isRecall && (
+                  <Box sx={{ display: "grid", gap: 1.5, mb: 2 }}>
+                    <TextField
+                      label="Return tracking number" value={recallTracking}
+                      onChange={(e) => setRecallTracking(e.target.value)} size="small" fullWidth
+                      placeholder="Waybill for the parcel coming back"
+                    />
+                    <TextField
+                      label="Return tracking URL" value={recallTrackingUrl}
+                      onChange={(e) => setRecallTrackingUrl(e.target.value)} size="small" fullWidth type="url"
+                      placeholder="https://track.courier.com/…"
+                    />
+                  </Box>
+                )}
                 {impl.kind === "refund" && (
                   <FormControl fullWidth size="small" sx={{ mb: 1.5 }}>
                     <InputLabel>Refund method</InputLabel>
@@ -782,6 +864,11 @@ const AdminOrders = () => {
                     </Select>
                   </FormControl>
                 )}
+                {selectedOrder.couponCode && (
+                  <Alert severity="info" icon={<Icon icon="mdi:ticket-percent-outline" />} sx={{ mb: 1.5 }}>
+                    Coupon <strong>{selectedOrder.couponCode}</strong>'s usage will be restored (freed for reuse).
+                  </Alert>
+                )}
                 <FormControlLabel
                   control={<Checkbox checked={cancelRestock} onChange={(e) => setCancelRestock(e.target.checked)} size="small" />}
                   label={<Typography variant="body2">Return items to inventory (restock)</Typography>}
@@ -789,8 +876,8 @@ const AdminOrders = () => {
               </DialogContent>
               <DialogActions sx={{ p: 2 }}>
                 <Button onClick={() => setCancelOpen(false)} disabled={actionBusy}>Keep Order</Button>
-                <Button variant="contained" color="error" onClick={handleCancelSubmit} disabled={actionBusy} startIcon={<Icon icon="mdi:close-circle-outline" />}>
-                  {impl.kind === "refund" ? "Cancel & Refund" : "Cancel Order"}
+                <Button variant="contained" color="error" onClick={handleCancelSubmit} disabled={actionBusy} startIcon={<Icon icon={isRecall ? "mdi:truck-alert-outline" : "mdi:close-circle-outline"} />}>
+                  {isRecall ? (impl.kind === "refund" ? "Recall & Refund" : "Cancel & Recall") : (impl.kind === "refund" ? "Cancel & Refund" : "Cancel Order")}
                 </Button>
               </DialogActions>
             </>

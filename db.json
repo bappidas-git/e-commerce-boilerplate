@@ -2214,7 +2214,11 @@
         }
       ],
       "deductionAmount": 0,
-      "restocked": true
+      "restocked": true,
+      "returnTrackingNumber": "RETN-SR-1029384",
+      "returnTrackingUrl": "https://shiprocket.co/tracking/RETN-SR-1029384",
+      "returnCarrier": "Shiprocket",
+      "pickupScheduledAt": "2026-01-21T11:30:00.000Z"
     },
     {
       "id": 2,
@@ -2241,6 +2245,10 @@
       "refundMethod": "original_payment",
       "deductionAmount": 0,
       "restocked": false,
+      "returnTrackingNumber": null,
+      "returnTrackingUrl": null,
+      "returnCarrier": null,
+      "pickupScheduledAt": null,
       "images": [],
       "notes": "",
       "statusHistory": [
@@ -2391,6 +2399,48 @@
       "createdAt": "2026-06-13T07:34:20.277Z",
       "updatedAt": "2026-06-13T07:34:20.277Z",
       "id": 6
+    }
+  ],
+  "refunds": [
+    {
+      "id": 1,
+      "refundNumber": "REF-20260122-7K2A",
+      "type": "return_refund",
+      "orderId": 1,
+      "orderNumber": "ORD-20250310-0001",
+      "returnId": 1,
+      "returnNumber": "RET-20260120-0001",
+      "paymentId": 1,
+      "amount": 10439,
+      "method": "original_payment",
+      "reason": "Return RET-20260120-0001",
+      "status": "completed",
+      "couponRestored": false,
+      "initiatedAt": "2026-01-22T14:30:00.000Z",
+      "settledAt": "2026-01-22T14:30:00.000Z",
+      "by": "Admin User",
+      "createdAt": "2026-01-22T14:30:00.000Z",
+      "updatedAt": "2026-01-22T14:30:00.000Z"
+    },
+    {
+      "id": 2,
+      "refundNumber": "REF-20260613-9QM4",
+      "type": "order_refund",
+      "orderId": 3,
+      "orderNumber": "ORD-20260310-0003",
+      "returnId": null,
+      "returnNumber": null,
+      "paymentId": 3,
+      "amount": 19818,
+      "method": "original_payment",
+      "reason": "Refunded from order",
+      "status": "completed",
+      "couponRestored": false,
+      "initiatedAt": "2026-06-13T06:13:05.674Z",
+      "settledAt": "2026-06-13T06:13:05.674Z",
+      "by": "Admin User",
+      "createdAt": "2026-06-13T06:13:05.674Z",
+      "updatedAt": "2026-06-13T06:13:05.674Z"
     }
   ],
   "shipping_methods": [

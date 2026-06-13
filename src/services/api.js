@@ -104,9 +104,12 @@ const currentAdminName = () => {
   }
 };
 
-const historyEvent = (action, note = "") => ({
+// `by` defaults to the signed-in admin; pass it explicitly (e.g. "Customer")
+// when a storefront action drives the same backend cascade an admin would,
+// so the timeline records who really initiated it.
+const historyEvent = (action, note = "", by = null) => ({
   at: new Date().toISOString(),
-  by: currentAdminName(),
+  by: by || currentAdminName(),
   action,
   ...(note ? { note } : {}),
 });
@@ -132,6 +135,8 @@ const appendPaymentRefund = async (payment, amount, reason) => {
     refundAmount: total,
     refundReason: reason || payment.refundReason || "",
     refunds: [...(payment.refunds || []), entry],
+    // Booking the money clears any "refund pending" stub left by initiation.
+    pendingRefund: null,
     updatedAt: entry.at,
   });
   return response.data;
@@ -168,24 +173,54 @@ const reflectReturnRefund = async (ret) => {
   const stamp = new Date().toISOString();
   const payable = Math.max(0, (Number(ret.refundAmount) || 0) - (Number(ret.deductionAmount) || 0));
   try {
+    const order = ret.orderId != null
+      ? (await api.get(`/orders/${ret.orderId}`).catch(() => null))?.data || null
+      : null;
+
+    // Book the payable onto the linked payment first, so the order's
+    // paymentStatus can mirror the REAL outcome: a partial return leaves the
+    // payment (and order) "partially_refunded", only a full settlement reads
+    // "refunded". (Previously the order was hard-stamped "refunded" even for a
+    // partial return — corrected here.)
+    const params = ret.orderId != null ? { orderId: ret.orderId } : { orderNumber: ret.orderNumber };
+    const payRes = await api.get("/payments", { params }).catch(() => ({ data: [] }));
+    const payment = Array.isArray(payRes.data) ? payRes.data[0] : payRes.data;
+    let newPaymentStatus = "refunded";
+    let paymentId = null;
+    if (payment && payment.id != null) {
+      paymentId = payment.id;
+      const updated = await appendPaymentRefund(payment, payable, ret.returnNumber ? `Return ${ret.returnNumber}` : "Return refund");
+      newPaymentStatus = updated.status === "refunded" ? "refunded" : "partially_refunded";
+    }
+
+    // A full return restores the coupon redemption (a partial one keeps it —
+    // the refund already reflects the net, post-coupon value of the items).
+    let couponRestored = false;
+    const events = [historyEvent(`Return refund processed (${ret.returnNumber || "return"})`, `₹${payable.toLocaleString("en-IN")} refunded`)];
+    if (order && order.couponCode && !order.couponRestored && isFullReturnOfOrder(order, ret)) {
+      couponRestored = await restoreCouponByCode(order.couponCode);
+      if (couponRestored) events.push(historyEvent("Coupon usage restored", `${order.couponCode} freed for reuse`));
+    }
+
     if (ret.orderId != null) {
-      const current = await api.get(`/orders/${ret.orderId}`).catch(() => null);
       await api.patch(`/orders/${ret.orderId}`, {
-        paymentStatus: "refunded",
+        paymentStatus: newPaymentStatus,
         fulfillmentStatus: "returned",
-        statusHistory: [
-          ...((current && current.data.statusHistory) || []),
-          historyEvent(`Return refund processed (${ret.returnNumber || "return"})`, `₹${payable} refunded`),
-        ],
+        ...(couponRestored ? { couponRestored: true } : {}),
+        statusHistory: [...((order && order.statusHistory) || []), ...events],
         updatedAt: stamp,
       });
     }
-    const params = ret.orderId != null ? { orderId: ret.orderId } : { orderNumber: ret.orderNumber };
-    const payRes = await api.get("/payments", { params });
-    const payment = Array.isArray(payRes.data) ? payRes.data[0] : payRes.data;
-    if (payment && payment.id != null) {
-      await appendPaymentRefund(payment, payable, ret.returnNumber ? `Return ${ret.returnNumber}` : "Return refund");
-    }
+
+    // First-class, settled refund ledger record linked to the return + order.
+    await createRefundRecord({
+      type: "return_refund",
+      orderId: ret.orderId ?? null, orderNumber: ret.orderNumber ?? null,
+      returnId: ret.id ?? null, returnNumber: ret.returnNumber ?? null,
+      paymentId, amount: payable, method: ret.refundMethod || "original_payment",
+      reason: ret.returnNumber ? `Return ${ret.returnNumber}` : "Return refund",
+      status: "completed", couponRestored,
+    });
   } catch (e) {
     console.error("Reflect return refund error:", e);
   }
@@ -274,6 +309,271 @@ const redeemCouponByCode = async (code) => {
   } catch (e) {
     console.error("Redeem coupon error:", e);
   }
+};
+
+// The inverse of redeemCouponByCode. When a coupon order is FULLY cancelled or
+// FULLY returned the redemption is given back: usedCount drops by one (floored
+// at 0), which frees a usage slot and can clear a "limit reached" state in
+// Admin → Coupons. Partial returns deliberately keep the redemption — the
+// coupon was validly used on the order — and instead refund the NET amount.
+// Returns true when a slot was actually restored. Best-effort — an unknown or
+// removed code must never fail the cancellation/return. Mock-only; the Laravel
+// branch decrements server-side inside the same transaction.
+const restoreCouponByCode = async (code) => {
+  const normalized = (code || "").trim();
+  if (!normalized) return false;
+  try {
+    const res = await api.get("/coupons", { params: { code: normalized } });
+    const coupon = Array.isArray(res.data) ? res.data[0] : res.data;
+    if (coupon && coupon.id != null && (Number(coupon.usedCount) || 0) > 0) {
+      await api.patch(`/coupons/${coupon.id}`, {
+        usedCount: Math.max(0, (Number(coupon.usedCount) || 0) - 1),
+        updatedAt: new Date().toISOString(),
+      });
+      return true;
+    }
+  } catch (e) {
+    console.error("Restore coupon error:", e);
+  }
+  return false;
+};
+
+// Does this return cover the whole order (every unit ordered)? Drives coupon
+// restoration and is intentionally simple: a single return whose summed
+// quantities meet or exceed the order's. Multiple partial returns that together
+// add up to "full" keep their redemption — documented behaviour.
+const isFullReturnOfOrder = (order, ret) => {
+  if (!order || !ret) return false;
+  const orderedQty = (order.items || []).reduce((s, it) => s + (Number(it.quantity) || 0), 0);
+  const returnedQty = (ret.items || []).reduce((s, it) => s + (Number(it.quantity) || 0), 0);
+  return orderedQty > 0 && returnedQty >= orderedQty;
+};
+
+// First-class refund ledger (the `refunds` collection). Every refund — from an
+// order cancellation, an order-level refund, a recall, or a processed return —
+// writes one record here, linked to the order (and the return / payment where
+// applicable) with amount, method, reason, status and timestamps. This is the
+// queryable surface Admin → Payments lists under "Refunds" and the audit trail
+// finance reconciles against; the order/payment remain the source of truth for
+// state, so a failed ledger write must never block the refund. Mock-only;
+// Laravel persists the record server-side on the same call.
+const createRefundRecord = async ({
+  type, orderId = null, orderNumber = null, returnId = null, returnNumber = null,
+  paymentId = null, amount, method = "original_payment", reason = "",
+  reference = null, status = "pending", couponRestored = false, by = null,
+} = {}) => {
+  try {
+    const now = new Date();
+    const ymd = now.toISOString().slice(0, 10).replace(/-/g, "");
+    const rand = Math.random().toString(36).slice(2, 6).toUpperCase();
+    const res = await api.post("/refunds", {
+      refundNumber: `REF-${ymd}-${rand}`,
+      type, orderId, orderNumber, returnId, returnNumber, paymentId,
+      amount: Number(amount) || 0, method, reason, reference, status, couponRestored,
+      initiatedAt: now.toISOString(),
+      settledAt: status === "completed" ? now.toISOString() : null,
+      by: by || currentAdminName(),
+      createdAt: now.toISOString(),
+      updatedAt: now.toISOString(),
+    });
+    return res.data;
+  } catch (e) {
+    console.error("Create refund record error:", e);
+    return null;
+  }
+};
+
+// Move an order's in-flight ledger record to a terminal state when the refund
+// settles (completed) or bounces (failed). Targets the newest pending record
+// for the order. Best-effort.
+const finalizeRefundRecord = async (orderId, status, { settledAmount = null } = {}) => {
+  if (orderId == null) return;
+  try {
+    const res = await api.get("/refunds", { params: { orderId, status: "pending" } });
+    const rows = Array.isArray(res.data) ? res.data : [];
+    if (rows.length === 0) return;
+    const rec = rows.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))[0];
+    const stamp = new Date().toISOString();
+    await api.patch(`/refunds/${rec.id}`, {
+      status,
+      ...(settledAmount != null ? { amount: Number(settledAmount) } : {}),
+      settledAt: status === "completed" ? stamp : null,
+      updatedAt: stamp,
+    });
+  } catch (e) {
+    console.error("Finalize refund record error:", e);
+  }
+};
+
+// Surface an in-flight refund on the linked payment so Admin → Payments shows
+// "Refund Pending" while the money is on its way back (gateways and bank/UPI
+// transfers settle days later). Does NOT book the money yet — refundAmount
+// stays put until completeOrderRefund settles it via appendPaymentRefund — so
+// the captured total is still counted as held. Only a payment actually holding
+// money can enter this state. Best-effort.
+const markPaymentRefundPending = async (orderId, { amount, method, reason } = {}) => {
+  if (orderId == null) return;
+  try {
+    const res = await api.get("/payments", { params: { orderId } });
+    const payment = Array.isArray(res.data) ? res.data[0] : res.data;
+    if (!payment || payment.id == null) return;
+    if (!["captured", "partially_refunded"].includes(payment.status)) return;
+    await api.patch(`/payments/${payment.id}`, {
+      status: "refund_pending",
+      pendingRefund: {
+        amount: Number(amount) || 0,
+        method: method || "original_payment",
+        reason: reason || "Refund",
+        initiatedAt: new Date().toISOString(),
+        by: currentAdminName(),
+      },
+      updatedAt: new Date().toISOString(),
+    });
+  } catch (e) {
+    console.error("Mark payment refund pending error:", e);
+  }
+};
+
+// Roll a payment back out of "refund pending" when the settlement fails, so the
+// admin can re-initiate. Returns to partially_refunded if earlier refunds were
+// booked, otherwise to captured. Best-effort.
+const revertPaymentRefundPending = async (orderId) => {
+  if (orderId == null) return;
+  try {
+    const res = await api.get("/payments", { params: { orderId } });
+    const payment = Array.isArray(res.data) ? res.data[0] : res.data;
+    if (!payment || payment.id == null || payment.status !== "refund_pending") return;
+    await api.patch(`/payments/${payment.id}`, {
+      status: (Number(payment.refundAmount) || 0) > 0 ? "partially_refunded" : "captured",
+      pendingRefund: null,
+      updatedAt: new Date().toISOString(),
+    });
+  } catch (e) {
+    console.error("Revert payment refund pending error:", e);
+  }
+};
+
+// A COD order cancelled before the cash was collected — or an online order
+// whose authorization was never captured — has no money to refund. Void the
+// linked payment so Admin → Payments stops showing it as awaiting collection.
+// Only ever voids a still-PENDING (uncollected/uncaptured) payment; captured
+// money is returned through the refund path, never voided. Best-effort.
+const voidPaymentForOrder = async (orderId, reason = "") => {
+  if (orderId == null) return;
+  try {
+    const res = await api.get("/payments", { params: { orderId } });
+    const payment = Array.isArray(res.data) ? res.data[0] : res.data;
+    if (!payment || payment.id == null || payment.status !== "pending") return;
+    await api.patch(`/payments/${payment.id}`, {
+      status: "voided",
+      refundReason: reason || payment.refundReason || "Order cancelled",
+      updatedAt: new Date().toISOString(),
+    });
+  } catch (e) {
+    console.error("Void payment error:", e);
+  }
+};
+
+// Shared cancellation cascade used by BOTH the admin (admin.cancelOrder) and the
+// storefront (orders.cancel), so a customer- and an admin-initiated
+// cancellation resolve to *identical* state across every module. Payment-method
+// and fulfillment aware:
+//   • refund { amount?, method } — money was captured (online paid, or COD
+//     collected): the order's refundStatus → "processing" with a pendingRefund
+//     stub, the linked payment flips to "refund_pending", a ledger record opens
+//     (pending), and it settles later via completeOrderRefund.
+//   • voidPayment: true — nothing to return (online never captured / COD not
+//     collected): the linked payment is voided.
+//   • recall { trackingNumber?, trackingUrl?, carrier? } — the parcel had
+//     already shipped, so it's recalled to the warehouse and the return-leg
+//     tracking is recorded on the order.
+//   • restock: true — items go back to inventory.
+//   • A coupon on the cancelled order has its redemption restored.
+// `actor` names who initiated it ("Customer" for the storefront path).
+const performCancel = async (id, opts = {}, actor = null) => {
+  const { reason = "", restock = false, refund = null, voidPayment = false, recall = null } = opts;
+  const current = (await api.get(`/orders/${id}`)).data;
+  const stamp = new Date().toISOString();
+  const events = [historyEvent("Order cancelled", reason, actor)];
+  const patch = {
+    fulfillmentStatus: "cancelled",
+    cancelReason: reason || null,
+    cancelledAt: stamp,
+    updatedAt: stamp,
+  };
+
+  if (recall) {
+    patch.recall = {
+      trackingNumber: recall.trackingNumber || null,
+      trackingUrl: recall.trackingUrl || null,
+      carrier: recall.carrier || null,
+      scheduledAt: stamp,
+      by: actor || currentAdminName(),
+    };
+    patch.shippingStatus = "recalled";
+    events.push(historyEvent(
+      "Shipment recall initiated",
+      recall.trackingNumber ? `Return tracking ${recall.trackingNumber}` : "Parcel recalled to warehouse",
+      actor
+    ));
+  }
+
+  let refundOpened = null;
+  if (refund) {
+    const amount = Number(refund.amount) ||
+      Math.max(0, (Number(current.total) || 0) - (Number(current.refundedAmount) || 0));
+    const method = refund.method || "original_payment";
+    patch.refundStatus = "processing";
+    patch.refundMethod = method;
+    patch.pendingRefund = {
+      amount, method,
+      reason: reason || "Order cancelled",
+      reference: refund.reference || null,
+      initiatedAt: stamp,
+      by: actor || currentAdminName(),
+    };
+    events.push(historyEvent(
+      "Refund initiated",
+      `₹${amount.toLocaleString("en-IN")} via ${method.replace(/_/g, " ")} — settlement pending`,
+      actor
+    ));
+    await markPaymentRefundPending(id, { amount, method, reason: reason || "Order cancelled" });
+    refundOpened = { amount, method };
+  } else if (voidPayment) {
+    patch.paymentStatus = "voided";
+    events.push(historyEvent("Payment voided", "No captured payment to refund", actor));
+    await voidPaymentForOrder(id, reason || "Order cancelled");
+  } else if ((current.paymentStatus || "") === "pending") {
+    // No money to return and the caller didn't flag a void, but the payment is
+    // still uncollected (e.g. a COD order cancelled/recalled before delivery) —
+    // void it so Admin → Payments doesn't leave it awaiting collection.
+    patch.paymentStatus = "voided";
+    events.push(historyEvent("Payment voided", "Cash on delivery not collected", actor));
+    await voidPaymentForOrder(id, reason || "Order cancelled");
+  }
+
+  let couponRestored = false;
+  if (current.couponCode && !current.couponRestored) {
+    couponRestored = await restoreCouponByCode(current.couponCode);
+    if (couponRestored) {
+      patch.couponRestored = true;
+      events.push(historyEvent("Coupon usage restored", `${current.couponCode} freed for reuse`, actor));
+    }
+  }
+
+  patch.statusHistory = [...(current.statusHistory || []), ...events];
+  const response = await api.patch(`/orders/${id}`, patch);
+  if (restock) await restockItems(current.items);
+  if (refundOpened) {
+    await createRefundRecord({
+      type: recall ? "recall_refund" : "order_cancellation",
+      orderId: current.id, orderNumber: current.orderNumber,
+      amount: refundOpened.amount, method: refundOpened.method,
+      reason: reason || "Order cancelled", status: "pending",
+      couponRestored, by: actor || currentAdminName(),
+    });
+  }
+  return response.data;
 };
 
 // =============================================================================
@@ -648,19 +948,34 @@ const apiService = {
       } catch (error) { console.error("Get order by number error:", error); throw error; }
     },
 
-    cancel: async (id) => {
+    // Customer-initiated cancellation. Allowed only before the parcel ships
+    // (the storefront only shows the button while the order is "processing");
+    // a shipped order must be recalled by the admin, a delivered one returned.
+    // Runs the SAME performCancel cascade the admin uses, with options derived
+    // from the order so every module stays in sync without admin intervention:
+    //   • prepaid & paid  → a full refund is initiated to the original method
+    //     (payment → refund_pending, ledger record opens) for the admin to
+    //     settle once the money lands;
+    //   • COD & not collected → the pending payment is voided (no money moved);
+    //   • a coupon is restored and the (unshipped) stock is returned to inventory.
+    // The optional `reason` defaults to a customer-cancellation note.
+    cancel: async (id, reason = "Cancelled by customer") => {
       try {
         if (IS_MOCK_API) {
-          // Cancellation is a fulfillment outcome — payment changes (refunds)
-          // stay with Admin. deriveOrderStatus maps this to "cancelled".
-          const response = await api.patch(`/orders/${id}`, {
-            fulfillmentStatus: "cancelled",
-            cancelledAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString(),
-          });
-          return response.data;
+          const current = (await api.get(`/orders/${id}`)).data;
+          const isOnline = current.paymentMethod && current.paymentMethod !== "cod";
+          const captured = ["paid", "partially_refunded"].includes(current.paymentStatus);
+          const opts = { reason, restock: true };
+          if (captured) {
+            opts.refund = { method: isOnline ? "original_payment" : "bank_transfer" };
+          } else if (isOnline) {
+            opts.voidPayment = true; // online authorization never captured
+          } else {
+            opts.voidPayment = true; // COD not yet collected — void the pending row
+          }
+          return await performCancel(id, opts, "Customer");
         }
-        const response = await api.post(`/orders/${id}/cancel`);
+        const response = await api.post(`/orders/${id}/cancel`, { reason });
         return extractData(response);
       } catch (error) { console.error("Cancel order error:", error); throw error; }
     },
@@ -1103,56 +1418,26 @@ const apiService = {
       return apiService.admin.updateOrder(id, { fulfillmentStatus: status, notes });
     },
 
-    // Admin-side cancellation (customer cancellations use orders.cancel).
-    // Payment-method aware: the second argument may be a bare reason string
-    // (back-compat) or an options object { reason, restock, refund, voidPayment }:
-    //   • refund: { amount?, method } — money was captured (online paid, or COD
-    //     collected); a refund is INITIATED (refundStatus → "processing", a
-    //     pendingRefund stub recorded) and settled later via completeOrderRefund,
-    //     mirroring how a real gateway processes refunds asynchronously.
-    //   • voidPayment: true — an online authorization that was never captured;
-    //     nothing to refund, so the payment is voided.
-    //   • neither — COD with no money collected: cancel only, no refund.
+    // Admin-side cancellation (customer cancellations use orders.cancel, which
+    // runs the same performCancel cascade). The second argument may be a bare
+    // reason string (back-compat) or an options object
+    // { reason, restock, refund, voidPayment, recall }:
+    //   • refund { amount?, method } — money was captured (online paid, or COD
+    //     collected): a refund is INITIATED (order refundStatus → "processing",
+    //     linked payment → "refund_pending", a pending ledger record opens) and
+    //     settled later via completeOrderRefund, mirroring an async gateway.
+    //   • voidPayment: true — nothing captured (COD not collected / online not
+    //     captured): the linked payment is voided.
+    //   • recall { trackingNumber?, trackingUrl?, carrier? } — the parcel had
+    //     already shipped, so it's recalled to the warehouse with return-leg
+    //     tracking recorded on the order.
     //   • restock: true — return the cancelled items to inventory.
+    //   • A coupon on the order has its redemption restored.
     cancelOrder: async (id, options = {}) => {
       try {
         const opts = typeof options === "string" ? { reason: options } : (options || {});
-        const { reason = "", restock = false, refund = null, voidPayment = false } = opts;
         if (IS_MOCK_API) {
-          const current = (await api.get(`/orders/${id}`)).data;
-          const stamp = new Date().toISOString();
-          const events = [historyEvent("Order cancelled", reason)];
-          const patch = {
-            fulfillmentStatus: "cancelled",
-            cancelReason: reason || null,
-            cancelledAt: stamp,
-            updatedAt: stamp,
-          };
-          if (refund) {
-            const amount = Number(refund.amount) ||
-              Math.max(0, (Number(current.total) || 0) - (Number(current.refundedAmount) || 0));
-            const method = refund.method || "original_payment";
-            patch.refundStatus = "processing";
-            patch.refundMethod = method;
-            patch.pendingRefund = {
-              amount, method,
-              reason: reason || "Order cancelled",
-              reference: refund.reference || null,
-              initiatedAt: stamp,
-              by: currentAdminName(),
-            };
-            events.push(historyEvent(
-              "Refund initiated",
-              `₹${amount.toLocaleString("en-IN")} via ${method.replace(/_/g, " ")} — settlement pending`
-            ));
-          } else if (voidPayment) {
-            patch.paymentStatus = "voided";
-            events.push(historyEvent("Payment voided", "No captured payment to refund"));
-          }
-          patch.statusHistory = [...(current.statusHistory || []), ...events];
-          const response = await api.patch(`/orders/${id}`, patch);
-          if (restock) await restockItems(current.items);
-          return response.data;
+          return await performCancel(id, opts, null);
         }
         const response = await api.post(`/admin/orders/${id}/cancel`, opts);
         return extractData(response);
@@ -1167,9 +1452,10 @@ const apiService = {
     // actually reached the customer. Storefront still shows the order as normal
     // (paymentStatus untouched) until settlement, with a "refund in progress" note.
 
-    // Step 1 — record the refund as in-flight. Does NOT touch the payment record
-    // or paymentStatus, so Admin → Payments doesn't show the money as already
-    // returned while it's still processing.
+    // Step 1 — record the refund as in-flight. The money is NOT booked yet (the
+    // payment's refundAmount is untouched, so it still counts as held), but the
+    // linked payment flips to "refund_pending" and a pending ledger record opens
+    // so Admin → Payments surfaces "Refund Pending" while it settles.
     initiateOrderRefund: async (id, { amount, method = "original_payment", reason = "", reference = null } = {}) => {
       try {
         if (IS_MOCK_API) {
@@ -1185,6 +1471,13 @@ const apiService = {
               historyEvent("Refund initiated", `₹${amt.toLocaleString("en-IN")} via ${method.replace(/_/g, " ")}${reference ? ` · ref ${reference}` : ""} — settlement pending`),
             ],
             updatedAt: stamp,
+          });
+          await markPaymentRefundPending(id, { amount: amt, method, reason: reason || "Refund" });
+          await createRefundRecord({
+            type: "order_refund",
+            orderId: current.id, orderNumber: current.orderNumber,
+            amount: amt, method, reason: reason || "Refund",
+            reference, status: "pending",
           });
           return response.data;
         }
@@ -1227,6 +1520,8 @@ const apiService = {
             ],
             updatedAt: stamp,
           });
+          // Settle the in-flight ledger record for this order.
+          await finalizeRefundRecord(id, "completed", { settledAmount: amt });
           return response.data;
         }
         const response = await api.post(`/admin/orders/${id}/refund/complete`, {});
@@ -1235,7 +1530,9 @@ const apiService = {
     },
 
     // A refund can bounce (closed card, wrong UPI). Flag it so the admin can
-    // re-initiate; leaves the money un-booked.
+    // re-initiate; leaves the money un-booked and rolls the payment back out of
+    // "refund pending" (to partially_refunded if earlier refunds settled, else
+    // captured), and marks the ledger record failed.
     failOrderRefund: async (id, note = "") => {
       try {
         if (IS_MOCK_API) {
@@ -1249,6 +1546,8 @@ const apiService = {
             ],
             updatedAt: stamp,
           });
+          await revertPaymentRefundPending(id);
+          await finalizeRefundRecord(id, "failed");
           return response.data;
         }
         const response = await api.post(`/admin/orders/${id}/refund/fail`, { note });
@@ -1295,6 +1594,13 @@ const apiService = {
             refundMethod: data.refundMethod || "original_payment",
             deductionAmount: 0,
             restocked: false,
+            // Return-leg shipping (the parcel coming BACK to the warehouse) is
+            // recorded manually by the admin — mirrors the outbound tracking
+            // fields and stays consistent with the "no shipping automation" rule.
+            returnTrackingNumber: null,
+            returnTrackingUrl: null,
+            returnCarrier: null,
+            pickupScheduledAt: null,
             images: [],
             notes: "",
             ...data,
@@ -1341,6 +1647,34 @@ const apiService = {
       } catch (error) { console.error("Admin update return error:", error); throw error; }
     },
 
+    // Record the return-leg shipment the customer sends back (or a courier
+    // pickup the admin schedules) — the manual tracking equivalent of the
+    // outbound shipment. Moves an approved return to "pickup_scheduled". No
+    // courier automation: the admin types the tracking number + URL.
+    scheduleReturnPickup: async (id, { trackingNumber = "", trackingUrl = "", carrier = "", pickupScheduledAt = null } = {}) => {
+      const note = [trackingNumber ? `Return tracking ${trackingNumber}` : "", pickupScheduledAt ? `pickup ${new Date(pickupScheduledAt).toLocaleDateString("en-IN")}` : ""].filter(Boolean).join(" · ");
+      return apiService.admin.updateReturn(
+        id,
+        {
+          status: "pickup_scheduled",
+          returnTrackingNumber: trackingNumber || null,
+          returnTrackingUrl: trackingUrl || null,
+          returnCarrier: carrier || null,
+          pickupScheduledAt: pickupScheduledAt || new Date().toISOString(),
+        },
+        { event: { action: "Return pickup scheduled", note } }
+      );
+    },
+
+    // The returned parcel is on its way back to the warehouse.
+    markReturnInTransit: async (id, trackingNumber = "") => {
+      return apiService.admin.updateReturn(
+        id,
+        { status: "in_transit" },
+        { event: { action: "Return in transit", note: trackingNumber ? `Tracking ${trackingNumber}` : "" } }
+      );
+    },
+
     // --- Payments ---
     getPayments: async (params = {}) => {
       try {
@@ -1362,6 +1696,21 @@ const apiService = {
         const response = await api.get(`/admin/payments/${id}`);
         return extractData(response);
       } catch (error) { console.error("Admin get payment error:", error); throw error; }
+    },
+
+    // --- Refund ledger (first-class refund records, linked to order/return) ---
+    // The queryable record of every refund — cancellations, order/recall
+    // refunds, return refunds and direct payment refunds — surfaced under
+    // Admin → Payments · Refunds and reconcilable against the payments.
+    getRefunds: async (params = {}) => {
+      try {
+        if (IS_MOCK_API) {
+          const response = await api.get("/refunds", { params });
+          return response.data;
+        }
+        const response = await api.get("/admin/refunds", { params });
+        return extractData(response);
+      } catch (error) { console.error("Admin get refunds error:", error); return []; }
     },
 
     // Issue a (possibly partial) refund. Each call appends to the payment's
@@ -1386,6 +1735,13 @@ const apiService = {
             `Refund issued (₹${Number(amount).toLocaleString("en-IN")})`,
             reason
           );
+          // Record it in the refund ledger (Admin → Payments · Refunds).
+          await createRefundRecord({
+            type: "payment_refund",
+            orderId: payment.orderId ?? null, orderNumber: payment.orderNumber ?? null,
+            paymentId: payment.id, amount: Number(amount), method: "original_payment",
+            reason: reason || "Refund", status: "completed",
+          });
           return updated;
         }
         const response = await api.post(`/admin/payments/${paymentId}/refund`, { amount, reason });

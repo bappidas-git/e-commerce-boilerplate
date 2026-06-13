@@ -137,7 +137,14 @@ const AdminCoupons = () => {
                 <TableCell>Code</TableCell>
                 <TableCell>Type & Value</TableCell>
                 <TableCell>Min Order</TableCell>
-                <TableCell>Usage</TableCell>
+                <TableCell>
+                  <Box sx={{ display: "inline-flex", alignItems: "center", gap: 0.5 }}>
+                    Usage
+                    <Tooltip title="Net redemptions — automatically restored when an order is fully cancelled or returned.">
+                      <Box component="span" sx={{ display: "inline-flex", color: "text.secondary" }}><Icon icon="mdi:information-outline" width={15} /></Box>
+                    </Tooltip>
+                  </Box>
+                </TableCell>
                 <TableCell>Expires</TableCell>
                 <TableCell>Status</TableCell>
                 <TableCell align="right">Actions</TableCell>

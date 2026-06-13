@@ -219,11 +219,13 @@ async function sectionOrders(browser) {
   check("fresh deliveredAt opens the Return / Exchange window", await card.locator('button:has-text("Return / Exchange")').isVisible());
   await cctx.close();
 
-  // -- cancel with reason --
+  // -- cancel with reason (now a MUI dialog, not a SweetAlert prompt) --
   dialog = await openOrderDialog(page, oCancel.orderNumber);
   await dialog.getByRole("button", { name: "Cancel Order" }).click();
-  await swalInputConfirm(page, "Item out of stock");
-  await sleep(500);
+  const cancelDlg = page.getByRole("dialog").last();
+  await cancelDlg.getByLabel("Cancellation reason").fill("Item out of stock");
+  await cancelDlg.getByRole("button", { name: /^Cancel Order$/ }).click();
+  await sleep(800);
   db = await getJson(`/orders/${oCancel.id}`);
   check("cancel persists status + reason + cancelledAt", db.fulfillmentStatus === "cancelled" && db.cancelReason === "Item out of stock" && !!db.cancelledAt);
   check("timeline logs the cancellation with the reason", (db.statusHistory || []).some((h) => h.action === "Order cancelled" && h.note === "Item out of stock"));
@@ -348,9 +350,11 @@ async function sectionReturns(browser, deliveredOrder) {
     JSON.stringify({ total: payAfter.refundAmount, n: (payAfter.refunds || []).length }));
   check("payment is partially_refunded (payable < captured total)", payAfter.status === "partially_refunded", payAfter.status);
 
-  // cascade: order closes as refunded/returned
+  // cascade: order closes as returned, paymentStatus MIRRORS the payment —
+  // partially_refunded here (the ₹1698 payable is less than the ₹2221 captured,
+  // since shipping/tax and the deduction are retained).
   const orderAfter = await getJson(`/orders/${deliveredOrder.id}`);
-  check("order cascades to refunded + returned", orderAfter.paymentStatus === "refunded" && orderAfter.fulfillmentStatus === "returned");
+  check("order cascades to partially_refunded + returned", orderAfter.paymentStatus === "partially_refunded" && orderAfter.fulfillmentStatus === "returned", `${orderAfter.paymentStatus}/${orderAfter.fulfillmentStatus}`);
 
   // restock: product 5 stock (and variant v2) grew by the returned qty (2)
   const productAfter = await getJson("/products/5");
