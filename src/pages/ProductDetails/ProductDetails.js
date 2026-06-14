@@ -5,6 +5,7 @@ import { useTheme } from "../../context/ThemeContext";
 import { useCart } from "../../hooks/useCart";
 import { useWishlist } from "../../context/WishlistContext";
 import apiService from "../../services/api";
+import { categoryParam } from "../../utils/categories";
 import {
   formatCurrency,
   getProductMinPrice,
@@ -361,7 +362,7 @@ const ProductDetails = () => {
           {category ? (
             <>
               <Link
-                to={`/products?category=${product.categoryId}`}
+                to={`/products?category=${categoryParam(category)}`}
                 className={styles.breadcrumbLink}
               >
                 {category.name}

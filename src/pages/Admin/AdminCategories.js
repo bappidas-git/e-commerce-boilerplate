@@ -32,6 +32,7 @@ const slugify = (name) =>
 
 const emptyForm = {
   name: "", slug: "", description: "", image: "", parentId: null, isActive: true, sortOrder: 0,
+  showInMainMenu: false, menuOrder: 0,
 };
 
 const AdminCategories = () => {
@@ -74,8 +75,33 @@ const AdminCategories = () => {
       parentId: cat.parentId ?? null,
       isActive: cat.isActive !== false,
       sortOrder: cat.sortOrder || 0,
+      showInMainMenu: cat.showInMainMenu === true,
+      menuOrder: cat.menuOrder || 0,
     });
     setDialogOpen(true);
+  };
+
+  // Next free menu position — used when a category is added to the menu without
+  // an explicit order, so it lands at the end rather than colliding at 0.
+  const nextMenuOrder = () =>
+    categories.reduce((m, c) => Math.max(m, c.menuOrder || 0), 0) + 1;
+
+  // Inline quick-toggle for a category's main-menu visibility (no dialog needed).
+  // Mirrors the storefront source of truth: the top menu renders exactly the
+  // categories flagged here, ordered by menuOrder.
+  const handleToggleMenu = async (cat) => {
+    const showInMainMenu = !(cat.showInMainMenu === true);
+    const menuOrder = showInMainMenu ? (cat.menuOrder || nextMenuOrder()) : (cat.menuOrder || 0);
+    // Optimistic update so the switch responds instantly.
+    setCategories((prev) =>
+      prev.map((c) => (c.id === cat.id ? { ...c, showInMainMenu, menuOrder } : c))
+    );
+    try {
+      await apiService.admin.updateCategory(cat.id, { ...cat, showInMainMenu, menuOrder });
+    } catch (e) {
+      Swal.fire({ icon: "error", title: "Couldn't update menu", text: e.message, toast: true, position: "bottom-end", showConfirmButton: false, timer: 3000 });
+      loadCategories(); // roll back to server truth
+    }
   };
 
   const handleNameChange = (e) => {
@@ -109,6 +135,8 @@ const AdminCategories = () => {
       slug: form.slug.trim() || slugify(form.name),
       sortOrder: Number(form.sortOrder) || 0,
       parentId,
+      showInMainMenu: !!form.showInMainMenu,
+      menuOrder: Number(form.menuOrder) || 0,
     };
 
     try {
@@ -209,6 +237,7 @@ const AdminCategories = () => {
                 <TableCell>Slug</TableCell>
                 <TableCell>Parent</TableCell>
                 <TableCell>Sort Order</TableCell>
+                <TableCell>Main Menu</TableCell>
                 <TableCell>Status</TableCell>
                 <TableCell align="right">Actions</TableCell>
               </TableRow>
@@ -216,10 +245,10 @@ const AdminCategories = () => {
             <TableBody>
               {loading ? (
                 [...Array(5)].map((_, i) => (
-                  <TableRow key={i}><TableCell colSpan={6}><Skeleton height={52} /></TableCell></TableRow>
+                  <TableRow key={i}><TableCell colSpan={7}><Skeleton height={52} /></TableCell></TableRow>
                 ))
               ) : filtered.length === 0 ? (
-                <TableRow><TableCell colSpan={6} align="center" sx={{ py: 6 }}><Typography color="text.secondary">No categories found</Typography></TableCell></TableRow>
+                <TableRow><TableCell colSpan={7} align="center" sx={{ py: 6 }}><Typography color="text.secondary">No categories found</Typography></TableCell></TableRow>
               ) : (
                 filtered.map((cat) => (
                   <TableRow key={cat.id} hover>
@@ -243,6 +272,21 @@ const AdminCategories = () => {
                       )}
                     </TableCell>
                     <TableCell>{cat.sortOrder || 0}</TableCell>
+                    <TableCell>
+                      <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                        <Tooltip title={cat.showInMainMenu === true ? "Showing in main menu — click to hide" : "Hidden from main menu — click to show"}>
+                          <Switch
+                            size="small"
+                            checked={cat.showInMainMenu === true}
+                            onChange={() => handleToggleMenu(cat)}
+                            inputProps={{ "aria-label": `Show ${cat.name} in main menu` }}
+                          />
+                        </Tooltip>
+                        {cat.showInMainMenu === true && (
+                          <Chip label={`#${cat.menuOrder || 0}`} size="small" variant="outlined" />
+                        )}
+                      </Box>
+                    </TableCell>
                     <TableCell>
                       <Chip label={cat.isActive !== false ? "Active" : "Inactive"} size="small" color={cat.isActive !== false ? "success" : "default"} />
                     </TableCell>
@@ -278,8 +322,44 @@ const AdminCategories = () => {
                 <MenuItem key={c.id} value={c.id}>{c.name}</MenuItem>
               ))}
             </TextField>
-            <TextField label="Sort Order" type="number" value={form.sortOrder} onChange={(e) => setForm((f) => ({ ...f, sortOrder: parseInt(e.target.value, 10) || 0 }))} size="small" sx={{ width: 140 }} />
+            <TextField label="Sort Order" type="number" value={form.sortOrder} onChange={(e) => setForm((f) => ({ ...f, sortOrder: parseInt(e.target.value, 10) || 0 }))} size="small" sx={{ width: 140 }} helperText="Order within its parent / the catalogue" />
             <FormControlLabel control={<Switch checked={form.isActive} onChange={(e) => setForm((f) => ({ ...f, isActive: e.target.checked }))} />} label="Active" />
+
+            {/* Main-menu controls — the storefront top menu renders exactly the
+                categories flagged here, ordered by Menu Order. */}
+            <Box sx={{ mt: 1, pt: 2, borderTop: "1px solid", borderColor: "divider" }}>
+              <Typography variant="subtitle2" sx={{ mb: 0.5 }}>Main Menu</Typography>
+              <Typography variant="caption" color="text.secondary" sx={{ display: "block", mb: 1 }}>
+                Controls whether this category appears in the storefront's top navigation menu.
+              </Typography>
+              <FormControlLabel
+                control={
+                  <Switch
+                    checked={form.showInMainMenu}
+                    onChange={(e) =>
+                      setForm((f) => ({
+                        ...f,
+                        showInMainMenu: e.target.checked,
+                        // Default a freshly-added item to the end of the menu.
+                        menuOrder: e.target.checked && !f.menuOrder ? nextMenuOrder() : f.menuOrder,
+                      }))
+                    }
+                  />
+                }
+                label="Show in main menu"
+              />
+              {form.showInMainMenu && (
+                <TextField
+                  label="Menu Order"
+                  type="number"
+                  value={form.menuOrder}
+                  onChange={(e) => setForm((f) => ({ ...f, menuOrder: parseInt(e.target.value, 10) || 0 }))}
+                  size="small"
+                  sx={{ width: 140, display: "block", mt: 1 }}
+                  helperText="Lower numbers appear first"
+                />
+              )}
+            </Box>
           </Box>
         </DialogContent>
         <DialogActions sx={{ p: 2, gap: 1 }}>

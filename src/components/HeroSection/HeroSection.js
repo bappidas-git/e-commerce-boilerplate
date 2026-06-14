@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { useTheme } from "../../context/ThemeContext";
 import apiService from "../../services/api";
+import { categoryParam } from "../../utils/categories";
 import styles from "./HeroSection.module.css";
 
 const defaultBanners = [
@@ -133,8 +134,8 @@ const HeroSection = () => {
   );
 
   const handleCategoryClick = useCallback(
-    (slug) => {
-      navigate(`/products?category=${slug}`);
+    (category) => {
+      navigate(`/products?category=${categoryParam(category)}`);
     },
     [navigate]
   );
@@ -378,7 +379,7 @@ const HeroSection = () => {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.55 + index * 0.06 }}
                 whileHover={{ y: -4 }}
-                onClick={() => handleCategoryClick(category.slug)}
+                onClick={() => handleCategoryClick(category)}
               >
                 <div
                   className={styles.categoryIcon}

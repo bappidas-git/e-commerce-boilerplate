@@ -6,6 +6,12 @@ import { useCart } from "../../hooks/useCart";
 import { useWishlist } from "../../context/WishlistContext";
 import apiService from "../../services/api";
 import {
+  categoryParam,
+  resolveCategory,
+  getCategoryScopeIds,
+  orderCategoriesHierarchically,
+} from "../../utils/categories";
+import {
   formatCurrency,
   getProductMinPrice,
   truncateText,
@@ -263,23 +269,52 @@ const Products = () => {
     fetchCatalog();
   }, [fetchCatalog]);
 
-  // Category links arrive as either an id (Home cards / header) or a slug
-  // (hero category bar). Once categories load, normalize the selection to slugs
-  // so the URL, sidebar checkboxes, toggle and breadcrumb all stay consistent.
+  // ---- Keep filter state in sync with the URL (the URL is the source of truth) ----
+  // Re-derive every URL-backed filter whenever the query string (or the loaded
+  // categories) changes. This fires not only on first mount / a deep link, but
+  // ALSO when a header, main-menu, sidebar, homepage or breadcrumb link is
+  // clicked while we are already on this page: React Router keeps <Products>
+  // mounted on a query-only change, so without this the listing would never
+  // react to the new category (the long-standing "URL changes but nothing
+  // re-renders / the checkbox stays stuck" bug). Category tokens are normalized
+  // to their canonical slug, and a legacy numeric-id deep link (?category=3) is
+  // rewritten to the slug form in place. Every setter is guarded against its
+  // current value, so re-applying a value we just pushed to the URL can't loop.
   useEffect(() => {
-    if (categories.length === 0 || selectedCategories.length === 0) return;
-    const normalized = selectedCategories.map((token) => {
-      const cat = categories.find(
-        (c) => c.slug === token || String(c.id) === String(token)
-      );
-      return cat ? cat.slug : token;
-    });
-    if (normalized.join(",") !== selectedCategories.join(",")) {
-      setSelectedCategories(normalized);
-      syncUrlParams({ category: normalized });
+    const tokens = urlCategory ? urlCategory.split(",").filter(Boolean) : [];
+    const normalized = categories.length
+      ? tokens.map((t) => {
+          const cat = resolveCategory(t, categories);
+          return cat ? cat.slug : t;
+        })
+      : tokens;
+
+    setSelectedCategories((prev) =>
+      prev.join(",") === normalized.join(",") ? prev : normalized
+    );
+    // Canonicalize a legacy ?category=<id> link to its slug form in the URL.
+    if (categories.length && normalized.join(",") !== tokens.join(",")) {
+      syncUrlParams({
+        category: normalized,
+        search: urlSearch,
+        sort: urlSort,
+        page: urlPage,
+        per_page: PER_PAGE_OPTIONS.includes(urlPerPage) ? urlPerPage : 12,
+        min_price: urlMinPrice,
+        max_price: urlMaxPrice,
+      });
     }
+
+    setMinPrice((prev) => (prev === urlMinPrice ? prev : urlMinPrice));
+    setMaxPrice((prev) => (prev === urlMaxPrice ? prev : urlMaxPrice));
+    setSortBy((prev) => (prev === urlSort ? prev : urlSort));
+    setCurrentPage((prev) => (prev === urlPage ? prev : urlPage));
+    setPerPage((prev) => {
+      const next = PER_PAGE_OPTIONS.includes(urlPerPage) ? urlPerPage : 12;
+      return prev === next ? prev : next;
+    });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [categories]);
+  }, [urlCategory, urlSearch, urlSort, urlPage, urlPerPage, urlMinPrice, urlMaxPrice, categories]);
 
   // ---- Sync URL params when filters change ----
   // NOTE: any param mutated in the same handler MUST be passed as an override —
@@ -325,15 +360,34 @@ const Products = () => {
     return Array.from(brands).sort();
   }, [allProducts]);
 
-  // ---- Derived: product count per category id (computed once per dataset) ----
+  // ---- Derived: product count per category id ----
+  // Counts honour the parent-includes-children rule: a category's count is the
+  // number of products in that category PLUS all of its descendants — i.e. the
+  // exact result set you get by selecting it. (A parent therefore shows an
+  // aggregate that overlaps its children's counts, which is the standard,
+  // expected behaviour.)
   const categoryCounts = useMemo(() => {
-    const counts = new Map();
+    const direct = new Map();
     allProducts.forEach((p) => {
       const key = String(p.categoryId);
-      counts.set(key, (counts.get(key) || 0) + 1);
+      direct.set(key, (direct.get(key) || 0) + 1);
+    });
+    const counts = new Map();
+    categories.forEach((cat) => {
+      let total = 0;
+      getCategoryScopeIds(cat.id, categories).forEach((id) => {
+        total += direct.get(String(id)) || 0;
+      });
+      counts.set(String(cat.id), total);
     });
     return counts;
-  }, [allProducts]);
+  }, [allProducts, categories]);
+
+  // ---- Derived: categories ordered for the filter list (parents → children) ----
+  const orderedCategories = useMemo(
+    () => orderCategoriesHierarchically(categories),
+    [categories]
+  );
 
   // ---- Filtering + Sorting (client-side) ----
   const filteredProducts = useMemo(() => {
@@ -353,21 +407,22 @@ const Products = () => {
     }
 
     // Categories — products carry a numeric `categoryId`; the selected tokens
-    // may be ids or slugs (different entry points pass different things), so
-    // resolve each token to a category id via the loaded categories and match
-    // on that.
+    // are canonical slugs (legacy ids still resolve). Each selected category is
+    // expanded to its own id PLUS all descendant ids, so selecting a PARENT
+    // includes its children's products (parent-includes-children rule): picking
+    // "Electronics" returns Laptops/Audio/Smartphones items too, and picking
+    // "Women's Ethnic Wear" — which has no products of its own — returns its
+    // Sarees/Kurtas items. Picking a leaf category returns just that category.
     if (selectedCategories.length > 0) {
-      const selectedCategoryIds = selectedCategories
-        .map((token) => {
-          const cat = categories.find(
-            (c) => c.slug === token || String(c.id) === String(token)
-          );
-          return cat ? String(cat.id) : null;
-        })
-        .filter(Boolean);
-      result = result.filter((p) =>
-        selectedCategoryIds.includes(String(p.categoryId))
-      );
+      const wantedIds = new Set();
+      selectedCategories.forEach((token) => {
+        const cat = resolveCategory(token, categories);
+        if (!cat) return;
+        getCategoryScopeIds(cat.id, categories).forEach((id) => wantedIds.add(id));
+      });
+      if (wantedIds.size > 0) {
+        result = result.filter((p) => wantedIds.has(String(p.categoryId)));
+      }
     }
 
     // Price range
@@ -696,14 +751,18 @@ const Products = () => {
       <div className={styles.filterSection}>
         <h4 className={styles.filterTitle}>Categories</h4>
         <div className={styles.filterList}>
-          {categories.map((cat) => (
-            <label key={cat.id || cat.slug} className={styles.checkboxLabel}>
+          {orderedCategories.ordered.map((cat) => (
+            <label
+              key={cat.id || cat.slug}
+              className={styles.checkboxLabel}
+              style={orderedCategories.depthOf(cat.id) ? { paddingLeft: orderedCategories.depthOf(cat.id) * 16 } : undefined}
+            >
               <input
                 type="checkbox"
                 checked={selectedCategories.some(
                   (t) => t === cat.slug || String(t) === String(cat.id)
                 )}
-                onChange={() => handleCategoryToggle(cat.slug)}
+                onChange={() => handleCategoryToggle(categoryParam(cat))}
                 className={styles.checkbox}
               />
               <span className={styles.checkboxText}>{cat.name}</span>

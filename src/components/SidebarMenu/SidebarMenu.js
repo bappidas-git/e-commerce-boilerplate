@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useTheme } from "../../context/ThemeContext";
 import { useAuth } from "../../hooks/useAuth";
 import apiService from "../../services/api";
+import { categoryParam, orderCategoriesHierarchically } from "../../utils/categories";
 import { APP_NAME } from "../../utils/constants";
 import styles from "./SidebarMenu.module.css";
 
@@ -80,6 +81,10 @@ const SidebarMenu = ({ open, onClose, onOpenAuth }) => {
   };
 
   const themeAttr = isDarkMode ? "dark" : "light";
+
+  // Full category list ordered hierarchically (parents → indented children),
+  // matching the desktop "All Categories" dropdown — same single source of truth.
+  const { ordered: orderedCategories, depthOf } = orderCategoriesHierarchically(categories);
 
   const backdropVariants = {
     hidden: { opacity: 0 },
@@ -301,19 +306,21 @@ const SidebarMenu = ({ open, onClose, onOpenAuth }) => {
                           No categories found
                         </div>
                       ) : (
-                        categories.map((cat) => (
-                          <button
-                            key={cat.id || cat._id || cat.slug}
-                            className={styles.subMenuItem}
-                            onClick={() =>
-                              handleNavigate(
-                                `/products?category=${cat.slug || cat.id || cat._id}`
-                              )
-                            }
-                          >
-                            {cat.name || cat.title}
-                          </button>
-                        ))
+                        orderedCategories.map((cat) => {
+                          const depth = depthOf(cat.id);
+                          return (
+                            <button
+                              key={cat.id || cat._id || cat.slug}
+                              className={styles.subMenuItem}
+                              style={depth ? { paddingLeft: 32 + depth * 14 } : undefined}
+                              onClick={() =>
+                                handleNavigate(`/products?category=${categoryParam(cat)}`)
+                              }
+                            >
+                              {cat.name || cat.title}
+                            </button>
+                          );
+                        })
                       )}
 
                       <button

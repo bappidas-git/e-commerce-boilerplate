@@ -6,6 +6,7 @@ import { useTheme } from "../../context/ThemeContext";
 import { useCart } from "../../hooks/useCart";
 import { useWishlist } from "../../context/WishlistContext";
 import apiService from "../../services/api";
+import { categoryParam } from "../../utils/categories";
 import HeroSection from "../../components/HeroSection/HeroSection";
 import { APP_NAME, WHY_CHOOSE_US } from "../../utils/constants";
 import {
@@ -455,7 +456,7 @@ const Home = () => {
                     whileHover={{ y: -4 }}
                   >
                     <Link
-                      to={`/products?category=${cat.id}`}
+                      to={`/products?category=${categoryParam(cat)}`}
                       className={styles.categoryCard}
                     >
                       {cat.image && (
