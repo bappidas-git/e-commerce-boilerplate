@@ -1568,6 +1568,40 @@
       "metaDescription": "Buy 500-piece building blocks set with storage box. Safe, non-toxic, compatible with major brands.",
       "createdAt": "2025-02-22T00:00:00.000Z",
       "updatedAt": "2026-06-12T06:57:43.733Z"
+    },
+    {
+      "name": "Test",
+      "slug": "test",
+      "sku": "TEST-123",
+      "shortDescription": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. ",
+      "description": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. In interdum ligula sed ex elementum commodo. Ut ultricies ullamcorper facilisis. Nam non vulputate tellus, at ultrices magna. Nam fringilla ultrices justo, eu placerat lorem tempor sed. Suspendisse potenti. ",
+      "categoryId": 1,
+      "brand": "Google",
+      "images": [
+        "https://placehold.co/600x400/1a1a2e/FFFFFF?text=Test+Product"
+      ],
+      "price": 1000,
+      "comparePrice": 1500,
+      "costPrice": 700,
+      "stock": 100,
+      "lowStockThreshold": 10,
+      "weight": 0.3,
+      "dimensions": {
+        "length": 10,
+        "width": 5,
+        "height": 3
+      },
+      "variants": [],
+      "tags": [],
+      "featured": false,
+      "trending": false,
+      "hot": false,
+      "isActive": true,
+      "metaTitle": "",
+      "metaDescription": "",
+      "createdAt": "2026-06-14T04:28:48.416Z",
+      "updatedAt": "2026-06-14T04:28:48.416Z",
+      "id": 21
     }
   ],
   "cart": [],
