@@ -1,0 +1,71 @@
+.block {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sf-space-1);
+}
+
+.row {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: var(--sf-space-2);
+}
+
+.price {
+  color: var(--sf-color-price);
+  font-weight: var(--sf-font-bold);
+  letter-spacing: -0.01em;
+}
+
+.compare {
+  color: var(--sf-color-compare);
+  text-decoration: line-through;
+  font-weight: var(--sf-font-normal);
+}
+
+.discount {
+  color: var(--sf-color-discount);
+  font-weight: var(--sf-font-semibold);
+}
+
+.savings {
+  color: var(--sf-color-discount);
+  font-weight: var(--sf-font-medium);
+  font-size: var(--sf-text-sm);
+}
+
+.taxNote {
+  color: var(--sf-color-text-muted);
+  font-size: var(--sf-text-xs);
+}
+
+/* ---- sizes ---- */
+.lg .price {
+  font-size: var(--sf-text-3xl);
+}
+.lg .compare {
+  font-size: var(--sf-text-lg);
+}
+.lg .discount {
+  font-size: var(--sf-text-md);
+}
+
+.md .price {
+  font-size: var(--sf-text-xl);
+}
+.md .compare {
+  font-size: var(--sf-text-base);
+}
+.md .discount {
+  font-size: var(--sf-text-sm);
+}
+
+.sm .price {
+  font-size: var(--sf-text-md);
+}
+.sm .compare {
+  font-size: var(--sf-text-sm);
+}
+.sm .discount {
+  font-size: var(--sf-text-xs);
+}

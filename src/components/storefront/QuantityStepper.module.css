@@ -1,0 +1,59 @@
+.stepper {
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid var(--sf-color-border-strong);
+  border-radius: var(--sf-radius-pill);
+  background: var(--sf-color-surface);
+  overflow: hidden;
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: var(--sf-tap-target);
+  min-height: var(--sf-tap-target);
+  border: none;
+  background: transparent;
+  color: var(--sf-color-text);
+  cursor: pointer;
+  transition: background var(--sf-transition-fast), color var(--sf-transition-fast);
+}
+
+.btn:hover:not(:disabled) {
+  background: var(--sf-color-primary-soft);
+  color: var(--sf-color-primary);
+}
+
+.btn:active:not(:disabled) {
+  transform: scale(0.92);
+}
+
+.btn:focus-visible {
+  outline: none;
+  box-shadow: var(--sf-shadow-focus);
+}
+
+.btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.value {
+  min-width: 40px;
+  text-align: center;
+  font-weight: var(--sf-font-semibold);
+  font-size: var(--sf-text-base);
+  color: var(--sf-color-text);
+  user-select: none;
+}
+
+/* small variant for dense surfaces (cart lines, bundles) */
+.sm .btn {
+  min-width: 32px;
+  min-height: 32px;
+}
+.sm .value {
+  min-width: 32px;
+  font-size: var(--sf-text-sm);
+}

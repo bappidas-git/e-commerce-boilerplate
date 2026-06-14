@@ -1,0 +1,184 @@
+/* =============================================================================
+ * STOREFRONT DESIGN TOKENS  —  edit this ONE file to re-skin a client storefront
+ * =============================================================================
+ *
+ * Every shared storefront component (and, increasingly, every storefront page)
+ * reads its colours, spacing, radius, shadows and type scale from the CSS custom
+ * properties defined here — never from hardcoded hex. To launch a new client in a
+ * new business domain you change values in THIS file (and optionally
+ * `colors.js` for the MUI layer); you do not edit component code.
+ *
+ * HOW THEMING WORKS
+ *   • Light mode  → the `:root` block below.
+ *   • Dark mode   → the `body.dark` block (ThemeContext toggles `body.dark`).
+ *   • Structural tokens (spacing/radius/shadows/type) are mode-agnostic and
+ *     declared once in `:root`.
+ *
+ * RELATIONSHIP TO colors.js
+ *   `src/theme/colors.js` holds the same brand palette for the MUI theme (admin
+ *   + the few MUI-based storefront bits). Keep the brand hexes here in sync with
+ *   colors.js. The storefront CSS Modules consume the tokens below; MUI consumes
+ *   colors.js. Documented in STOREFRONT_UX_GUIDELINES.md.
+ *
+ * NB: This file styles the STOREFRONT only. The admin panel has its own palette
+ * and is intentionally untouched by changes here.
+ * ========================================================================== */
+
+:root {
+  /* ---- Brand ------------------------------------------------------------- */
+  --sf-color-primary: #667eea;
+  --sf-color-primary-dark: #4c5ed0;
+  --sf-color-primary-light: #8b9af3;
+  --sf-color-primary-contrast: #ffffff;
+  --sf-color-primary-soft: rgba(102, 126, 234, 0.10); /* tinted fills/hovers */
+  --sf-color-secondary: #f093fb;
+  --sf-color-accent: #ec4899;
+  --sf-gradient-primary: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  --sf-gradient-primary-hover: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
+
+  /* ---- Surfaces & text -------------------------------------------------- */
+  --sf-color-bg: #f5f7fa;
+  --sf-color-surface: #ffffff;
+  --sf-color-surface-2: #f3f4f6;       /* subtle panels, thumbnails, tracks */
+  --sf-color-surface-hover: #f9fafb;
+  --sf-color-text: #1a202c;
+  --sf-color-text-secondary: #4a5568;
+  --sf-color-text-muted: #6b7280;
+  --sf-color-border: #e5e7eb;
+  --sf-color-border-strong: #d1d5db;
+  --sf-color-overlay: rgba(15, 23, 42, 0.55);
+
+  /* ---- Semantic --------------------------------------------------------- */
+  --sf-color-success: #15803d;
+  --sf-color-success-bg: #dcfce7;
+  --sf-color-warning: #b45309;
+  --sf-color-warning-bg: #fef3c7;
+  --sf-color-danger: #dc2626;
+  --sf-color-danger-bg: #fee2e2;
+  --sf-color-info: #2563eb;
+  --sf-color-info-bg: #dbeafe;
+
+  /* ---- Commerce-specific ----------------------------------------------- */
+  --sf-color-star: #f59e0b;            /* rating stars */
+  --sf-color-price: #1a202c;           /* current/sale price */
+  --sf-color-compare: #9ca3af;         /* struck-through original price */
+  --sf-color-discount: #15803d;        /* "% off" + savings */
+  --sf-color-discount-bg: #dcfce7;
+  --sf-color-badge-bg: #eef2ff;        /* neutral chip background */
+
+  /* ---- Radius ----------------------------------------------------------- */
+  --sf-radius-sm: 6px;
+  --sf-radius-md: 10px;
+  --sf-radius-lg: 16px;
+  --sf-radius-xl: 22px;
+  --sf-radius-pill: 999px;
+
+  /* ---- Spacing scale (4px base) ---------------------------------------- */
+  --sf-space-1: 4px;
+  --sf-space-2: 8px;
+  --sf-space-3: 12px;
+  --sf-space-4: 16px;
+  --sf-space-5: 20px;
+  --sf-space-6: 24px;
+  --sf-space-8: 32px;
+  --sf-space-10: 40px;
+  --sf-space-12: 48px;
+  --sf-space-16: 64px;
+
+  /* ---- Shadows ---------------------------------------------------------- */
+  --sf-shadow-xs: 0 1px 2px rgba(15, 23, 42, 0.06);
+  --sf-shadow-sm: 0 2px 8px rgba(15, 23, 42, 0.08);
+  --sf-shadow-md: 0 6px 20px rgba(15, 23, 42, 0.10);
+  --sf-shadow-lg: 0 12px 32px rgba(15, 23, 42, 0.14);
+  --sf-shadow-focus: 0 0 0 3px rgba(102, 126, 234, 0.45);
+
+  /* ---- Typography ------------------------------------------------------- */
+  --sf-font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI",
+    "Roboto", sans-serif;
+  --sf-text-xs: 0.75rem;
+  --sf-text-sm: 0.875rem;
+  --sf-text-base: 1rem;
+  --sf-text-md: 1.0625rem;
+  --sf-text-lg: 1.25rem;
+  --sf-text-xl: 1.5rem;
+  --sf-text-2xl: 1.875rem;
+  --sf-text-3xl: 2.25rem;
+  --sf-font-normal: 400;
+  --sf-font-medium: 500;
+  --sf-font-semibold: 600;
+  --sf-font-bold: 700;
+  --sf-leading-tight: 1.25;
+  --sf-leading-normal: 1.5;
+
+  /* ---- Motion ----------------------------------------------------------- */
+  --sf-transition-fast: 0.15s ease;
+  --sf-transition: 0.25s ease;
+  --sf-transition-slow: 0.4s ease;
+
+  /* ---- Layout & a11y ---------------------------------------------------- */
+  --sf-container-max: 1280px;
+  --sf-tap-target: 44px;               /* min touch target (WCAG 2.5.5) */
+
+  /* ---- z-index scale ---------------------------------------------------- */
+  --sf-z-sticky: 40;
+  --sf-z-stickybar: 60;                /* mobile sticky Add-to-Cart bar */
+  --sf-z-overlay: 1000;
+  --sf-z-modal: 1100;
+}
+
+/* ===========================================================================
+ * DARK MODE  —  overrides only the colour tokens; structural tokens persist.
+ * ======================================================================== */
+body.dark {
+  --sf-color-primary: #a855f7;
+  --sf-color-primary-dark: #9333ea;
+  --sf-color-primary-light: #c084fc;
+  --sf-color-primary-contrast: #ffffff;
+  --sf-color-primary-soft: rgba(168, 85, 247, 0.16);
+  --sf-color-secondary: #ec4899;
+  --sf-color-accent: #f472b6;
+  --sf-gradient-primary: linear-gradient(135deg, #a855f7 0%, #ec4899 100%);
+  --sf-gradient-primary-hover: linear-gradient(135deg, #ec4899 0%, #a855f7 100%);
+
+  --sf-color-bg: #0a0e27;
+  --sf-color-surface: #1a1f3a;
+  --sf-color-surface-2: #2d3350;
+  --sf-color-surface-hover: #242a47;
+  --sf-color-text: #f5f7fa;
+  --sf-color-text-secondary: #cbd5e1;
+  --sf-color-text-muted: #94a3b8;
+  --sf-color-border: rgba(148, 163, 184, 0.22);
+  --sf-color-border-strong: rgba(148, 163, 184, 0.4);
+  --sf-color-overlay: rgba(0, 0, 0, 0.65);
+
+  --sf-color-success: #4ade80;
+  --sf-color-success-bg: rgba(34, 197, 94, 0.16);
+  --sf-color-warning: #fbbf24;
+  --sf-color-warning-bg: rgba(245, 158, 11, 0.16);
+  --sf-color-danger: #f87171;
+  --sf-color-danger-bg: rgba(248, 113, 113, 0.16);
+  --sf-color-info: #60a5fa;
+  --sf-color-info-bg: rgba(96, 165, 250, 0.16);
+
+  --sf-color-star: #fbbf24;
+  --sf-color-price: #f5f7fa;
+  --sf-color-compare: #94a3b8;
+  --sf-color-discount: #4ade80;
+  --sf-color-discount-bg: rgba(34, 197, 94, 0.16);
+  --sf-color-badge-bg: rgba(168, 85, 247, 0.16);
+
+  --sf-shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --sf-shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.45);
+  --sf-shadow-md: 0 6px 20px rgba(0, 0, 0, 0.5);
+  --sf-shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.55);
+  --sf-shadow-focus: 0 0 0 3px rgba(168, 85, 247, 0.5);
+}
+
+/* Respect users who prefer reduced motion — shared, applies storefront-wide. */
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --sf-transition-fast: 0s;
+    --sf-transition: 0s;
+    --sf-transition-slow: 0s;
+  }
+}

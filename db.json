@@ -367,21 +367,30 @@
           "name": "8GB RAM / 256GB SSD",
           "price": 64999,
           "stock": 20,
-          "sku": "LAP-PBU-15-8-256"
+          "sku": "LAP-PBU-15-8-256",
+          "attributes": {
+            "Configuration": "8GB · 256GB SSD"
+          }
         },
         {
           "id": "v2",
           "name": "16GB RAM / 512GB SSD",
           "price": 74999,
           "stock": 15,
-          "sku": "LAP-PBU-15-16-512"
+          "sku": "LAP-PBU-15-16-512",
+          "attributes": {
+            "Configuration": "16GB · 512GB SSD"
+          }
         },
         {
           "id": "v3",
           "name": "32GB RAM / 1TB SSD",
           "price": 94999,
           "stock": 10,
-          "sku": "LAP-PBU-15-32-1TB"
+          "sku": "LAP-PBU-15-32-1TB",
+          "attributes": {
+            "Configuration": "32GB · 1TB SSD"
+          }
         }
       ],
       "tags": [
@@ -401,7 +410,18 @@
       "metaTitle": "ProBook Ultra Laptop 15\" - Intel Core i7 | Best Price",
       "metaDescription": "Buy ProBook Ultra Laptop 15\" with Intel Core i7, 16GB RAM, 512GB SSD. Free shipping available.",
       "createdAt": "2025-01-10T00:00:00.000Z",
-      "updatedAt": "2025-03-01T00:00:00.000Z"
+      "updatedAt": "2025-03-01T00:00:00.000Z",
+      "frequentlyBoughtTogetherIds": [
+        4,
+        6
+      ],
+      "relatedProductIds": [
+        13,
+        3,
+        16,
+        4,
+        6
+      ]
     },
     {
       "id": 2,
@@ -433,21 +453,33 @@
           "name": "Midnight Black",
           "price": 8999,
           "stock": 50,
-          "sku": "AUD-SWP-TWS-BLK"
+          "sku": "AUD-SWP-TWS-BLK",
+          "attributes": {
+            "Color": "Midnight Black"
+          },
+          "swatchHex": "#1a1a2e"
         },
         {
           "id": "v2",
           "name": "Pearl White",
           "price": 8999,
           "stock": 40,
-          "sku": "AUD-SWP-TWS-WHT"
+          "sku": "AUD-SWP-TWS-WHT",
+          "attributes": {
+            "Color": "Pearl White"
+          },
+          "swatchHex": "#f3f1ea"
         },
         {
           "id": "v3",
           "name": "Navy Blue",
           "price": 8999,
           "stock": 30,
-          "sku": "AUD-SWP-TWS-NVY"
+          "sku": "AUD-SWP-TWS-NVY",
+          "attributes": {
+            "Color": "Navy Blue"
+          },
+          "swatchHex": "#1e3a5f"
         }
       ],
       "tags": [
@@ -467,7 +499,12 @@
       "metaTitle": "SoundWave Pro Wireless Earbuds - ANC | True Wireless",
       "metaDescription": "Shop SoundWave Pro Wireless Earbuds with Active Noise Cancellation, 30hr battery, IPX5 rating.",
       "createdAt": "2025-01-15T00:00:00.000Z",
-      "updatedAt": "2025-02-20T00:00:00.000Z"
+      "updatedAt": "2025-02-20T00:00:00.000Z",
+      "relatedProductIds": [
+        10,
+        4,
+        3
+      ]
     },
     {
       "id": 3,
@@ -598,7 +635,16 @@
       "metaTitle": "MechKey RGB Gaming Keyboard - Mechanical Switches",
       "metaDescription": "Buy MechKey RGB Mechanical Gaming Keyboard with per-key RGB, aluminum frame, N-key rollover.",
       "createdAt": "2025-02-01T00:00:00.000Z",
-      "updatedAt": "2025-02-28T00:00:00.000Z"
+      "updatedAt": "2025-02-28T00:00:00.000Z",
+      "frequentlyBoughtTogetherIds": [
+        1,
+        6
+      ],
+      "relatedProductIds": [
+        3,
+        16,
+        13
+      ]
     },
     {
       "id": 5,
@@ -630,35 +676,60 @@
           "name": "S / White",
           "price": 899,
           "stock": 50,
-          "sku": "CLT-UCT-CRW-S-WHT"
+          "sku": "CLT-UCT-CRW-S-WHT",
+          "attributes": {
+            "Size": "S",
+            "Color": "White"
+          },
+          "swatchHex": "#ffffff"
         },
         {
           "id": "v2",
           "name": "M / White",
           "price": 899,
           "stock": 60,
-          "sku": "CLT-UCT-CRW-M-WHT"
+          "sku": "CLT-UCT-CRW-M-WHT",
+          "attributes": {
+            "Size": "M",
+            "Color": "White"
+          },
+          "swatchHex": "#ffffff"
         },
         {
           "id": "v3",
           "name": "L / White",
           "price": 899,
           "stock": 55,
-          "sku": "CLT-UCT-CRW-L-WHT"
+          "sku": "CLT-UCT-CRW-L-WHT",
+          "attributes": {
+            "Size": "L",
+            "Color": "White"
+          },
+          "swatchHex": "#ffffff"
         },
         {
           "id": "v4",
           "name": "XL / White",
           "price": 899,
           "stock": 40,
-          "sku": "CLT-UCT-CRW-XL-WHT"
+          "sku": "CLT-UCT-CRW-XL-WHT",
+          "attributes": {
+            "Size": "XL",
+            "Color": "White"
+          },
+          "swatchHex": "#ffffff"
         },
         {
           "id": "v5",
           "name": "S / Black",
           "price": 899,
           "stock": 45,
-          "sku": "CLT-UCT-CRW-S-BLK"
+          "sku": "CLT-UCT-CRW-S-BLK",
+          "attributes": {
+            "Size": "S",
+            "Color": "Black"
+          },
+          "swatchHex": "#1a1a1a"
         }
       ],
       "tags": [
@@ -911,28 +982,48 @@
           "name": "UK 7 - Black",
           "price": 3999,
           "stock": 20,
-          "sku": "FTW-ASR-7-BLK"
+          "sku": "FTW-ASR-7-BLK",
+          "attributes": {
+            "Size": "UK 7",
+            "Color": "Black"
+          },
+          "swatchHex": "#1a1a1a"
         },
         {
           "id": "v2",
           "name": "UK 8 - Black",
           "price": 3999,
           "stock": 20,
-          "sku": "FTW-ASR-8-BLK"
+          "sku": "FTW-ASR-8-BLK",
+          "attributes": {
+            "Size": "UK 8",
+            "Color": "Black"
+          },
+          "swatchHex": "#1a1a1a"
         },
         {
           "id": "v3",
           "name": "UK 9 - Blue",
           "price": 3999,
           "stock": 20,
-          "sku": "FTW-ASR-9-BLU"
+          "sku": "FTW-ASR-9-BLU",
+          "attributes": {
+            "Size": "UK 9",
+            "Color": "Blue"
+          },
+          "swatchHex": "#1e3a5f"
         },
         {
           "id": "v4",
           "name": "UK 10 - Blue",
           "price": 3999,
           "stock": 20,
-          "sku": "FTW-ASR-10-BLU"
+          "sku": "FTW-ASR-10-BLU",
+          "attributes": {
+            "Size": "UK 10",
+            "Color": "Blue"
+          },
+          "swatchHex": "#1e3a5f"
         }
       ],
       "tags": [
@@ -952,7 +1043,11 @@
       "metaTitle": "AirStride Running Shoes - Lightweight & Responsive",
       "metaDescription": "Buy AirStride running shoes with responsive cushioning. Breathable, lightweight, and durable.",
       "createdAt": "2025-02-01T00:00:00.000Z",
-      "updatedAt": "2025-03-10T00:00:00.000Z"
+      "updatedAt": "2025-03-10T00:00:00.000Z",
+      "relatedProductIds": [
+        12,
+        19
+      ]
     },
     {
       "id": 10,
@@ -1398,28 +1493,48 @@
           "name": "S - White",
           "price": 1999,
           "stock": 20,
-          "sku": "CLT-MFS-S-WHT"
+          "sku": "CLT-MFS-S-WHT",
+          "attributes": {
+            "Size": "S",
+            "Color": "White"
+          },
+          "swatchHex": "#ffffff"
         },
         {
           "id": "v2",
           "name": "M - White",
           "price": 1999,
           "stock": 25,
-          "sku": "CLT-MFS-M-WHT"
+          "sku": "CLT-MFS-M-WHT",
+          "attributes": {
+            "Size": "M",
+            "Color": "White"
+          },
+          "swatchHex": "#ffffff"
         },
         {
           "id": "v3",
           "name": "L - Light Blue",
           "price": 1999,
           "stock": 25,
-          "sku": "CLT-MFS-L-BLU"
+          "sku": "CLT-MFS-L-BLU",
+          "attributes": {
+            "Size": "L",
+            "Color": "Light Blue"
+          },
+          "swatchHex": "#cfe2f3"
         },
         {
           "id": "v4",
           "name": "XL - Light Blue",
           "price": 1999,
           "stock": 20,
-          "sku": "CLT-MFS-XL-BLU"
+          "sku": "CLT-MFS-XL-BLU",
+          "attributes": {
+            "Size": "XL",
+            "Color": "Light Blue"
+          },
+          "swatchHex": "#cfe2f3"
         }
       ],
       "tags": [
@@ -2867,6 +2982,55 @@
       "createdAt": "2026-06-14T03:47:30.056Z",
       "updatedAt": "2026-06-14T03:48:35.812Z",
       "id": 4
+    },
+    {
+      "id": 5,
+      "status": "approved",
+      "isVerifiedPurchase": true,
+      "helpfulCount": 9,
+      "productId": 1,
+      "userId": 2,
+      "userName": "Priya M.",
+      "rating": 5,
+      "title": "Fantastic for work and study",
+      "body": "Switched from an old laptop and the difference is night and day. The screen is crisp, it stays cool, and battery comfortably lasts a full work day. Setup was painless.",
+      "photos": [
+        "https://placehold.co/300x300/667eea/FFFFFF?text=Setup",
+        "https://placehold.co/300x300/4c5ed0/FFFFFF?text=Display"
+      ],
+      "createdAt": "2026-04-02T10:15:00.000Z",
+      "updatedAt": "2026-04-02T10:15:00.000Z"
+    },
+    {
+      "id": 6,
+      "status": "approved",
+      "isVerifiedPurchase": true,
+      "helpfulCount": 4,
+      "productId": 1,
+      "userId": 3,
+      "userName": "Rahul K.",
+      "rating": 4,
+      "title": "Great value, solid build",
+      "body": "Handles multiple browser tabs and light photo editing without breaking a sweat. Keyboard is comfortable. Knocked one star because the speakers are just average.",
+      "createdAt": "2026-04-20T16:40:00.000Z",
+      "updatedAt": "2026-04-20T16:40:00.000Z"
+    },
+    {
+      "id": 7,
+      "status": "approved",
+      "isVerifiedPurchase": true,
+      "helpfulCount": 6,
+      "productId": 5,
+      "userId": 1,
+      "userName": "John D.",
+      "rating": 5,
+      "title": "Soft, true to size",
+      "body": "Lovely cotton, holds shape after washing and the fit is exactly as described. Bought two more.",
+      "photos": [
+        "https://placehold.co/300x300/1a1a2e/FFFFFF?text=Fit"
+      ],
+      "createdAt": "2026-05-05T09:00:00.000Z",
+      "updatedAt": "2026-05-05T09:00:00.000Z"
     }
   ],
   "wishlist": [],

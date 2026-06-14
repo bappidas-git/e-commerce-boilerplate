@@ -1,0 +1,36 @@
+.stars {
+  display: inline-flex;
+  align-items: center;
+  gap: 1px;
+  line-height: 1;
+}
+
+/* Each star stacks an empty base with a clipped filled overlay so half stars
+   render crisply at any size without extra assets. */
+.star {
+  position: relative;
+  display: inline-block;
+  line-height: 1;
+}
+
+.starBase {
+  color: var(--sf-color-border-strong);
+}
+
+.starFull,
+.starHalf {
+  position: absolute;
+  top: 0;
+  left: 0;
+  overflow: hidden;
+  color: var(--sf-color-star);
+  white-space: nowrap;
+}
+
+.starFull {
+  width: 100%;
+}
+
+.starHalf {
+  width: 50%;
+}

@@ -2,45 +2,51 @@
    Products Page — Professional E-commerce Layout
    ========================================================================== */
 
-/* ---- CSS Custom Properties (Light mode defaults) ---- */
+/* ---- Local aliases mapped onto the GLOBAL storefront design tokens ----------
+   The listing keeps its own variable names (used by the rules below) but their
+   values now come from src/theme/storefront-tokens.css (--sf-*). A client
+   re-skins the whole storefront — listing included — from that one file, and the
+   listing's accent/CTA now matches the rest of the storefront (principle F).
+   Dark mode is inherited automatically because the --sf-* tokens flip under
+   body.dark, so a separate .dark override block is no longer needed here. */
 .page {
-  --bg: #f5f5f7;
-  --sidebar-bg: #ffffff;
-  --card-bg: #ffffff;
-  --text-primary: #0f1111;
-  --text-secondary: #565959;
-  --text-muted: #888c8c;
-  --border: #e3e6e6;
-  --border-light: #f0f2f2;
-  --accent: #ff9900;
-  --accent-hover: #fa8900;
-  --accent-bg: #fef4e4;
-  --price-color: #b12704;
-  --discount-text: #cc0c39;
-  --discount-badge-bg: #cc0c39;
-  --link-color: #007185;
-  --link-hover: #c7511f;
-  --btn-primary-bg: #ffd814;
-  --btn-primary-hover: #f7ca00;
-  --btn-primary-text: #0f1111;
-  --sortbar-bg: #ffffff;
-  --input-bg: #ffffff;
-  --input-border: #888c8c;
-  --toggle-bg: #ccc;
-  --toggle-on-bg: #ff9900;
-  --skeleton-bg: #e8e8e8;
-  --skeleton-shimmer: #f5f5f5;
-  --overlay-bg: rgba(0, 0, 0, 0.5);
-  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.08);
-  --shadow-md: 0 2px 8px rgba(0, 0, 0, 0.1);
-  --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.12);
-  --radius-sm: 4px;
-  --radius-md: 8px;
-  --radius-lg: 12px;
-  --empty-box: #e2e8f0;
-  --empty-line: #cbd5e1;
-  --empty-circle: #94a3b8;
-  --error-color: #cc0c39;
+  --bg: var(--sf-color-bg);
+  --sidebar-bg: var(--sf-color-surface);
+  --card-bg: var(--sf-color-surface);
+  --text-primary: var(--sf-color-text);
+  --text-secondary: var(--sf-color-text-secondary);
+  --text-muted: var(--sf-color-text-muted);
+  --border: var(--sf-color-border);
+  --border-light: var(--sf-color-surface-2);
+  --accent: var(--sf-color-primary);
+  --accent-hover: var(--sf-color-primary-dark);
+  --accent-bg: var(--sf-color-primary-soft);
+  --price-color: var(--sf-color-price);
+  --discount-text: var(--sf-color-discount);
+  --discount-badge-bg: var(--sf-color-danger);
+  --link-color: var(--sf-color-primary);
+  --link-hover: var(--sf-color-primary-dark);
+  --btn-primary-bg: var(--sf-color-primary);
+  --btn-primary-hover: var(--sf-color-primary-dark);
+  --btn-primary-text: var(--sf-color-primary-contrast);
+  --sortbar-bg: var(--sf-color-surface);
+  --input-bg: var(--sf-color-surface);
+  --input-border: var(--sf-color-border-strong);
+  --toggle-bg: var(--sf-color-border-strong);
+  --toggle-on-bg: var(--sf-color-primary);
+  --skeleton-bg: var(--sf-color-surface-2);
+  --skeleton-shimmer: var(--sf-color-surface-hover);
+  --overlay-bg: var(--sf-color-overlay);
+  --shadow-sm: var(--sf-shadow-sm);
+  --shadow-md: var(--sf-shadow-md);
+  --shadow-lg: var(--sf-shadow-lg);
+  --radius-sm: var(--sf-radius-sm);
+  --radius-md: var(--sf-radius-md);
+  --radius-lg: var(--sf-radius-lg);
+  --empty-box: var(--sf-color-surface-2);
+  --empty-line: var(--sf-color-border-strong);
+  --empty-circle: var(--sf-color-text-muted);
+  --error-color: var(--sf-color-danger);
 
   min-height: 100vh;
   background: var(--bg);
@@ -48,43 +54,9 @@
   padding-bottom: 60px;
 }
 
-/* ---- Dark Mode ---- */
-.dark {
-  --bg: #0f1111;
-  --sidebar-bg: #1a1a2e;
-  --card-bg: #1a1a2e;
-  --text-primary: #e8e8e8;
-  --text-secondary: #a0a4a8;
-  --text-muted: #6b7280;
-  --border: #2d2d44;
-  --border-light: #252540;
-  --accent: #ff9900;
-  --accent-hover: #fa8900;
-  --accent-bg: rgba(255, 153, 0, 0.1);
-  --price-color: #ff9900;
-  --discount-text: #f87171;
-  --discount-badge-bg: #dc2626;
-  --link-color: #56b4d3;
-  --link-hover: #ff9900;
-  --btn-primary-bg: #ff9900;
-  --btn-primary-hover: #fa8900;
-  --btn-primary-text: #0f1111;
-  --sortbar-bg: #1a1a2e;
-  --input-bg: #16213e;
-  --input-border: #3d3d5c;
-  --toggle-bg: #3d3d5c;
-  --toggle-on-bg: #ff9900;
-  --skeleton-bg: #252540;
-  --skeleton-shimmer: #2d2d44;
-  --overlay-bg: rgba(0, 0, 0, 0.7);
-  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.3);
-  --shadow-md: 0 2px 8px rgba(0, 0, 0, 0.4);
-  --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.5);
-  --empty-box: #252540;
-  --empty-line: #3d3d5c;
-  --empty-circle: #6b7280;
-  --error-color: #f87171;
-}
+/* Dark mode is driven by the global --sf-* tokens (which flip under body.dark),
+   so the listing needs no separate dark palette. The .dark class is still set on
+   the root for any legacy descendant selectors below. */
 
 /* ==========================================================================
    Breadcrumb
@@ -541,7 +513,7 @@
 
 .viewBtnActive {
   background: var(--accent);
-  color: #0f1111;
+  color: var(--sf-color-primary-contrast);
 }
 
 /* ==========================================================================
@@ -927,12 +899,12 @@
 .pageBtnActive {
   background: var(--accent);
   border-color: var(--accent);
-  color: #0f1111;
+  color: var(--sf-color-primary-contrast);
   font-weight: 700;
 }
 
 .pageBtnActive:hover {
-  color: #0f1111;
+  color: var(--sf-color-primary-contrast);
 }
 
 .pageBtnText {

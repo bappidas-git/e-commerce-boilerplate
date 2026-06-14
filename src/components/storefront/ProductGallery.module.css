@@ -1,0 +1,131 @@
+.gallery {
+  display: grid;
+  grid-template-columns: 72px minmax(0, 1fr);
+  gap: var(--sf-space-4);
+  align-items: start;
+}
+
+/* When there's a single image the strip is not rendered → one column. */
+.gallery:has(.main:only-child) {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.thumbs {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sf-space-3);
+  max-height: 520px;
+  overflow-y: auto;
+  padding-right: 2px;
+}
+
+.thumb {
+  width: 72px;
+  height: 72px;
+  flex-shrink: 0;
+  padding: 0;
+  border: 2px solid var(--sf-color-border);
+  border-radius: var(--sf-radius-md);
+  overflow: hidden;
+  background: var(--sf-color-surface-2);
+  cursor: pointer;
+  transition: border-color var(--sf-transition-fast), transform var(--sf-transition-fast);
+}
+
+.thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.thumb:hover {
+  transform: translateY(-1px);
+}
+
+.thumbActive {
+  border-color: var(--sf-color-primary);
+}
+
+.thumb:focus-visible {
+  outline: none;
+  box-shadow: var(--sf-shadow-focus);
+}
+
+.main {
+  position: relative;
+  aspect-ratio: 1 / 1;
+  border-radius: var(--sf-radius-lg);
+  overflow: hidden;
+  background: var(--sf-color-surface-2);
+  cursor: zoom-in;
+}
+
+.main:focus-visible {
+  outline: none;
+  box-shadow: var(--sf-shadow-focus);
+}
+
+.mainImg {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+  transition: transform var(--sf-transition-slow);
+}
+
+.discountBadge {
+  position: absolute;
+  top: var(--sf-space-3);
+  left: var(--sf-space-3);
+  z-index: 2;
+  background: var(--sf-color-danger);
+  color: #fff;
+  font-size: var(--sf-text-sm);
+  font-weight: var(--sf-font-bold);
+  padding: 4px 10px;
+  border-radius: var(--sf-radius-pill);
+}
+
+.dots {
+  position: absolute;
+  bottom: var(--sf-space-3);
+  left: 0;
+  right: 0;
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+}
+
+.dot {
+  width: 6px;
+  height: 6px;
+  border-radius: var(--sf-radius-pill);
+  background: var(--sf-color-border-strong);
+  transition: width var(--sf-transition-fast), background var(--sf-transition-fast);
+}
+
+.dotActive {
+  width: 18px;
+  background: var(--sf-color-primary);
+}
+
+/* ---- Mobile: thumbnail strip moves below the image, scrolls horizontally ---- */
+@media (max-width: 768px) {
+  .gallery {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .thumbs {
+    order: 2;
+    flex-direction: row;
+    max-height: none;
+    overflow-x: auto;
+    padding-bottom: 2px;
+  }
+
+  .main {
+    order: 1;
+    cursor: default; /* no hover-zoom on touch */
+  }
+}

@@ -1,0 +1,221 @@
+.selector {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sf-space-5);
+}
+
+.group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sf-space-3);
+}
+
+.groupHead {
+  display: flex;
+  align-items: baseline;
+  gap: var(--sf-space-2);
+}
+
+.label {
+  font-size: var(--sf-text-sm);
+  font-weight: var(--sf-font-semibold);
+  color: var(--sf-color-text);
+  text-transform: capitalize;
+}
+
+.chosen {
+  font-size: var(--sf-text-sm);
+  color: var(--sf-color-text-muted);
+}
+
+.options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sf-space-3);
+}
+
+.optionsColor {
+  gap: var(--sf-space-3);
+}
+
+/* ---- Tiles (flat variants + non-colour structured attributes) ---- */
+.tile {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  min-height: var(--sf-tap-target);
+  padding: 8px 16px;
+  border: 1.5px solid var(--sf-color-border-strong);
+  border-radius: var(--sf-radius-md);
+  background: var(--sf-color-surface);
+  color: var(--sf-color-text);
+  cursor: pointer;
+  transition: border-color var(--sf-transition-fast),
+    background var(--sf-transition-fast), transform var(--sf-transition-fast),
+    box-shadow var(--sf-transition-fast);
+}
+
+/* chip = compact, single-line tile for structured attribute values */
+.tileChip {
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  min-width: var(--sf-tap-target);
+  padding: 10px 18px;
+}
+
+.tile:hover:not(:disabled) {
+  border-color: var(--sf-color-primary);
+  transform: translateY(-1px);
+}
+
+.tile:focus-visible {
+  outline: none;
+  box-shadow: var(--sf-shadow-focus);
+}
+
+.tileActive {
+  border-color: var(--sf-color-primary);
+  background: var(--sf-color-primary-soft);
+  box-shadow: inset 0 0 0 1px var(--sf-color-primary);
+}
+
+.tileName {
+  font-size: var(--sf-text-sm);
+  font-weight: var(--sf-font-medium);
+}
+
+.tilePrice {
+  font-size: var(--sf-text-sm);
+  font-weight: var(--sf-font-semibold);
+  color: var(--sf-color-primary);
+}
+
+/* Unavailable with the CURRENT other selections, but buyable on its own — kept
+   clickable (clicking snaps to a valid variant). Dimmed, no strike. */
+.tileMuted {
+  opacity: 0.55;
+}
+
+.tileMuted .tileName {
+  text-decoration: line-through;
+  text-decoration-color: var(--sf-color-border-strong);
+}
+
+.tileOos {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+/* Diagonal strike for sold-out tiles (kept legible, honest signal) */
+.tileOos::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(
+    to top left,
+    transparent calc(50% - 0.6px),
+    var(--sf-color-border-strong) calc(50% - 0.6px),
+    var(--sf-color-border-strong) calc(50% + 0.6px),
+    transparent calc(50% + 0.6px)
+  );
+  pointer-events: none;
+}
+
+.oosTag {
+  font-size: var(--sf-text-xs);
+  color: var(--sf-color-danger);
+  font-weight: var(--sf-font-medium);
+}
+
+/* ---- Colour swatches ---- */
+.swatch {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 3px;
+  border: 2px solid transparent;
+  border-radius: var(--sf-radius-pill);
+  background: transparent;
+  cursor: pointer;
+  transition: border-color var(--sf-transition-fast), transform var(--sf-transition-fast);
+}
+
+.swatch:hover:not(:disabled) {
+  transform: translateY(-1px);
+}
+
+.swatch:focus-visible {
+  outline: none;
+  box-shadow: var(--sf-shadow-focus);
+}
+
+.swatchActive {
+  border-color: var(--sf-color-primary);
+}
+
+.swatchChip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: var(--sf-radius-pill);
+  border: 1px solid var(--sf-color-border);
+  background: var(--sf-color-surface-2);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.25);
+}
+
+.swatchText {
+  font-size: var(--sf-text-sm);
+  font-weight: var(--sf-font-semibold);
+  color: var(--sf-color-text-secondary);
+}
+
+/* Unavailable with current other selections but buyable on its own — clickable
+   (snaps on click). Dimmed without the hard sold-out strike. */
+.swatchMuted {
+  opacity: 0.5;
+}
+
+.swatchOos {
+  opacity: 0.5;
+}
+
+.swatchOos .swatchChip {
+  position: relative;
+  overflow: hidden;
+}
+
+.swatchOos .swatchChip::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    to top left,
+    transparent calc(50% - 1px),
+    var(--sf-color-danger) calc(50% - 1px),
+    var(--sf-color-danger) calc(50% + 1px),
+    transparent calc(50% + 1px)
+  );
+}
+
+/* ---- Selected variant honest meta ---- */
+.selectedMeta:empty {
+  display: none;
+}
+
+.metaLow {
+  font-size: var(--sf-text-sm);
+  color: var(--sf-color-warning);
+  font-weight: var(--sf-font-medium);
+}
+
+.metaOos {
+  font-size: var(--sf-text-sm);
+  color: var(--sf-color-danger);
+  font-weight: var(--sf-font-medium);
+}

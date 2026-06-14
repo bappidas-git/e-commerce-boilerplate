@@ -1,0 +1,135 @@
+.bar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: var(--sf-z-stickybar); /* see note below for mobile override */
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sf-space-3);
+  padding: var(--sf-space-3) var(--sf-space-4);
+  padding-bottom: calc(var(--sf-space-3) + env(safe-area-inset-bottom));
+  background: var(--sf-color-surface);
+  border-top: 1px solid var(--sf-color-border);
+  box-shadow: 0 -4px 20px rgba(15, 23, 42, 0.12);
+  transform: translateY(110%);
+  transition: transform var(--sf-transition);
+  /* Hidden by default on desktop; this is a mobile-first device. */
+  display: none;
+}
+
+.visible {
+  transform: translateY(0);
+}
+
+.info {
+  display: flex;
+  align-items: center;
+  gap: var(--sf-space-3);
+  min-width: 0;
+}
+
+.thumb {
+  width: 44px;
+  height: 44px;
+  border-radius: var(--sf-radius-sm);
+  object-fit: cover;
+  background: var(--sf-color-surface-2);
+  flex-shrink: 0;
+}
+
+.priceWrap {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.name {
+  font-size: var(--sf-text-xs);
+  color: var(--sf-color-text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 38vw;
+}
+
+.priceRow {
+  display: flex;
+  align-items: baseline;
+  gap: var(--sf-space-2);
+}
+
+.price {
+  font-size: var(--sf-text-md);
+  font-weight: var(--sf-font-bold);
+  color: var(--sf-color-price);
+}
+
+.compare {
+  font-size: var(--sf-text-sm);
+  color: var(--sf-color-compare);
+  text-decoration: line-through;
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  gap: var(--sf-space-2);
+  flex-shrink: 0;
+}
+
+.addBtn,
+.buyNow {
+  min-height: var(--sf-tap-target);
+  padding: 0 var(--sf-space-5);
+  border-radius: var(--sf-radius-md);
+  font-weight: var(--sf-font-semibold);
+  font-size: var(--sf-text-sm);
+  cursor: pointer;
+  transition: filter var(--sf-transition-fast), background var(--sf-transition-fast),
+    color var(--sf-transition-fast);
+  white-space: nowrap;
+}
+
+.addBtn {
+  border: none;
+  background: var(--sf-gradient-primary);
+  color: var(--sf-color-primary-contrast);
+}
+
+.addBtn:hover:not(:disabled) {
+  filter: brightness(1.05);
+}
+
+.addBtnDone {
+  background: var(--sf-color-success);
+}
+
+.buyNow {
+  border: 1.5px solid var(--sf-color-primary);
+  background: transparent;
+  color: var(--sf-color-primary);
+}
+
+.addBtn:focus-visible,
+.buyNow:focus-visible {
+  outline: none;
+  box-shadow: var(--sf-shadow-focus);
+}
+
+.addBtn:disabled,
+.buyNow:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+/* Mobile-first: the bar only exists on phones/large-phones. It intentionally
+   sits ABOVE the global BottomNav (z 1200) so the PDP's primary CTA is never
+   hidden while a shopper is deciding. */
+@media (max-width: 768px) {
+  .bar {
+    display: flex;
+    z-index: 1300;
+  }
+}
