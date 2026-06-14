@@ -717,6 +717,39 @@ const performCancel = async (id, opts = {}, actor = null) => {
   return response.data;
 };
 
+// Resilient DELETE for mock mode.
+//
+// json-server's STOCK delete handler removes the row from its in-memory store
+// FIRST and only then runs a "dependent cascade" scan (getRemovable) across every
+// foreign-key field in the database. Seed/generated rows legitimately carry NULL
+// foreign keys, and that scan calls `null.toString()`, which throws — so the
+// request returns HTTP 500 even though the row is already gone. That is the
+// "delete → 500, but the item is actually deleted (and vanishes on reload)"
+// desync the admin sees. The bundled backend (server.js) overrides DELETE to be
+// safe and return 200, but a developer running a stale server process — or the
+// bare `json-server --watch` binary — can still hit the stock handler.
+//
+// So: if the DELETE errors, verify whether the row is actually gone. A confirmed
+// 404 means the delete succeeded despite the error status, so resolve normally.
+// Only a row that is STILL PRESENT (or that we cannot verify) is surfaced as a
+// genuine failure. This never hides a real error — it only reconciles a delete
+// that the backend completed but mis-reported.
+const deleteWithVerify = async (path) => {
+  try {
+    const response = await api.delete(path);
+    return response.data;
+  } catch (error) {
+    try {
+      await api.get(path);
+    } catch (verifyError) {
+      // The resource is gone → the delete did take effect.
+      if (verifyError.response?.status === 404) return {};
+    }
+    // Still there, or the verification itself failed → report the real error.
+    throw error;
+  }
+};
+
 // =============================================================================
 // API Service Object
 // =============================================================================
@@ -1632,8 +1665,8 @@ const apiService = {
     deleteProduct: async (id) => {
       try {
         if (IS_MOCK_API) {
-          const response = await api.delete(`/products/${id}`);
-          return response.data;
+          // Tolerate json-server's delete-then-crash desync (see deleteWithVerify).
+          return await deleteWithVerify(`/products/${id}`);
         }
         const response = await api.delete(`/admin/products/${id}`);
         return extractData(response);
@@ -1697,8 +1730,8 @@ const apiService = {
             err.code = "CATEGORY_IN_USE";
             throw err;
           }
-          const response = await api.delete(`/categories/${id}`);
-          return response.data;
+          // Tolerate json-server's delete-then-crash desync (see deleteWithVerify).
+          return await deleteWithVerify(`/categories/${id}`);
         }
         const response = await api.delete(`/admin/categories/${id}`);
         return extractData(response);
