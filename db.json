@@ -2776,6 +2776,21 @@
       "helpfulCount": 0,
       "createdAt": "2026-03-12T15:00:00.000Z",
       "updatedAt": "2026-06-12T03:45:30.100Z"
+    },
+    {
+      "productId": 1,
+      "userId": null,
+      "userName": "Aarav Sharma",
+      "rating": 2,
+      "title": "Price is too high",
+      "body": "Price is high compared to other stores",
+      "status": "approved",
+      "isVerifiedPurchase": true,
+      "helpfulCount": 0,
+      "source": "admin",
+      "createdAt": "2026-06-14T03:47:30.056Z",
+      "updatedAt": "2026-06-14T03:48:35.812Z",
+      "id": 4
     }
   ],
   "wishlist": [],
