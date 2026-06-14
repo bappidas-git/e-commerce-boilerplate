@@ -95,8 +95,8 @@
       ],
       "isActive": true,
       "createdAt": "2025-06-01T10:00:00.000Z",
-      "updatedAt": "2026-06-13T14:44:33.946Z",
-      "storeCredit": 3918
+      "updatedAt": "2026-06-14T14:22:33.376Z",
+      "storeCredit": 2918
     }
   ],
   "admins": [
@@ -261,10 +261,10 @@
       "parentId": null,
       "isActive": true,
       "sortOrder": 9,
-      "showInMainMenu": true,
+      "showInMainMenu": false,
       "menuOrder": 9,
       "createdAt": "2025-01-01T00:00:00.000Z",
-      "updatedAt": "2025-01-01T00:00:00.000Z"
+      "updatedAt": "2026-06-14T14:28:04.495Z"
     },
     {
       "id": 12,
@@ -275,10 +275,10 @@
       "parentId": null,
       "isActive": true,
       "sortOrder": 10,
-      "showInMainMenu": true,
+      "showInMainMenu": false,
       "menuOrder": 10,
       "createdAt": "2025-01-01T00:00:00.000Z",
-      "updatedAt": "2025-01-01T00:00:00.000Z"
+      "updatedAt": "2026-06-14T14:28:05.635Z"
     },
     {
       "id": 13,
@@ -1400,72 +1400,6 @@
       "updatedAt": "2025-03-10T00:00:00.000Z"
     },
     {
-      "id": 16,
-      "name": "NovaTech Smartphone Case - iPhone 15",
-      "slug": "novatech-smartphone-case-iphone-15",
-      "sku": "ACC-NVT-CSE-001",
-      "shortDescription": "Shockproof clear case with MagSafe compatibility",
-      "description": "NovaTech case combines military-grade protection with crystal clarity. Features Air Cushion technology at corners, anti-yellowing polycarbonate back, and flexible TPU bumper. Compatible with MagSafe chargers and accessories. Precise cutouts for all ports and buttons.",
-      "categoryId": 13,
-      "brand": "NovaTech",
-      "images": [
-        "https://placehold.co/600x400/00bcd4/FFFFFF?text=Phone+Case",
-        "https://placehold.co/600x400/0097a7/FFFFFF?text=Case+Side"
-      ],
-      "price": 999,
-      "comparePrice": 1499,
-      "costPrice": 350,
-      "stock": 200,
-      "lowStockThreshold": 30,
-      "weight": 0.04,
-      "dimensions": {
-        "length": 16,
-        "width": 8,
-        "height": 1.2
-      },
-      "variants": [
-        {
-          "id": "v1",
-          "name": "Crystal Clear",
-          "price": 999,
-          "stock": 80,
-          "sku": "ACC-NVT-CSE-CLR"
-        },
-        {
-          "id": "v2",
-          "name": "Matte Black",
-          "price": 1099,
-          "stock": 60,
-          "sku": "ACC-NVT-CSE-MBK"
-        },
-        {
-          "id": "v3",
-          "name": "Navy Blue",
-          "price": 1099,
-          "stock": 60,
-          "sku": "ACC-NVT-CSE-NBL"
-        }
-      ],
-      "tags": [
-        "phone case",
-        "iphone",
-        "magsafe",
-        "shockproof",
-        "accessories",
-        "protective"
-      ],
-      "featured": false,
-      "trending": false,
-      "hot": true,
-      "isActive": true,
-      "rating": 4.2,
-      "totalReviews": 445,
-      "metaTitle": "NovaTech iPhone 15 Case - Shockproof, MagSafe Compatible",
-      "metaDescription": "Buy NovaTech shockproof clear case for iPhone 15. MagSafe compatible, military-grade protection.",
-      "createdAt": "2025-02-25T00:00:00.000Z",
-      "updatedAt": "2025-03-15T00:00:00.000Z"
-    },
-    {
       "id": 17,
       "name": "Men's Premium Formal Shirt",
       "slug": "mens-premium-formal-shirt",
@@ -1727,40 +1661,6 @@
       "metaDescription": "Buy 500-piece building blocks set with storage box. Safe, non-toxic, compatible with major brands.",
       "createdAt": "2025-02-22T00:00:00.000Z",
       "updatedAt": "2026-06-12T06:57:43.733Z"
-    },
-    {
-      "name": "Test",
-      "slug": "test",
-      "sku": "TEST-123",
-      "shortDescription": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. ",
-      "description": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. In interdum ligula sed ex elementum commodo. Ut ultricies ullamcorper facilisis. Nam non vulputate tellus, at ultrices magna. Nam fringilla ultrices justo, eu placerat lorem tempor sed. Suspendisse potenti. ",
-      "categoryId": 1,
-      "brand": "Google AZX",
-      "images": [
-        "https://placehold.co/600x400/1a1a2e/FFFFFF?text=Test+Product"
-      ],
-      "price": 1000,
-      "comparePrice": 1500,
-      "costPrice": 700,
-      "stock": 100,
-      "lowStockThreshold": 10,
-      "weight": 0.3,
-      "dimensions": {
-        "length": 10,
-        "width": 5,
-        "height": 3
-      },
-      "variants": [],
-      "tags": [],
-      "featured": false,
-      "trending": false,
-      "hot": false,
-      "isActive": true,
-      "metaTitle": "",
-      "metaDescription": "",
-      "createdAt": "2026-06-14T04:28:48.416Z",
-      "updatedAt": "2026-06-14T12:27:33.737Z",
-      "id": 21
     }
   ],
   "cart": [],
@@ -2461,6 +2361,154 @@
         }
       ],
       "id": 9
+    },
+    {
+      "items": [
+        {
+          "productId": 1,
+          "variantId": "v1",
+          "name": "ProBook Ultra Laptop 15\" - 8GB RAM / 256GB SSD",
+          "image": "https://placehold.co/600x400/1a1a2e/FFFFFF?text=ProBook+Laptop",
+          "sku": "",
+          "price": 64999,
+          "quantity": 1,
+          "subtotal": 64999
+        },
+        {
+          "productId": 3,
+          "variantId": "v1",
+          "name": "FitPulse Smartwatch Series 5 - Black / Rubber Band",
+          "image": "https://placehold.co/600x400/0f3460/FFFFFF?text=FitPulse+Watch",
+          "sku": "",
+          "price": 14999,
+          "quantity": 1,
+          "subtotal": 14999
+        }
+      ],
+      "shippingAddress": {
+        "id": 1,
+        "label": "Home",
+        "firstName": "Bappi",
+        "lastName": "Das",
+        "phone": "+919707112233",
+        "addressLine1": "Moutupuri, Barpeta",
+        "addressLine2": "Near BH College",
+        "city": "Howly",
+        "state": "Assam",
+        "postalCode": "781316",
+        "country": "India",
+        "isDefault": true
+      },
+      "billingAddress": {
+        "id": 1,
+        "label": "Home",
+        "firstName": "Bappi",
+        "lastName": "Das",
+        "phone": "+919707112233",
+        "addressLine1": "Moutupuri, Barpeta",
+        "addressLine2": "Near BH College",
+        "city": "Howly",
+        "state": "Assam",
+        "postalCode": "781316",
+        "country": "India",
+        "isDefault": true
+      },
+      "subtotal": 79998,
+      "discountAmount": 0,
+      "couponCode": null,
+      "shippingAmount": 0,
+      "taxAmount": 14400,
+      "total": 94398,
+      "storeCreditUsed": 0,
+      "amountPayable": 94398,
+      "paymentMethod": "upi",
+      "paymentStatus": "paid",
+      "fulfillmentStatus": "unfulfilled",
+      "shippingStatus": "pending",
+      "trackingNumber": null,
+      "notes": "",
+      "userId": 3,
+      "orderNumber": "ORD-MQDUWC74-RUVY",
+      "shiprocketOrderId": null,
+      "createdAt": "2026-06-14T14:05:08.416Z",
+      "updatedAt": "2026-06-14T14:05:08.416Z",
+      "statusHistory": [
+        {
+          "at": "2026-06-14T14:05:08.416Z",
+          "by": "Customer",
+          "action": "Order placed"
+        }
+      ],
+      "id": 10
+    },
+    {
+      "items": [
+        {
+          "productId": 2,
+          "variantId": "v1",
+          "name": "SoundWave Pro Wireless Earbuds - Midnight Black",
+          "image": "https://placehold.co/600x400/1a1a2e/FFFFFF?text=SoundWave+Earbuds",
+          "sku": "",
+          "price": 8999,
+          "quantity": 1,
+          "subtotal": 8999
+        }
+      ],
+      "shippingAddress": {
+        "id": 1,
+        "label": "Home",
+        "firstName": "Bappi",
+        "lastName": "Das",
+        "phone": "+919707112233",
+        "addressLine1": "Moutupuri, Barpeta",
+        "addressLine2": "Near BH College",
+        "city": "Howly",
+        "state": "Assam",
+        "postalCode": "781316",
+        "country": "India",
+        "isDefault": true
+      },
+      "billingAddress": {
+        "id": 1,
+        "label": "Home",
+        "firstName": "Bappi",
+        "lastName": "Das",
+        "phone": "+919707112233",
+        "addressLine1": "Moutupuri, Barpeta",
+        "addressLine2": "Near BH College",
+        "city": "Howly",
+        "state": "Assam",
+        "postalCode": "781316",
+        "country": "India",
+        "isDefault": true
+      },
+      "subtotal": 8999,
+      "discountAmount": 0,
+      "couponCode": null,
+      "shippingAmount": 0,
+      "taxAmount": 1620,
+      "total": 10619,
+      "storeCreditUsed": 1000,
+      "amountPayable": 9619,
+      "paymentMethod": "upi",
+      "paymentStatus": "paid",
+      "fulfillmentStatus": "unfulfilled",
+      "shippingStatus": "pending",
+      "trackingNumber": null,
+      "notes": "",
+      "userId": 3,
+      "orderNumber": "ORD-MQDVIQCV-30A9",
+      "shiprocketOrderId": null,
+      "createdAt": "2026-06-14T14:22:33.199Z",
+      "updatedAt": "2026-06-14T14:22:33.200Z",
+      "statusHistory": [
+        {
+          "at": "2026-06-14T14:22:33.200Z",
+          "by": "Customer",
+          "action": "Order placed"
+        }
+      ],
+      "id": 11
     }
   ],
   "returns": [
@@ -2730,6 +2778,40 @@
       "createdAt": "2026-06-13T14:44:33.866Z",
       "updatedAt": "2026-06-13T14:44:33.866Z",
       "id": 7
+    },
+    {
+      "orderId": 10,
+      "orderNumber": "ORD-MQDUWC74-RUVY",
+      "userId": 3,
+      "amount": 94398,
+      "currency": "INR",
+      "paymentMethod": "upi",
+      "gateway": "razorpay",
+      "transactionId": "pay_MOCKMQDUWC82",
+      "gatewayOrderId": "order_MOCKMQDUWC82",
+      "status": "captured",
+      "storeCreditApplied": 0,
+      "gatewayResponse": {},
+      "createdAt": "2026-06-14T14:05:08.450Z",
+      "updatedAt": "2026-06-14T14:05:08.450Z",
+      "id": 8
+    },
+    {
+      "orderId": 11,
+      "orderNumber": "ORD-MQDVIQCV-30A9",
+      "userId": 3,
+      "amount": 9619,
+      "currency": "INR",
+      "paymentMethod": "upi",
+      "gateway": "razorpay",
+      "transactionId": "pay_MOCKMQDVIQEE",
+      "gatewayOrderId": "order_MOCKMQDVIQEE",
+      "status": "captured",
+      "storeCreditApplied": 1000,
+      "gatewayResponse": {},
+      "createdAt": "2026-06-14T14:22:33.254Z",
+      "updatedAt": "2026-06-14T14:22:33.254Z",
+      "id": 9
     }
   ],
   "refunds": [
@@ -3035,7 +3117,140 @@
       "updatedAt": "2026-05-05T09:00:00.000Z"
     }
   ],
-  "wishlist": [],
+  "wishlist": [
+    {
+      "productId": 1,
+      "slug": "probook-ultra-laptop-15",
+      "name": "ProBook Ultra Laptop 15\"",
+      "image": "https://placehold.co/600x400/1a1a2e/FFFFFF?text=ProBook+Laptop",
+      "brand": "ProBook",
+      "price": 74999,
+      "comparePrice": 89999,
+      "rating": 4.6,
+      "totalReviews": 128,
+      "shortDescription": "Powerful 15-inch laptop with Intel Core i7 processor and 16GB RAM",
+      "variants": [
+        {
+          "id": "v1",
+          "name": "8GB RAM / 256GB SSD",
+          "price": 64999,
+          "stock": 20,
+          "sku": "LAP-PBU-15-8-256",
+          "attributes": {
+            "Configuration": "8GB · 256GB SSD"
+          }
+        },
+        {
+          "id": "v2",
+          "name": "16GB RAM / 512GB SSD",
+          "price": 74999,
+          "stock": 15,
+          "sku": "LAP-PBU-15-16-512",
+          "attributes": {
+            "Configuration": "16GB · 512GB SSD"
+          }
+        },
+        {
+          "id": "v3",
+          "name": "32GB RAM / 1TB SSD",
+          "price": 94999,
+          "stock": 10,
+          "sku": "LAP-PBU-15-32-1TB",
+          "attributes": {
+            "Configuration": "32GB · 1TB SSD"
+          }
+        }
+      ],
+      "stock": 45,
+      "trending": true,
+      "hot": false,
+      "addedAt": "2026-06-14T13:57:44.901Z",
+      "userId": 3,
+      "id": 1
+    },
+    {
+      "productId": 3,
+      "slug": "fitpulse-smartwatch-series-5",
+      "name": "FitPulse Smartwatch Series 5",
+      "image": "https://placehold.co/600x400/0f3460/FFFFFF?text=FitPulse+Watch",
+      "brand": "FitPulse",
+      "price": 14999,
+      "comparePrice": 19999,
+      "rating": 4.5,
+      "totalReviews": 215,
+      "shortDescription": "Advanced health tracking smartwatch with GPS and AMOLED display",
+      "variants": [
+        {
+          "id": "v1",
+          "name": "Black / Rubber Band",
+          "price": 14999,
+          "stock": 30,
+          "sku": "ELC-FPS-SW5-BLK-R"
+        },
+        {
+          "id": "v2",
+          "name": "Silver / Metal Band",
+          "price": 16999,
+          "stock": 25,
+          "sku": "ELC-FPS-SW5-SLV-M"
+        },
+        {
+          "id": "v3",
+          "name": "Gold / Leather Band",
+          "price": 18999,
+          "stock": 20,
+          "sku": "ELC-FPS-SW5-GLD-L"
+        }
+      ],
+      "stock": 75,
+      "trending": false,
+      "hot": true,
+      "addedAt": "2026-06-14T13:57:57.354Z",
+      "userId": 3,
+      "id": 2
+    },
+    {
+      "productId": 7,
+      "slug": "banarasi-silk-saree",
+      "name": "Banarasi Silk Saree",
+      "image": "https://placehold.co/600x400/c2185b/FFFFFF?text=Banarasi+Saree",
+      "brand": "WeaveKraft",
+      "price": 5999,
+      "comparePrice": 8999,
+      "rating": 4.8,
+      "totalReviews": 215,
+      "shortDescription": "Handwoven Banarasi silk saree with rich zari work",
+      "variants": [
+        {
+          "id": "v1",
+          "name": "Maroon & Gold",
+          "price": 5999,
+          "stock": 10,
+          "sku": "SAR-BNR-SLK-MRN"
+        },
+        {
+          "id": "v2",
+          "name": "Royal Blue & Gold",
+          "price": 5999,
+          "stock": 10,
+          "sku": "SAR-BNR-SLK-BLU"
+        },
+        {
+          "id": "v3",
+          "name": "Green & Gold",
+          "price": 6499,
+          "stock": 10,
+          "sku": "SAR-BNR-SLK-GRN"
+        }
+      ],
+      "stock": 30,
+      "trending": true,
+      "hot": false,
+      "addedAt": "2026-06-14T13:57:59.358Z",
+      "userId": 3,
+      "id": 3
+    }
+  ],
   "leads": [
     {
       "id": 1,
@@ -3184,6 +3399,20 @@
       "balanceAfter": 3918,
       "createdAt": "2026-06-13T14:44:33.927Z",
       "id": 2
+    },
+    {
+      "userId": 3,
+      "type": "debit",
+      "amount": 1000,
+      "reason": "Applied to order ORD-MQDVIQCV-30A9",
+      "orderId": 11,
+      "orderNumber": "ORD-MQDVIQCV-30A9",
+      "refundId": null,
+      "refundNumber": null,
+      "balanceBefore": 3918,
+      "balanceAfter": 2918,
+      "createdAt": "2026-06-14T14:22:33.343Z",
+      "id": 3
     }
   ],
   "dealsConfig": {
