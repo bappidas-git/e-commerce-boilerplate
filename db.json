@@ -1735,7 +1735,7 @@
       "shortDescription": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. ",
       "description": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. In interdum ligula sed ex elementum commodo. Ut ultricies ullamcorper facilisis. Nam non vulputate tellus, at ultrices magna. Nam fringilla ultrices justo, eu placerat lorem tempor sed. Suspendisse potenti. ",
       "categoryId": 1,
-      "brand": "Google",
+      "brand": "Google AZX",
       "images": [
         "https://placehold.co/600x400/1a1a2e/FFFFFF?text=Test+Product"
       ],
@@ -1759,7 +1759,7 @@
       "metaTitle": "",
       "metaDescription": "",
       "createdAt": "2026-06-14T04:28:48.416Z",
-      "updatedAt": "2026-06-14T04:28:48.416Z",
+      "updatedAt": "2026-06-14T12:27:33.737Z",
       "id": 21
     }
   ],
