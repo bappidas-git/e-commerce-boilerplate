@@ -131,6 +131,18 @@ const AdminCategories = () => {
   };
 
   const handleDelete = async (cat) => {
+    // Subcategories are already in state — block early with specific guidance,
+    // before showing a destructive confirmation.
+    const childCount = categories.filter((c) => String(c.parentId) === String(cat.id)).length;
+    if (childCount > 0) {
+      Swal.fire({
+        icon: "info",
+        title: "Category in use",
+        text: `"${cat.name}" has ${childCount} subcategor${childCount === 1 ? "y" : "ies"}. Reassign or delete ${childCount === 1 ? "it" : "them"} first.`,
+      });
+      return;
+    }
+
     const result = await Swal.fire({ title: "Delete category?", text: `"${cat.name}" will be permanently deleted.`, icon: "warning", showCancelButton: true, confirmButtonColor: "#d32f2f", confirmButtonText: "Delete" });
     if (!result.isConfirmed) return;
     try {
@@ -138,7 +150,10 @@ const AdminCategories = () => {
       Swal.fire({ icon: "success", title: "Deleted", toast: true, position: "bottom-end", showConfirmButton: false, timer: 2000 });
       loadCategories();
     } catch (e) {
-      Swal.fire({ icon: "error", title: "Error", text: e.message });
+      // Products-still-assigned (and any other referential guard) surface here
+      // as a clear, non-alarming message rather than a raw error.
+      const blocked = e.code === "CATEGORY_IN_USE";
+      Swal.fire({ icon: blocked ? "info" : "error", title: blocked ? "Category in use" : "Error", text: e.message });
     }
   };
 
