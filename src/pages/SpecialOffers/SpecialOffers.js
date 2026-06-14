@@ -1,19 +1,22 @@
-import React, { useState, useEffect, useMemo, useCallback } from "react";
+import React, { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { useTheme } from "../../context/ThemeContext";
 import { useCart } from "../../hooks/useCart";
 import { useWishlist } from "../../context/WishlistContext";
+import { useDealsConfig } from "../../context/DealsConfigContext";
 import apiService from "../../services/api";
 import {
   formatCurrency,
   getProductMinPrice,
   getProductMaxDiscount,
   buildCartItem,
+  productPath,
   copyToClipboard,
   truncateText,
   onImageError,
 } from "../../utils/helpers";
+import { resolveCountdownTarget, diffToParts } from "../../utils/dealsConfig";
 import styles from "./SpecialOffers.module.css";
 
 // ── Coupon display helpers ───────────────────────────────────────────────────
@@ -30,34 +33,51 @@ const formatExpiry = (iso) =>
 // Headline figure on a coupon's stub: "20%" for percentage, "₹500" for fixed.
 const couponHeadline = (c) => (c.type === "percentage" ? `${c.value}%` : rupees(c.value));
 
-// ── Countdown Timer Hook ─────────────────────────────────────────────────────
+// Only advertise coupons a shopper can actually redeem right now: active, not
+// past expiry, not usage-exhausted — the same gates checkout enforces.
+// (minOrderAmount is order-dependent, so it's shown on the card instead.)
+const isCouponValid = (c, now = new Date()) =>
+  c &&
+  c.isActive !== false &&
+  (!c.expiresAt || new Date(c.expiresAt) > now) &&
+  !(c.usageLimit && c.usedCount >= c.usageLimit);
 
-const getEndOfDay = () => {
-  const now = new Date();
-  const end = new Date(now);
-  end.setHours(23, 59, 59, 999);
-  return end;
+// Resolve an ordered id selection against a list, preserving the admin order and
+// dropping ids that no longer exist.
+const pickByIds = (items, ids) => {
+  const byId = new Map(items.map((it) => [String(it.id), it]));
+  return (ids || []).map((id) => byId.get(String(id))).filter(Boolean);
 };
 
-const calcTimeLeft = () => {
-  const diff = getEndOfDay() - new Date();
-  if (diff <= 0) return { hours: 0, minutes: 0, seconds: 0 };
-  return {
-    hours: Math.floor(diff / (1000 * 60 * 60)),
-    minutes: Math.floor((diff / (1000 * 60)) % 60),
-    seconds: Math.floor((diff / 1000) % 60),
-  };
+const pad = (n) => String(n).padStart(2, "0");
+
+// ── Countdown Hook (admin-configured) ────────────────────────────────────────
+// Targets the admin's window (fixed end date, or end-of-day when none) and
+// re-evaluates each second so a fixed end can expire live and honour onExpiry.
+const computeCountdown = (timer) => {
+  const r = resolveCountdownTarget(timer);
+  if (!r.active) {
+    return { show: false, ended: !!r.ended, parts: { hours: 0, minutes: 0, seconds: 0 } };
+  }
+  return { show: true, ended: false, parts: diffToParts(r.target) };
 };
 
-const useCountdown = () => {
-  const [timeLeft, setTimeLeft] = useState(calcTimeLeft);
+const useDealsCountdown = (timer) => {
+  const [state, setState] = useState(() => computeCountdown(timer));
+  const enabled = timer?.enabled;
+  const endAt = timer?.endAt;
+  const onExpiry = timer?.onExpiry;
 
   useEffect(() => {
-    const timer = setInterval(() => setTimeLeft(calcTimeLeft()), 1000);
-    return () => clearInterval(timer);
-  }, []);
+    setState(computeCountdown({ enabled, endAt, onExpiry }));
+    const id = setInterval(
+      () => setState(computeCountdown({ enabled, endAt, onExpiry })),
+      1000
+    );
+    return () => clearInterval(id);
+  }, [enabled, endAt, onExpiry]);
 
-  return timeLeft;
+  return state;
 };
 
 // ── Star Rating ──────────────────────────────────────────────────────────────
@@ -73,10 +93,103 @@ const StarRating = ({ rating, reviewCount }) => {
         <span key={`f${i}`} className={styles.starFull}>&#9733;</span>
       ))}
       {hasHalf && <span className={styles.starHalf}>&#9733;</span>}
-      {Array.from({ length: emptyStars }, (_, i) => (
+      {Array.from({ length: Math.max(0, emptyStars) }, (_, i) => (
         <span key={`e${i}`} className={styles.starEmpty}>&#9733;</span>
       ))}
       <span className={styles.reviewCount}>({reviewCount?.toLocaleString() || 0})</span>
+    </div>
+  );
+};
+
+// ── Responsive Category Tabs ─────────────────────────────────────────────────
+// Horizontally scrollable strip that never hides a tab: edge-fade affordances +
+// scroll buttons appear when there's more off-screen, and the active tab is
+// scrolled into view. Buttons are hidden on touch/mobile (CSS) where the strip
+// scrolls by swipe.
+const CategoryTabs = ({ categories, activeTab, onChange }) => {
+  const scrollRef = useRef(null);
+  const [atStart, setAtStart] = useState(true);
+  const [atEnd, setAtEnd] = useState(true);
+
+  const updateEdges = useCallback(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const { scrollLeft, scrollWidth, clientWidth } = el;
+    setAtStart(scrollLeft <= 1);
+    setAtEnd(scrollLeft + clientWidth >= scrollWidth - 1);
+  }, []);
+
+  useEffect(() => {
+    updateEdges();
+    const el = scrollRef.current;
+    if (!el) return undefined;
+    el.addEventListener("scroll", updateEdges, { passive: true });
+    window.addEventListener("resize", updateEdges);
+    return () => {
+      el.removeEventListener("scroll", updateEdges);
+      window.removeEventListener("resize", updateEdges);
+    };
+  }, [updateEdges, categories.length]);
+
+  // Keep the active tab visible when it changes.
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const active = el.querySelector('[data-active="true"]');
+    if (active) active.scrollIntoView({ inline: "center", block: "nearest", behavior: "smooth" });
+  }, [activeTab]);
+
+  const scrollByDir = (dir) => {
+    const el = scrollRef.current;
+    if (!el) return;
+    el.scrollBy({ left: dir * Math.max(180, el.clientWidth * 0.6), behavior: "smooth" });
+  };
+
+  return (
+    <div className={styles.tabBarWrap}>
+      <button
+        type="button"
+        className={`${styles.tabScrollBtn} ${styles.tabScrollLeft} ${atStart ? styles.tabScrollHidden : ""}`}
+        onClick={() => scrollByDir(-1)}
+        aria-label="Scroll categories left"
+        tabIndex={atStart ? -1 : 0}
+      >
+        &#8249;
+      </button>
+      <div className={`${styles.tabFade} ${styles.tabFadeLeft} ${atStart ? styles.tabFadeHidden : ""}`} />
+
+      <div className={styles.tabBar} ref={scrollRef}>
+        <button
+          type="button"
+          data-active={activeTab === "all"}
+          className={`${styles.tab} ${activeTab === "all" ? styles.tabActive : ""}`}
+          onClick={() => onChange("all")}
+        >
+          All Deals
+        </button>
+        {categories.map((cat) => (
+          <button
+            key={cat.id}
+            type="button"
+            data-active={activeTab === cat.id}
+            className={`${styles.tab} ${activeTab === cat.id ? styles.tabActive : ""}`}
+            onClick={() => onChange(cat.id)}
+          >
+            {cat.name}
+          </button>
+        ))}
+      </div>
+
+      <div className={`${styles.tabFade} ${styles.tabFadeRight} ${atEnd ? styles.tabFadeHidden : ""}`} />
+      <button
+        type="button"
+        className={`${styles.tabScrollBtn} ${styles.tabScrollRight} ${atEnd ? styles.tabScrollHidden : ""}`}
+        onClick={() => scrollByDir(1)}
+        aria-label="Scroll categories right"
+        tabIndex={atEnd ? -1 : 0}
+      >
+        &#8250;
+      </button>
     </div>
   );
 };
@@ -106,7 +219,7 @@ const ProductCard = ({ product, categoryName, onAddToCart, onToggleWishlist, isW
       exit={{ opacity: 0, y: -16 }}
       transition={{ duration: 0.3, delay: Math.min(index * 0.04, 0.4) }}
       layout
-      onClick={() => navigate(`/products/${product.id}`)}
+      onClick={() => navigate(productPath(product))}
     >
       <div className={styles.productImageWrap}>
         <img
@@ -131,7 +244,7 @@ const ProductCard = ({ product, categoryName, onAddToCart, onToggleWishlist, isW
             className={styles.quickViewBtn}
             onClick={(e) => {
               e.stopPropagation();
-              navigate(`/products/${product.id}`);
+              navigate(productPath(product));
             }}
           >
             Quick View
@@ -198,6 +311,10 @@ const SpecialOffers = () => {
   const { isDarkMode } = useTheme();
   const { addToCart } = useCart();
   const { toggleWishlist, isInWishlist } = useWishlist();
+  // The whole page is admin-managed via this config (master toggle, hero,
+  // timer, featured coupon/product selections).
+  const { config, loading: configLoading } = useDealsConfig();
+  const enabled = config.enabled !== false;
 
   const [products, setProducts] = useState([]);
   const [categories, setCategories] = useState([]);
@@ -206,11 +323,17 @@ const SpecialOffers = () => {
   const [activeTab, setActiveTab] = useState("all");
   const [copiedCode, setCopiedCode] = useState(null);
 
-  const timeLeft = useCountdown();
+  const countdown = useDealsCountdown(config.timer);
 
   // Fetch products (for deals), categories (for accurate tabs) and the real
-  // coupons (so advertised codes match what checkout accepts) in one pass.
+  // coupons (so advertised codes match what checkout accepts) in one pass. Only
+  // when the page is actually enabled — no point fetching for a hidden page.
   useEffect(() => {
+    if (!enabled) {
+      setLoading(false);
+      return;
+    }
+    let cancelled = false;
     const fetchData = async () => {
       try {
         setLoading(true);
@@ -219,33 +342,35 @@ const SpecialOffers = () => {
           apiService.categories.getAll(),
           apiService.coupons.getActive(),
         ]);
+        if (cancelled) return;
         setProducts(Array.isArray(productsData) ? productsData : []);
         setCategories(Array.isArray(categoriesData) ? categoriesData : []);
         setCoupons(Array.isArray(couponsData) ? couponsData : []);
       } catch (error) {
         console.error("Error fetching offers data:", error);
+        if (cancelled) return;
         setProducts([]);
         setCategories([]);
         setCoupons([]);
       } finally {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       }
     };
     fetchData();
-  }, []);
+    return () => {
+      cancelled = true;
+    };
+  }, [enabled]);
 
-  // Only advertise coupons a shopper can actually redeem right now: active,
-  // not past expiry, not usage-exhausted — the same gates checkout enforces.
-  // (minOrderAmount is order-dependent, so it's shown on the card instead.)
-  const activeCoupons = useMemo(() => {
-    const now = new Date();
-    return coupons.filter(
-      (c) =>
-        c.isActive !== false &&
-        (!c.expiresAt || new Date(c.expiresAt) > now) &&
-        !(c.usageLimit && c.usedCount >= c.usageLimit)
-    );
-  }, [coupons]);
+  // Coupons to advertise: the admin's ordered selection (kept to valid ones), or
+  // — when nothing is selected — every valid active coupon (automatic).
+  const featuredCoupons = useMemo(() => {
+    const valid = coupons.filter((c) => isCouponValid(c));
+    if (config.featuredCouponIds?.length) {
+      return pickByIds(valid, config.featuredCouponIds);
+    }
+    return valid;
+  }, [coupons, config.featuredCouponIds]);
 
   // Map of categoryId → name; products carry a numeric categoryId only.
   const categoryMap = useMemo(() => {
@@ -254,27 +379,43 @@ const SpecialOffers = () => {
     return map;
   }, [categories]);
 
-  // Filter & sort discounted products (highest discount first).
+  // Discounted products, highest discount first — the automatic deal pool.
   const discountedProducts = useMemo(() => {
     return products
       .filter((p) => getProductMaxDiscount(p) > 0)
       .sort((a, b) => getProductMaxDiscount(b) - getProductMaxDiscount(a));
   }, [products]);
 
-  // Category tabs = real categories that actually have a deal, in catalogue order.
+  // Deal of the Day: the admin's ordered picks, else the top 3 by discount.
+  const dealOfTheDay = useMemo(() => {
+    if (config.dealOfTheDayIds?.length) return pickByIds(products, config.dealOfTheDayIds);
+    return discountedProducts.slice(0, 3);
+  }, [products, discountedProducts, config.dealOfTheDayIds]);
+
+  // Deals grid: the admin's ordered picks, else every discounted product.
+  const gridProducts = useMemo(() => {
+    if (config.featuredProductIds?.length) return pickByIds(products, config.featuredProductIds);
+    return discountedProducts;
+  }, [products, discountedProducts, config.featuredProductIds]);
+
+  // Category tabs = real categories represented in the grid, in catalogue order.
   const dealCategories = useMemo(() => {
-    const ids = new Set(discountedProducts.map((p) => p.categoryId).filter((id) => id != null));
+    const ids = new Set(gridProducts.map((p) => p.categoryId).filter((id) => id != null));
     return categories.filter((c) => ids.has(c.id));
-  }, [discountedProducts, categories]);
+  }, [gridProducts, categories]);
 
   // Filtered by active tab (tab value is a categoryId, or "all").
   const filteredProducts = useMemo(() => {
-    if (activeTab === "all") return discountedProducts;
-    return discountedProducts.filter((p) => p.categoryId === activeTab);
-  }, [discountedProducts, activeTab]);
+    if (activeTab === "all") return gridProducts;
+    return gridProducts.filter((p) => p.categoryId === activeTab);
+  }, [gridProducts, activeTab]);
 
-  // Deal of the Day: top 3 by discount.
-  const dealOfTheDay = useMemo(() => discountedProducts.slice(0, 3), [discountedProducts]);
+  // If the active tab's category drops out of the deal set, fall back to "all".
+  useEffect(() => {
+    if (activeTab !== "all" && !dealCategories.some((c) => c.id === activeTab)) {
+      setActiveTab("all");
+    }
+  }, [dealCategories, activeTab]);
 
   // Handlers
   const handleCopyCode = useCallback(async (code) => {
@@ -299,7 +440,46 @@ const SpecialOffers = () => {
     [toggleWishlist]
   );
 
-  const pad = (n) => String(n).padStart(2, "0");
+  // ── Master toggle: page hidden ───────────────────────────────────────────────
+  // While the config is still loading we show a neutral loader so a disabled
+  // page never flashes its content first.
+  if (configLoading) {
+    return (
+      <div className={`${styles.page} ${isDarkMode ? styles.dark : ""}`}>
+        <div className={styles.pageLoader}>
+          <div className={styles.spinner} aria-label="Loading" />
+        </div>
+      </div>
+    );
+  }
+
+  if (!enabled) {
+    return (
+      <motion.div
+        className={`${styles.page} ${isDarkMode ? styles.dark : ""}`}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.3 }}
+      >
+        <div className={styles.container}>
+          <section className={styles.unavailableState}>
+            <div className={styles.unavailableIcon}>&#128276;</div>
+            <h1 className={styles.unavailableTitle}>No Deals Right Now</h1>
+            <p className={styles.unavailableText}>
+              Our special offers page is taking a short break. Great deals are on their way back —
+              in the meantime, explore our full collection.
+            </p>
+            <button className={styles.emptyBtn} onClick={() => navigate("/products")}>
+              Browse All Products
+            </button>
+          </section>
+        </div>
+      </motion.div>
+    );
+  }
+
+  const showCountdown = config.timer?.enabled !== false && countdown.show;
+  const timerEnded = config.timer?.enabled !== false && countdown.ended;
 
   // ── Render ─────────────────────────────────────────────────────────────────
 
@@ -320,37 +500,41 @@ const SpecialOffers = () => {
             transition={{ duration: 0.5 }}
             className={styles.heroInner}
           >
-            <span className={styles.heroTag}>Limited Time</span>
+            {config.hero?.tag && <span className={styles.heroTag}>{config.hero.tag}</span>}
             <motion.h1
               className={styles.heroTitle}
               initial={{ opacity: 0, scale: 0.94 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ duration: 0.5, delay: 0.1 }}
             >
-              Special Offers &amp; Deals
+              {config.hero?.title || "Special Offers & Deals"}
             </motion.h1>
-            <p className={styles.heroSubtitle}>
-              Discover unbeatable prices on top products. New deals drop daily — don't miss out!
-            </p>
-            <div className={styles.heroCountdown}>
-              <span className={styles.countdownLabel}>Deals end in:</span>
-              <div className={styles.countdownBoxes}>
-                <div className={styles.countdownUnit}>
-                  <span className={styles.countdownNumber}>{pad(timeLeft.hours)}</span>
-                  <span className={styles.countdownText}>Hours</span>
-                </div>
-                <span className={styles.countdownSep}>:</span>
-                <div className={styles.countdownUnit}>
-                  <span className={styles.countdownNumber}>{pad(timeLeft.minutes)}</span>
-                  <span className={styles.countdownText}>Min</span>
-                </div>
-                <span className={styles.countdownSep}>:</span>
-                <div className={styles.countdownUnit}>
-                  <span className={styles.countdownNumber}>{pad(timeLeft.seconds)}</span>
-                  <span className={styles.countdownText}>Sec</span>
+            {config.hero?.subtitle && (
+              <p className={styles.heroSubtitle}>{config.hero.subtitle}</p>
+            )}
+            {showCountdown ? (
+              <div className={styles.heroCountdown}>
+                <span className={styles.countdownLabel}>Deals end in:</span>
+                <div className={styles.countdownBoxes}>
+                  <div className={styles.countdownUnit}>
+                    <span className={styles.countdownNumber}>{pad(countdown.parts.hours)}</span>
+                    <span className={styles.countdownText}>Hours</span>
+                  </div>
+                  <span className={styles.countdownSep}>:</span>
+                  <div className={styles.countdownUnit}>
+                    <span className={styles.countdownNumber}>{pad(countdown.parts.minutes)}</span>
+                    <span className={styles.countdownText}>Min</span>
+                  </div>
+                  <span className={styles.countdownSep}>:</span>
+                  <div className={styles.countdownUnit}>
+                    <span className={styles.countdownNumber}>{pad(countdown.parts.seconds)}</span>
+                    <span className={styles.countdownText}>Sec</span>
+                  </div>
                 </div>
               </div>
-            </div>
+            ) : timerEnded ? (
+              <div className={styles.heroEnded}>These deals have ended — fresh offers coming soon!</div>
+            ) : null}
           </motion.div>
         </div>
       </section>
@@ -369,9 +553,9 @@ const SpecialOffers = () => {
                 <CouponSkeleton key={i} />
               ))}
             </div>
-          ) : activeCoupons.length > 0 ? (
+          ) : featuredCoupons.length > 0 ? (
             <div className={styles.couponGrid}>
-              {activeCoupons.map((coupon) => (
+              {featuredCoupons.map((coupon) => (
                 <motion.div
                   key={coupon.id ?? coupon.code}
                   className={styles.couponCard}
@@ -420,12 +604,14 @@ const SpecialOffers = () => {
             <div className={styles.sectionHeader}>
               <div className={styles.sectionTitleRow}>
                 <h2 className={styles.sectionTitle}>Deal of the Day</h2>
-                <div className={styles.dotdTimer}>
-                  <span className={styles.timerIcon}>&#9200;</span>
-                  <span>
-                    {pad(timeLeft.hours)}:{pad(timeLeft.minutes)}:{pad(timeLeft.seconds)}
-                  </span>
-                </div>
+                {showCountdown && (
+                  <div className={styles.dotdTimer}>
+                    <span className={styles.timerIcon}>&#9200;</span>
+                    <span>
+                      {pad(countdown.parts.hours)}:{pad(countdown.parts.minutes)}:{pad(countdown.parts.seconds)}
+                    </span>
+                  </div>
+                )}
               </div>
               <p className={styles.sectionSubtitle}>Today's top picks at the lowest prices</p>
             </div>
@@ -441,7 +627,7 @@ const SpecialOffers = () => {
                     initial={{ opacity: 0, scale: 0.95 }}
                     animate={{ opacity: 1, scale: 1 }}
                     transition={{ duration: 0.4, delay: idx * 0.1 }}
-                    onClick={() => navigate(`/products/${product.id}`)}
+                    onClick={() => navigate(productPath(product))}
                   >
                     <div className={styles.dotdImageWrap}>
                       <img
@@ -450,7 +636,7 @@ const SpecialOffers = () => {
                         className={styles.dotdImage}
                         onError={onImageError}
                       />
-                      <span className={styles.dotdBadge}>-{maxDiscount}%</span>
+                      {maxDiscount > 0 && <span className={styles.dotdBadge}>-{maxDiscount}%</span>}
                     </div>
                     <div className={styles.dotdInfo}>
                       <h3 className={styles.dotdName}>{product.name}</h3>
@@ -458,9 +644,11 @@ const SpecialOffers = () => {
                         <span className={styles.dotdSalePrice}>
                           {formatCurrency(minPrice.sellingPrice, minPrice.currency)}
                         </span>
-                        <span className={styles.dotdOriginalPrice}>
-                          {formatCurrency(minPrice.originalPrice, minPrice.currency)}
-                        </span>
+                        {maxDiscount > 0 && (
+                          <span className={styles.dotdOriginalPrice}>
+                            {formatCurrency(minPrice.originalPrice, minPrice.currency)}
+                          </span>
+                        )}
                       </div>
                       {saving > 0 && (
                         <p className={styles.dotdSavings}>
@@ -488,7 +676,7 @@ const SpecialOffers = () => {
         )}
 
         {/* ── Deals by Category ─────────────────────────────────────────── */}
-        {!loading && discountedProducts.length > 0 && (
+        {!loading && gridProducts.length > 0 && (
           <section className={styles.section}>
             <div className={styles.sectionHeader}>
               <h2 className={styles.sectionTitle}>
@@ -500,23 +688,11 @@ const SpecialOffers = () => {
             </div>
 
             {dealCategories.length > 0 && (
-              <div className={styles.tabBar}>
-                <button
-                  className={`${styles.tab} ${activeTab === "all" ? styles.tabActive : ""}`}
-                  onClick={() => setActiveTab("all")}
-                >
-                  All Deals
-                </button>
-                {dealCategories.map((cat) => (
-                  <button
-                    key={cat.id}
-                    className={`${styles.tab} ${activeTab === cat.id ? styles.tabActive : ""}`}
-                    onClick={() => setActiveTab(cat.id)}
-                  >
-                    {cat.name}
-                  </button>
-                ))}
-              </div>
+              <CategoryTabs
+                categories={dealCategories}
+                activeTab={activeTab}
+                onChange={setActiveTab}
+              />
             )}
 
             {/* ── Products Grid ─────────────────────────────────────────── */}
@@ -550,7 +726,7 @@ const SpecialOffers = () => {
         )}
 
         {/* ── Empty State ───────────────────────────────────────────────── */}
-        {!loading && discountedProducts.length === 0 && (
+        {!loading && gridProducts.length === 0 && dealOfTheDay.length === 0 && (
           <section className={styles.emptyState}>
             <div className={styles.emptyIcon}>&#127991;</div>
             <h2 className={styles.emptyTitle}>No Deals Available</h2>

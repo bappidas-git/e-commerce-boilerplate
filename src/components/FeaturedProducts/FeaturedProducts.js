@@ -9,6 +9,7 @@ import {
   getProductMinPrice,
   truncateText,
   buildCartItem,
+  productPath,
   PLACEHOLDER_IMG,
   onImageError,
 } from "../../utils/helpers";
@@ -87,7 +88,7 @@ const FeaturedProducts = ({ products = [], title = "Featured Products", viewAllL
             onAddToCart={addToCart}
             onToggleWishlist={toggleWishlist}
             isWishlisted={isInWishlist(product.id)}
-            onClick={() => navigate(`/products/${product.id}`)}
+            onClick={() => navigate(productPath(product))}
           />
         ))}
       </div>

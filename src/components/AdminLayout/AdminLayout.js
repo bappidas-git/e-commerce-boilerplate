@@ -94,6 +94,11 @@ const menuItems = [
     path: "/admin/coupons",
   },
   {
+    title: "Special Offers",
+    icon: "mdi:sale",
+    path: "/admin/special-offers",
+  },
+  {
     title: "Operations",
     icon: null,
     isSection: true,

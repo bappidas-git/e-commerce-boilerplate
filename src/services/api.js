@@ -1361,6 +1361,31 @@ const apiService = {
   },
 
   // ===========================================================================
+  // Deals / Special Offers (Storefront)
+  // ===========================================================================
+  // Public read of the admin-managed config that drives the Special Offers page
+  // (master toggle, hero copy, countdown window, featured coupon/product ids).
+  // The storefront nav also reads `enabled` from here to show/hide the "Today's
+  // Deals" entry. Falls back to a sensible default if the record is missing so
+  // the page/nav degrade gracefully rather than breaking.
+  deals: {
+    getConfig: async () => {
+      try {
+        if (IS_MOCK_API) {
+          const response = await api.get("/dealsConfig");
+          return response.data || {};
+        }
+        const response = await api.get("/deals/config");
+        return extractData(response);
+      } catch (error) {
+        console.error("Get deals config error:", error);
+        // Default to "enabled" so a missing config never hides deals silently.
+        return { enabled: true };
+      }
+    },
+  },
+
+  // ===========================================================================
   // Leads / Support
   // ===========================================================================
   leads: {
@@ -2296,6 +2321,34 @@ const apiService = {
         const response = await api.patch(`/admin/settings/${section}`, data);
         return extractData(response);
       } catch (error) { console.error("Admin update settings error:", error); throw error; }
+    },
+
+    // --- Deals / Special Offers config ---
+    // The dedicated "Special Offers" admin screen reads and writes the single
+    // dealsConfig record (a json-server singleton in mock mode). The whole
+    // object is replaced on save (mirrors how settings is persisted), so the
+    // admin form always holds and sends the complete config.
+    getDealsConfig: async () => {
+      try {
+        if (IS_MOCK_API) {
+          const response = await api.get("/dealsConfig");
+          return response.data || {};
+        }
+        const response = await api.get("/admin/deals/config");
+        return extractData(response);
+      } catch (error) { console.error("Admin get deals config error:", error); throw error; }
+    },
+
+    updateDealsConfig: async (data) => {
+      try {
+        const payload = { ...data, updatedAt: new Date().toISOString() };
+        if (IS_MOCK_API) {
+          const response = await api.put("/dealsConfig", payload);
+          return response.data;
+        }
+        const response = await api.put("/admin/deals/config", payload);
+        return extractData(response);
+      } catch (error) { console.error("Admin update deals config error:", error); throw error; }
     },
   },
 };

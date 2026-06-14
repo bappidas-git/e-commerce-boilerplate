@@ -41,6 +41,9 @@ const isLocalId = (id) => String(id).startsWith("local-");
 // the Wishlist page and POSTed to the API (minus the local row id).
 const buildWishlistItem = (product) => ({
   productId: product.id,
+  // Carry the slug so the wishlist card can deep-link to the canonical slug URL
+  // (falls back to productId via productPath when absent).
+  slug: product.slug || null,
   name: product.name,
   image: product.images?.[0] || product.image,
   brand: product.brand,
@@ -65,6 +68,7 @@ const normalizeWishlistItem = (item) => {
     return {
       id: item.id,
       productId: item.productId || item.product.id,
+      slug: item.product.slug || item.slug || null,
       name: item.product.name,
       image: item.product.images?.[0] || item.product.image,
       brand: item.product.brand,

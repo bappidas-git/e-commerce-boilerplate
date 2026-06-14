@@ -80,6 +80,9 @@ export const buildCartItem = (product) => {
   return {
     id: variant ? `${product.id}-${variant.id}` : String(product.id),
     productId: product.id,
+    // Carry the slug so the cart line can deep-link to the canonical slug URL
+    // (falls back to the product id when absent — see productPath).
+    slug: product.slug || null,
     variantId: variant?.id || null,
     variantName: variant?.name || null,
     name: product.name,
@@ -89,6 +92,18 @@ export const buildCartItem = (product) => {
     currency: "INR",
     ...(stock != null && stock !== "" ? { stock: Number(stock) } : {}),
   };
+};
+
+// Canonical storefront URL for a product. Prefers the human-readable slug and
+// falls back to the numeric product id, which the product detail route still
+// resolves (and then redirects to the slug). Accepts a full product object or a
+// cart/wishlist snapshot. NB: `productId` is preferred over `id` because a cart
+// line's `id` may be a composite like "1-v2" (productId-variantId), not the
+// product id.
+export const productPath = (product) => {
+  if (!product) return "/products";
+  const idPart = product.slug || product.productId || product.id;
+  return `/products/${idPart}`;
 };
 
 export const formatNumber = (num) => {
