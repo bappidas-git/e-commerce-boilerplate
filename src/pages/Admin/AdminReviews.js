@@ -4,7 +4,7 @@ import {
   TableHead, TableRow, Chip, IconButton, Tooltip, Skeleton, TextField,
   InputAdornment, Select, MenuItem, FormControl, InputLabel, Avatar,
   Rating, Dialog, DialogTitle, DialogContent, DialogActions, Button,
-  Checkbox, FormControlLabel, Stack,
+  Checkbox, FormControlLabel, Stack, Autocomplete,
 } from "@mui/material";
 import { Icon } from "@iconify/react";
 import Swal from "sweetalert2";
@@ -259,18 +259,22 @@ const AdminReviews = () => {
         <DialogTitle sx={{ fontWeight: "bold" }}>Add a Review</DialogTitle>
         <DialogContent dividers>
           <Stack spacing={2.5} sx={{ pt: 1 }}>
-            <FormControl fullWidth size="small">
-              <InputLabel>Product</InputLabel>
-              <Select
-                label="Product"
-                value={form.productId}
-                onChange={(e) => setForm((f) => ({ ...f, productId: e.target.value }))}
-              >
-                {products.map((p) => (
-                  <MenuItem key={p.id} value={p.id}>{p.name}</MenuItem>
-                ))}
-              </Select>
-            </FormControl>
+            <Autocomplete
+              fullWidth
+              size="small"
+              options={products}
+              value={products.find((p) => p.id === form.productId) || null}
+              onChange={(_, newValue) => setForm((f) => ({ ...f, productId: newValue ? newValue.id : "" }))}
+              getOptionLabel={(option) => option.name || ""}
+              isOptionEqualToValue={(option, value) => option.id === value.id}
+              renderOption={(props, option) => (
+                <li {...props} key={option.id}>{option.name}</li>
+              )}
+              renderInput={(params) => (
+                <TextField {...params} label="Product" placeholder="Search products…" />
+              )}
+              noOptionsText="No products found"
+            />
 
             <Box>
               <TextField
