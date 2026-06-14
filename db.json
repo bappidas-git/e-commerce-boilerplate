@@ -121,6 +121,8 @@
       "parentId": null,
       "isActive": true,
       "sortOrder": 1,
+      "showInMainMenu": true,
+      "menuOrder": 1,
       "createdAt": "2025-01-01T00:00:00.000Z",
       "updatedAt": "2025-01-01T00:00:00.000Z"
     },
@@ -133,6 +135,8 @@
       "parentId": null,
       "isActive": true,
       "sortOrder": 2,
+      "showInMainMenu": true,
+      "menuOrder": 2,
       "createdAt": "2025-01-01T00:00:00.000Z",
       "updatedAt": "2025-01-01T00:00:00.000Z"
     },
@@ -145,6 +149,8 @@
       "parentId": null,
       "isActive": true,
       "sortOrder": 3,
+      "showInMainMenu": true,
+      "menuOrder": 3,
       "createdAt": "2025-01-01T00:00:00.000Z",
       "updatedAt": "2025-01-01T00:00:00.000Z"
     },
@@ -157,6 +163,8 @@
       "parentId": null,
       "isActive": true,
       "sortOrder": 4,
+      "showInMainMenu": true,
+      "menuOrder": 4,
       "createdAt": "2025-01-01T00:00:00.000Z",
       "updatedAt": "2025-01-01T00:00:00.000Z"
     },
@@ -169,6 +177,8 @@
       "parentId": null,
       "isActive": true,
       "sortOrder": 5,
+      "showInMainMenu": true,
+      "menuOrder": 5,
       "createdAt": "2025-01-01T00:00:00.000Z",
       "updatedAt": "2025-01-01T00:00:00.000Z"
     },
@@ -181,6 +191,8 @@
       "parentId": 1,
       "isActive": true,
       "sortOrder": 1,
+      "showInMainMenu": false,
+      "menuOrder": 0,
       "createdAt": "2025-01-01T00:00:00.000Z",
       "updatedAt": "2025-01-01T00:00:00.000Z"
     },
@@ -193,6 +205,8 @@
       "parentId": 1,
       "isActive": true,
       "sortOrder": 2,
+      "showInMainMenu": false,
+      "menuOrder": 0,
       "createdAt": "2025-01-01T00:00:00.000Z",
       "updatedAt": "2025-01-01T00:00:00.000Z"
     },
@@ -205,6 +219,8 @@
       "parentId": null,
       "isActive": true,
       "sortOrder": 6,
+      "showInMainMenu": true,
+      "menuOrder": 6,
       "createdAt": "2025-01-01T00:00:00.000Z",
       "updatedAt": "2025-01-01T00:00:00.000Z"
     },
@@ -217,6 +233,8 @@
       "parentId": null,
       "isActive": true,
       "sortOrder": 7,
+      "showInMainMenu": true,
+      "menuOrder": 7,
       "createdAt": "2025-01-01T00:00:00.000Z",
       "updatedAt": "2026-06-12T01:38:32.822Z"
     },
@@ -229,6 +247,8 @@
       "parentId": null,
       "isActive": true,
       "sortOrder": 8,
+      "showInMainMenu": true,
+      "menuOrder": 8,
       "createdAt": "2025-01-01T00:00:00.000Z",
       "updatedAt": "2025-01-01T00:00:00.000Z"
     },
@@ -241,6 +261,8 @@
       "parentId": null,
       "isActive": true,
       "sortOrder": 9,
+      "showInMainMenu": true,
+      "menuOrder": 9,
       "createdAt": "2025-01-01T00:00:00.000Z",
       "updatedAt": "2025-01-01T00:00:00.000Z"
     },
@@ -253,6 +275,8 @@
       "parentId": null,
       "isActive": true,
       "sortOrder": 10,
+      "showInMainMenu": true,
+      "menuOrder": 10,
       "createdAt": "2025-01-01T00:00:00.000Z",
       "updatedAt": "2025-01-01T00:00:00.000Z"
     },
@@ -265,6 +289,8 @@
       "parentId": 1,
       "isActive": true,
       "sortOrder": 3,
+      "showInMainMenu": false,
+      "menuOrder": 0,
       "createdAt": "2025-01-01T00:00:00.000Z",
       "updatedAt": "2025-01-01T00:00:00.000Z"
     },
@@ -277,6 +303,8 @@
       "parentId": 8,
       "isActive": true,
       "sortOrder": 1,
+      "showInMainMenu": false,
+      "menuOrder": 0,
       "createdAt": "2025-01-01T00:00:00.000Z",
       "updatedAt": "2025-01-01T00:00:00.000Z"
     },
@@ -289,6 +317,8 @@
       "parentId": 8,
       "isActive": true,
       "sortOrder": 2,
+      "showInMainMenu": false,
+      "menuOrder": 0,
       "createdAt": "2025-01-01T00:00:00.000Z",
       "updatedAt": "2025-01-01T00:00:00.000Z"
     }

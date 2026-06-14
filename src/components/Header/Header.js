@@ -5,6 +5,11 @@ import { useCart } from "../../hooks/useCart";
 import { useAuth } from "../../hooks/useAuth";
 import { useWishlist } from "../../context/WishlistContext";
 import apiService from "../../services/api";
+import {
+  categoryParam,
+  getMainMenuCategories,
+  orderCategoriesHierarchically,
+} from "../../utils/categories";
 import { APP_NAME, SUPPORT_PHONE, FREE_SHIPPING_THRESHOLD } from "../../utils/constants";
 import { formatCurrency } from "../../utils/helpers";
 import CartDrawer from "../CartDrawer/CartDrawer";
@@ -73,17 +78,28 @@ const Header = () => {
   const [allCategoriesOpen, setAllCategoriesOpen] = useState(false);
   const allCategoriesRef = useRef(null);
 
-  // Fetch categories on mount
+  // Fetch categories on mount. Also refetch when the tab regains focus so any
+  // change the admin makes (toggling a category into the main menu, reordering
+  // it, activating/deactivating it) shows up on the storefront without a hard
+  // reload — the menu is fully API-driven from the same categories source the
+  // admin edits.
   useEffect(() => {
+    let active = true;
     const fetchCategories = async () => {
       try {
         const data = await apiService.categories.getAll();
-        setCategories(Array.isArray(data) ? data : []);
+        if (active) setCategories(Array.isArray(data) ? data : []);
       } catch (err) {
         console.error("Failed to fetch categories:", err);
       }
     };
     fetchCategories();
+    const onFocus = () => fetchCategories();
+    window.addEventListener("focus", onFocus);
+    return () => {
+      active = false;
+      window.removeEventListener("focus", onFocus);
+    };
   }, []);
 
   // Close all-categories dropdown on route change
@@ -118,10 +134,18 @@ const Header = () => {
 
   const handleCategoryClick = (category) => {
     setAllCategoriesOpen(false);
-    navigate(`/products?category=${category.id || category.slug}`);
+    navigate(`/products?category=${categoryParam(category)}`);
   };
 
-  const visibleCategories = isMobile ? [] : categories.slice(0, isTablet ? 5 : 8);
+  // Top main menu = the admin-curated set (categories flagged "Show in main
+  // menu", ordered by their menu order). No hardcoded list and no arbitrary
+  // slice — the admin decides which categories appear and in what order. The
+  // nav bar scrolls horizontally when there are more than fit (see CSS).
+  const menuCategories = isMobile ? [] : getMainMenuCategories(categories);
+
+  // The "All Categories" dropdown lists the full active catalogue, ordered
+  // hierarchically (parents followed by their children) for legibility.
+  const { ordered: dropdownCategories, depthOf } = orderCategoriesHierarchically(categories);
 
   return (
     <>
@@ -366,10 +390,11 @@ const Header = () => {
                         exit={{ opacity: 0, y: -8 }}
                         transition={{ duration: 0.2 }}
                       >
-                        {categories.map((cat) => (
+                        {dropdownCategories.map((cat) => (
                           <button
                             key={cat.id}
                             className={styles.categoryDropdownItem}
+                            style={depthOf(cat.id) ? { paddingLeft: 20 + depthOf(cat.id) * 16 } : undefined}
                             onClick={() => handleCategoryClick(cat)}
                           >
                             {cat.name}
@@ -386,12 +411,12 @@ const Header = () => {
                 </AnimatePresence>
               </div>
 
-              {/* Category links */}
+              {/* Category links (admin-curated main menu) */}
               <div className={styles.navLinks}>
-                {visibleCategories.map((cat) => (
+                {menuCategories.map((cat) => (
                   <Link
                     key={cat.id}
-                    to={`/products?category=${cat.id || cat.slug}`}
+                    to={`/products?category=${categoryParam(cat)}`}
                     className={styles.navLink}
                   >
                     {cat.name}
