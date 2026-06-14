@@ -947,9 +947,12 @@ const Products = () => {
               <p className={styles.cardDesc}>{truncateText(product.shortDescription, 120)}</p>
             )}
 
-            <div className={styles.cardRating}>
-              <RatingStars value={product.rating || 0} count={product.totalReviews || 0} />
-            </div>
+            {/* Social proof — shown ONLY when real ratings exist (no hollow "(0)") */}
+            {(product.totalReviews || 0) > 0 && (
+              <div className={styles.cardRating}>
+                <RatingStars value={product.rating || 0} count={product.totalReviews || 0} />
+              </div>
+            )}
 
             <div className={styles.cardPriceRow}>
               <span className={styles.cardPrice}>

@@ -916,6 +916,75 @@ const apiService = {
         return extractData(response);
       } catch (error) { console.error("Get reviews error:", error); throw error; }
     },
+
+    // Related / "you may also like" — resolved from REAL catalogue data only, in
+    // priority order: (1) the merchant's curated `relatedProductIds`, then
+    // (2) the same category, then (3) shared tags/brand to top up. Never returns
+    // the product itself; deduped; capped at `limit`. Drives the AOV carousel.
+    getRelated: async (product, limit = 10) => {
+      if (!product) return [];
+      try {
+        const all = await apiService.products.getAll();
+        const list = Array.isArray(all) ? all : [];
+        const selfId = String(product.id);
+        const active = (p) => p && p.isActive !== false && String(p.id) !== selfId;
+        const out = [];
+        const seen = new Set([selfId]);
+        const push = (p) => {
+          if (p && active(p) && !seen.has(String(p.id))) {
+            seen.add(String(p.id));
+            out.push(p);
+          }
+        };
+        // 1. curated, in the merchant's order
+        (product.relatedProductIds || []).forEach((id) =>
+          push(list.find((x) => String(x.id) === String(id)))
+        );
+        // 2. same category
+        if (out.length < limit) {
+          list
+            .filter((p) => String(p.categoryId) === String(product.categoryId))
+            .forEach(push);
+        }
+        // 3. shared tags / same brand
+        if (out.length < limit) {
+          const tags = new Set((product.tags || []).map((t) => String(t).toLowerCase()));
+          list
+            .filter(
+              (p) =>
+                p.brand === product.brand ||
+                (p.tags || []).some((t) => tags.has(String(t).toLowerCase()))
+            )
+            .forEach(push);
+        }
+        return out.slice(0, limit);
+      } catch (error) {
+        console.error("Get related products error:", error);
+        return [];
+      }
+    },
+
+    // CURATED "frequently bought together" bundle. Driven ONLY by the merchant's
+    // explicit `frequentlyBoughtTogetherIds` (a deliberate merchandising choice
+    // stored in data) — so it can never imply a fabricated co-purchase statistic.
+    // Returns [] when unset, and the AOV bundle module then renders nothing.
+    getFrequentlyBoughtTogether: async (product, limit = 3) => {
+      const ids = product?.frequentlyBoughtTogetherIds;
+      if (!Array.isArray(ids) || ids.length === 0) return [];
+      try {
+        const all = await apiService.products.getAll();
+        const list = Array.isArray(all) ? all : [];
+        const out = [];
+        ids.forEach((id) => {
+          const p = list.find((x) => String(x.id) === String(id));
+          if (p && p.isActive !== false && String(p.id) !== String(product.id)) out.push(p);
+        });
+        return out.slice(0, limit);
+      } catch (error) {
+        console.error("Get frequently-bought-together error:", error);
+        return [];
+      }
+    },
   },
 
   // ===========================================================================

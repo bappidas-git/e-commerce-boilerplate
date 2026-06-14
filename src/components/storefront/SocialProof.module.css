@@ -1,0 +1,64 @@
+.wrap {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sf-space-2);
+  flex-wrap: wrap;
+  background: none;
+  border: none;
+  padding: 0;
+  margin: 0;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+}
+
+.clickable {
+  cursor: pointer;
+  border-radius: var(--sf-radius-sm);
+}
+
+.clickable:hover .count {
+  color: var(--sf-color-primary);
+  text-decoration: underline;
+}
+
+.clickable:focus-visible {
+  outline: none;
+  box-shadow: var(--sf-shadow-focus);
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  background: var(--sf-color-success);
+  color: #fff;
+  font-weight: var(--sf-font-semibold);
+  border-radius: var(--sf-radius-sm);
+  padding: 2px 8px;
+  font-size: var(--sf-text-sm);
+}
+
+.badgeStar {
+  font-size: 0.85em;
+}
+
+.count {
+  color: var(--sf-color-text-muted);
+  font-size: var(--sf-text-sm);
+  transition: color var(--sf-transition-fast);
+}
+
+.empty {
+  color: var(--sf-color-text-muted);
+  font-size: var(--sf-text-sm);
+  font-style: italic;
+}
+
+.sm .badge {
+  font-size: var(--sf-text-xs);
+  padding: 1px 6px;
+}
+.sm .count {
+  font-size: var(--sf-text-xs);
+}

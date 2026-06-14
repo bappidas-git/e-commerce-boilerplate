@@ -1,0 +1,38 @@
+.section {
+  margin-top: var(--sf-space-12);
+}
+
+.title {
+  margin: 0 0 var(--sf-space-5);
+  font-size: var(--sf-text-xl);
+  font-weight: var(--sf-font-bold);
+  color: var(--sf-color-text);
+}
+
+.scroller {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(190px, 1fr);
+  gap: var(--sf-space-4);
+  overflow-x: auto;
+  padding-bottom: var(--sf-space-3);
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+}
+
+.cell {
+  scroll-snap-align: start;
+}
+
+/* On wide screens show ~5 across without forcing a scroll for small sets. */
+@media (min-width: 1024px) {
+  .scroller {
+    grid-auto-columns: minmax(210px, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
+  .scroller {
+    grid-auto-columns: minmax(160px, 70%);
+  }
+}
