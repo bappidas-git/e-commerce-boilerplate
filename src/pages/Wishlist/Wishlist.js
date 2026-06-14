@@ -10,6 +10,7 @@ import {
   getProductMinPrice,
   getDefaultCartVariant,
   buildCartItem,
+  productPath,
 } from "../../utils/helpers";
 import styles from "./Wishlist.module.css";
 
@@ -104,8 +105,10 @@ const Wishlist = () => {
     }, 300);
   };
 
-  const handleProductClick = (productId) => {
-    navigate(`/products/${productId}`);
+  const handleProductClick = (item) => {
+    // Wishlist rows carry the slug (with a productId fallback) so the link is
+    // canonical; productPath resolves whichever is present.
+    navigate(productPath(item));
   };
 
   const sortedItems = getSortedItems();
@@ -277,7 +280,7 @@ const Wishlist = () => {
                   animate={{ opacity: 1, scale: 1 }}
                   exit={{ opacity: 0, scale: 0.85, y: 20 }}
                   transition={{ duration: 0.3, delay: index * 0.03 }}
-                  onClick={() => handleProductClick(item.productId)}
+                  onClick={() => handleProductClick(item)}
                 >
                   {/* Image Section */}
                   <div className={styles.imageWrapper}>

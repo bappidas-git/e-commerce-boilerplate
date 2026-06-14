@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { useTheme } from "../../context/ThemeContext";
 import apiService from "../../services/api";
-import { formatCurrency, getProductMinPrice } from "../../utils/helpers";
+import { formatCurrency, getProductMinPrice, productPath } from "../../utils/helpers";
 import styles from "./SearchModal.module.css";
 
 // ---------------------------------------------------------------------------
@@ -443,7 +443,7 @@ const SearchModal = ({ open, onClose }) => {
   const handleProductClick = (product) => {
     if (query.trim()) setRecentSearches(saveRecentSearch(query.trim()));
     onClose();
-    navigate(`/products/${product.id}`);
+    navigate(productPath(product));
   };
 
   const handleChipSearch = (term) => setQuery(term);

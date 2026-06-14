@@ -16,6 +16,7 @@ import {
   getProductMinPrice,
   truncateText,
   buildCartItem,
+  productPath,
   getDeviceType,
 } from "../../utils/helpers";
 import styles from "./Products.module.css";
@@ -647,9 +648,9 @@ const Products = () => {
 
   const handleProductClick = useCallback(
     (product) => {
-      // Route is /products/:id resolved via getById — link by numeric id (as the
-      // rest of the app does); a slug would 404 against the mock/JSON API.
-      navigate(`/products/${product.id}`);
+      // Route is /products/:slug, resolved via getBySlug (with a legacy-id
+      // fallback + canonical redirect), so link by the human-readable slug.
+      navigate(productPath(product));
     },
     [navigate]
   );

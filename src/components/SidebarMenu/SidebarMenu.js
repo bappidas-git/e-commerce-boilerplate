@@ -38,6 +38,7 @@ import {
 } from "@mui/icons-material";
 import { useTheme } from "../../context/ThemeContext";
 import { useAuth } from "../../hooks/useAuth";
+import { useDealsConfig } from "../../context/DealsConfigContext";
 import apiService from "../../services/api";
 import { categoryParam } from "../../utils/categories";
 import { APP_NAME } from "../../utils/constants";
@@ -82,6 +83,12 @@ const SidebarMenu = ({ open, onClose, onOpenAuth }) => {
   const navigate = useNavigate();
   const { isDarkMode, toggleTheme } = useTheme();
   const { user, logout } = useAuth();
+  // Drop the deals quick links when the admin disables the Special Offers page.
+  const { enabled: dealsEnabled } = useDealsConfig();
+  const quickLinks = useMemo(
+    () => (dealsEnabled ? QUICK_LINKS : QUICK_LINKS.filter((l) => l.to !== "/special-offers")),
+    [dealsEnabled]
+  );
   const panelRef = useRef(null);
 
   const [categories, setCategories] = useState([]);
@@ -365,7 +372,7 @@ const SidebarMenu = ({ open, onClose, onOpenAuth }) => {
               {/* Quick links */}
               <div className={styles.section}>
                 <div className={styles.sectionLabel}>Discover</div>
-                {QUICK_LINKS.map(renderQuickLink)}
+                {quickLinks.map(renderQuickLink)}
               </div>
 
               <div className={styles.divider} />

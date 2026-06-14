@@ -4,6 +4,7 @@ import { useTheme } from "../../context/ThemeContext";
 import { useCart } from "../../hooks/useCart";
 import { useAuth } from "../../hooks/useAuth";
 import { useWishlist } from "../../context/WishlistContext";
+import { useDealsConfig } from "../../context/DealsConfigContext";
 import apiService from "../../services/api";
 import {
   categoryParam,
@@ -64,6 +65,8 @@ const Header = () => {
   } = useAuth();
   const { getCartItemCount, isCartOpen, setIsCartOpen } = useCart();
   const { getWishlistCount } = useWishlist();
+  // The "Today's Deals" entry is hidden when the admin turns the deals page off.
+  const { enabled: dealsEnabled } = useDealsConfig();
   const isMobile = useMediaQuery("(max-width:768px)");
   const isTablet = useMediaQuery("(max-width:1024px)");
 
@@ -424,11 +427,13 @@ const Header = () => {
                 ))}
               </div>
 
-              {/* Deals link */}
-              <Link to="/special-offers" className={styles.dealsLink}>
-                <LocalOffer fontSize="small" />
-                <span>Today's Deals</span>
-              </Link>
+              {/* Deals link — hidden when the admin disables the deals page */}
+              {dealsEnabled && (
+                <Link to="/special-offers" className={styles.dealsLink}>
+                  <LocalOffer fontSize="small" />
+                  <span>Today's Deals</span>
+                </Link>
+              )}
             </div>
           </motion.nav>
         )}

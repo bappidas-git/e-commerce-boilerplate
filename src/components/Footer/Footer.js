@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import { useTheme } from "../../context/ThemeContext";
+import { useDealsConfig } from "../../context/DealsConfigContext";
 import apiService from "../../services/api";
 import {
   APP_NAME,
@@ -15,6 +16,7 @@ import styles from "./Footer.module.css";
 
 const Footer = () => {
   const { isDarkMode } = useTheme();
+  const { enabled: dealsEnabled } = useDealsConfig();
   const [email, setEmail] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [subscribeStatus, setSubscribeStatus] = useState("idle"); // idle | success | error
@@ -57,10 +59,12 @@ const Footer = () => {
   const quickLinks = [
     { label: "Products", path: "/products" },
     { label: "New Arrivals", path: "/products?sort=newest" },
-    { label: "Deals", path: "/special-offers" },
+    // "Deals" / "Special Offers" point at the deals page — dropped when the
+    // admin disables it so the footer never shows a dead link.
+    { label: "Deals", path: "/special-offers", deals: true },
     { label: "Best Sellers", path: "/products?sort=popular" },
-    { label: "Special Offers", path: "/special-offers" },
-  ];
+    { label: "Special Offers", path: "/special-offers", deals: true },
+  ].filter((link) => dealsEnabled || !link.deals);
 
   // Shipping Info and FAQs both live in the Help Center (it covers shipping
   // topics and the FAQ accordion); Returns maps to the Refund Policy page.

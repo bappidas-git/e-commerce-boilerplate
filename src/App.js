@@ -15,6 +15,7 @@ import { CartProvider } from "./context/CartContext";
 import { OrderProvider } from "./context/OrderContext";
 import { AdminProvider } from "./context/AdminContext";
 import { WishlistProvider } from "./context/WishlistContext";
+import { DealsConfigProvider } from "./context/DealsConfigContext";
 
 // Layout Components
 import Header from "./components/Header/Header";
@@ -52,6 +53,7 @@ import AdminPayments from "./pages/Admin/AdminPayments";
 import AdminUsers from "./pages/Admin/AdminUsers";
 import AdminShipping from "./pages/Admin/AdminShipping";
 import AdminCoupons from "./pages/Admin/AdminCoupons";
+import AdminSpecialOffers from "./pages/Admin/AdminSpecialOffers";
 import AdminReviews from "./pages/Admin/AdminReviews";
 import AdminLeads from "./pages/Admin/AdminLeads";
 import AdminSettings from "./pages/Admin/AdminSettings";
@@ -85,6 +87,7 @@ function App() {
                         <Route path="users" element={<AdminUsers />} />
                         <Route path="shipping" element={<AdminShipping />} />
                         <Route path="coupons" element={<AdminCoupons />} />
+                        <Route path="special-offers" element={<AdminSpecialOffers />} />
                         <Route path="reviews" element={<AdminReviews />} />
                         <Route path="leads" element={<AdminLeads />} />
                         <Route path="settings" element={<AdminSettings />} />
@@ -95,6 +98,7 @@ function App() {
                     <Route
                       path="/*"
                       element={
+                        <DealsConfigProvider>
                         <div className="App">
                           <Header />
                           <main className="main-content">
@@ -102,7 +106,10 @@ function App() {
                               <Routes>
                                 <Route path="/" element={<Home />} />
                                 <Route path="/products" element={<Products />} />
-                                <Route path="/products/:id" element={<ProductDetails />} />
+                                {/* Product detail resolves by human-readable slug;
+                                    legacy numeric /products/:id still resolves and
+                                    redirects to the canonical slug URL. */}
+                                <Route path="/products/:slug" element={<ProductDetails />} />
                                 <Route path="/checkout" element={<Checkout />} />
                                 <Route path="/order-confirmation/:orderNumber" element={<OrderConfirmation />} />
                                 <Route path="/orders" element={<OrderHistory />} />
@@ -123,6 +130,7 @@ function App() {
                           <Footer />
                           <BottomNav />
                         </div>
+                        </DealsConfigProvider>
                       }
                     />
                   </Routes>

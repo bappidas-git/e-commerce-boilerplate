@@ -3019,5 +3019,22 @@
       "createdAt": "2026-06-13T14:44:33.927Z",
       "id": 2
     }
-  ]
+  ],
+  "dealsConfig": {
+    "enabled": true,
+    "hero": {
+      "tag": "Limited Time",
+      "title": "Special Offers & Deals",
+      "subtitle": "Discover unbeatable prices on top products. New deals drop daily — don't miss out!"
+    },
+    "featuredCouponIds": [],
+    "dealOfTheDayIds": [],
+    "featuredProductIds": [],
+    "updatedAt": "2026-06-14T00:00:00.000Z",
+    "timer": {
+      "enabled": true,
+      "endAt": "",
+      "onExpiry": "endOfDay"
+    }
+  }
 }

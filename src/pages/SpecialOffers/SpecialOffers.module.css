@@ -488,20 +488,111 @@
   opacity: 0.9;
 }
 
-/* ── Category Tabs ──────────────────────────────────────────────────────── */
+/* ── Category Tabs (fully responsive, never clipped) ────────────────────── */
+
+.tabBarWrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+  margin-bottom: 24px;
+}
 
 .tabBar {
   display: flex;
   gap: 8px;
   overflow-x: auto;
-  padding-bottom: 4px;
-  margin-bottom: 24px;
+  padding: 4px 2px;
+  flex: 1;
+  scroll-behavior: smooth;
+  scroll-snap-type: x proximity;
   -ms-overflow-style: none;
   scrollbar-width: none;
 }
 
 .tabBar::-webkit-scrollbar {
   display: none;
+}
+
+/* Edge fades hint that more tabs sit off-screen (hidden at each end). */
+.tabFade {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 44px;
+  pointer-events: none;
+  z-index: 2;
+  transition: opacity 0.2s;
+}
+
+.tabFadeHidden {
+  opacity: 0;
+}
+
+.tabFadeLeft {
+  left: 0;
+  background: linear-gradient(to right, #f5f6fa, rgba(245, 246, 250, 0));
+}
+
+.tabFadeRight {
+  right: 0;
+  background: linear-gradient(to left, #f5f6fa, rgba(245, 246, 250, 0));
+}
+
+.dark .tabFadeLeft {
+  background: linear-gradient(to right, #0c0f1d, rgba(12, 15, 29, 0));
+}
+
+.dark .tabFadeRight {
+  background: linear-gradient(to left, #0c0f1d, rgba(12, 15, 29, 0));
+}
+
+/* Scroll buttons (desktop/tablet); hidden on touch where the strip swipes. */
+.tabScrollBtn {
+  flex-shrink: 0;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: 1px solid #e5e7eb;
+  background: #fff;
+  color: #4b5563;
+  font-size: 1.3rem;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 3;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  transition: opacity 0.2s, transform 0.15s, background 0.2s, visibility 0.2s;
+}
+
+.tabScrollBtn:hover {
+  background: #f3f4f6;
+  transform: scale(1.06);
+}
+
+.tabScrollLeft {
+  margin-right: 6px;
+}
+
+.tabScrollRight {
+  margin-left: 6px;
+}
+
+.tabScrollHidden {
+  opacity: 0;
+  pointer-events: none;
+  visibility: hidden;
+}
+
+.dark .tabScrollBtn {
+  background: #1a1f3a;
+  border-color: #2d3154;
+  color: #c7c9e0;
+}
+
+.dark .tabScrollBtn:hover {
+  background: #232845;
 }
 
 .tab {
@@ -514,6 +605,7 @@
   font-weight: 500;
   cursor: pointer;
   white-space: nowrap;
+  scroll-snap-align: start;
   transition: all 0.2s;
 }
 
@@ -933,6 +1025,15 @@
     padding: 10px 18px;
   }
 
+  /* On touch, the tab strip swipes — drop the scroll buttons, slim the fades. */
+  .tabScrollBtn {
+    display: none;
+  }
+
+  .tabFade {
+    width: 28px;
+  }
+
   .couponGrid {
     grid-template-columns: 1fr;
   }
@@ -1052,4 +1153,76 @@
     align-items: flex-start;
     gap: 6px;
   }
+}
+
+/* ── Hero "ended" note (timer expired with onExpiry: hide) ──────────────── */
+
+.heroEnded {
+  margin-top: 18px;
+  background: rgba(0, 0, 0, 0.2);
+  color: #fff;
+  padding: 10px 22px;
+  border-radius: 14px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  backdrop-filter: blur(4px);
+}
+
+/* ── Config gate loader ─────────────────────────────────────────────────── */
+
+.pageLoader {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 60vh;
+}
+
+.spinner {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: 4px solid rgba(123, 47, 247, 0.18);
+  border-top-color: #7b2ff7;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ── Unavailable state (admin master toggle off) ────────────────────────── */
+
+.unavailableState {
+  text-align: center;
+  max-width: 540px;
+  margin: 0 auto;
+  padding: 90px 20px;
+}
+
+.unavailableIcon {
+  font-size: 4rem;
+  margin-bottom: 12px;
+}
+
+.unavailableTitle {
+  font-size: 1.9rem;
+  font-weight: 800;
+  color: #1a1a2e;
+  margin: 0 0 10px;
+}
+
+.dark .unavailableTitle {
+  color: #f0f0f5;
+}
+
+.unavailableText {
+  color: #6b7280;
+  line-height: 1.6;
+  margin: 0 auto 24px;
+}
+
+.dark .unavailableText {
+  color: #9ca3af;
 }

@@ -6,6 +6,7 @@ import { useTheme } from "../../context/ThemeContext";
 import {
   formatCurrency,
   truncateText,
+  productPath,
   PLACEHOLDER_IMG,
   onImageError,
 } from "../../utils/helpers";
@@ -216,7 +217,7 @@ const CartDrawer = ({ open, onClose }) => {
                       typeof item.stock === "number" &&
                       item.stock > 0 &&
                       item.quantity >= item.stock;
-                    const productHref = `/products/${item.productId || item.id}`;
+                    const productHref = productPath(item);
 
                     return (
                       <motion.div

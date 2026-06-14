@@ -14,6 +14,7 @@ import {
   getProductMinPrice,
   truncateText,
   buildCartItem,
+  productPath,
   PLACEHOLDER_IMG,
   onImageError,
 } from "../../utils/helpers";
@@ -80,7 +81,7 @@ const ProductCard = ({ product, onAddToCart, onToggleWishlist, isWishlisted }) =
   const name = product.name || "Untitled Product";
 
   const handleCardClick = () => {
-    navigate(`/products/${product.id}`);
+    navigate(productPath(product));
   };
 
   const handleAddToCart = (e) => {
@@ -114,7 +115,7 @@ const ProductCard = ({ product, onAddToCart, onToggleWishlist, isWishlisted }) =
             className={styles.quickViewBtn}
             onClick={(e) => {
               e.stopPropagation();
-              navigate(`/products/${product.id}`);
+              navigate(productPath(product));
             }}
           >
             Quick View

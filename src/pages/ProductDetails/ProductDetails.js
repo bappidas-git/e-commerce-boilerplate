@@ -10,6 +10,7 @@ import {
   formatCurrency,
   getProductMinPrice,
   formatDate,
+  productPath,
   PLACEHOLDER_IMG,
   onImageError,
 } from "../../utils/helpers";
@@ -91,7 +92,9 @@ const NotFound = () => (
 // Main Component
 // ═══════════════════════════════════════════════════════════════════════════
 const ProductDetails = () => {
-  const { id } = useParams();
+  // The route is /products/:slug. The param is normally a human-readable slug,
+  // but may be a legacy numeric id from an old link/bookmark — both resolve.
+  const { slug } = useParams();
   const navigate = useNavigate();
   const { isDarkMode } = useTheme();
   const { addToCart } = useCart();
@@ -121,11 +124,34 @@ const ProductDetails = () => {
     try {
       setLoading(true);
       setNotFound(false);
-      const data = await apiService.products.getById(id);
+
+      // Resolve by slug (canonical) or by numeric id (legacy URLs). A purely
+      // numeric param is treated as an id; anything else as a slug.
+      const isLegacyId = /^\d+$/.test(String(slug));
+      let data = isLegacyId
+        ? await apiService.products.getById(slug)
+        : await apiService.products.getBySlug(slug);
+
+      // Defensive fallback so neither shape 404s: a slug-looking param that
+      // didn't match could be an id, and vice-versa.
+      if (!data) {
+        data = isLegacyId
+          ? await apiService.products.getBySlug(slug).catch(() => null)
+          : await apiService.products.getById(slug).catch(() => null);
+      }
+
       if (!data) {
         setNotFound(true);
         return;
       }
+
+      // Canonicalise the address bar: if we arrived via an id (or any non-slug
+      // path) and the product has a slug, redirect to the slug URL so old links
+      // resolve without a 404 and the URL is always human-readable.
+      if (data.slug && String(slug) !== String(data.slug)) {
+        navigate(`/products/${data.slug}`, { replace: true });
+      }
+
       setProduct(data);
       if (data.variants && data.variants.length > 0) {
         setSelectedVariant(data.variants[0]);
@@ -173,15 +199,17 @@ const ProductDetails = () => {
     } finally {
       setLoading(false);
     }
-  }, [id]);
+  }, [slug, navigate]);
 
   // ── Fetch reviews ──────────────────────────────────────────────────────
+  // Keyed off the resolved product id (the URL now carries a slug, not an id).
   const fetchReviews = useCallback(async () => {
-    if (!id) return;
+    const productId = product?.id;
+    if (!productId) return;
     try {
       setReviewsLoading(true);
       setReviewsError(false);
-      const data = await apiService.products.getReviews(id);
+      const data = await apiService.products.getReviews(productId);
       setReviews(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error("Error fetching reviews:", error);
@@ -190,7 +218,7 @@ const ProductDetails = () => {
     } finally {
       setReviewsLoading(false);
     }
-  }, [id]);
+  }, [product?.id]);
 
   // ── Fetch related products ─────────────────────────────────────────────
   const fetchRelatedProducts = useCallback(async () => {
@@ -275,6 +303,7 @@ const ProductDetails = () => {
         ? `${product.id}-${selectedVariant.id}`
         : String(product.id),
       productId: product.id,
+      slug: product.slug || null,
       variantId: selectedVariant?.id || null,
       variantName: selectedVariant?.name || null,
       name: product.name,
@@ -947,7 +976,7 @@ const ProductDetails = () => {
                 return (
                   <Link
                     key={rp.id}
-                    to={`/products/${rp.id}`}
+                    to={productPath(rp)}
                     className={styles.similarCard}
                   >
                     <div className={styles.similarImageWrapper}>
