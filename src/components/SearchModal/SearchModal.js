@@ -20,25 +20,9 @@ const TRENDING_SEARCHES = [
   "Speaker",
 ];
 
-const CATEGORY_FILTERS = [
-  "All",
-  "Electronics",
-  "Fashion",
-  "Footwear",
-  "Accessories",
-  "Home",
-];
-
-// Each storefront chip maps to one or more category slugs (and tag keywords)
-// so the coarse chips line up with the finer-grained catalogue categories.
-// Matching is also tolerant of casing/slug differences and tag hits.
-const CATEGORY_GROUPS = {
-  Electronics: ["electronics", "laptops", "audio", "smartphones", "mobiles", "computers", "gadgets"],
-  Fashion: ["clothing", "mens-fashion", "womens-ethnic-wear", "sarees", "kurtas", "fashion", "apparel"],
-  Footwear: ["footwear", "shoes"],
-  Accessories: ["accessories", "beauty-personal-care", "watches", "bags", "jewellery", "jewelry"],
-  Home: ["home-garden", "kitchen-dining", "home", "furniture", "decor", "garden"],
-};
+// Category filter chips (and the slugs each one matches) are derived at runtime
+// from the live category tree — see buildCategoryNav() — so they always reflect
+// what's in the catalogue with no hardcoded list to drift out of sync.
 
 const RECENT_SEARCHES_KEY = "recentSearches";
 const MAX_RECENT_SEARCHES = 8;
@@ -136,6 +120,39 @@ const buildCategoryMap = (categories) => {
   return { byId, bySlug };
 };
 
+// Build the storefront filter chips straight from the live category tree, so
+// adding / renaming / removing a category in the admin is reflected here with no
+// code change. One chip per active top-level category; each chip matches that
+// category's slug AND all of its descendants' slugs (so a "Women's Ethnic Wear"
+// chip still surfaces Sarees / Kurtas products). Returns { chips, groups }.
+const buildCategoryNav = (categories) => {
+  const list = (Array.isArray(categories) ? categories : []).filter(
+    (c) => c && c.isActive !== false
+  );
+  const byParent = {};
+  list.forEach((c) => {
+    const key = c.parentId == null ? "root" : String(c.parentId);
+    (byParent[key] = byParent[key] || []).push(c);
+  });
+  const descendantSlugs = (cat) => {
+    const slugs = [];
+    const stack = [cat];
+    while (stack.length) {
+      const cur = stack.pop();
+      if (cur.slug) slugs.push(String(cur.slug).toLowerCase());
+      (byParent[String(cur.id)] || []).forEach((child) => stack.push(child));
+    }
+    return slugs;
+  };
+  const tops = (byParent.root || [])
+    .slice()
+    .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0) || String(a.name).localeCompare(String(b.name)));
+  const chips = ["All", ...tops.map((c) => c.name)];
+  const groups = {};
+  tops.forEach((c) => { groups[c.name] = descendantSlugs(c); });
+  return { chips, groups };
+};
+
 const resolveCategory = (product, map) => {
   if (!product) return { name: "", slug: "" };
   if (typeof product.category === "string" && product.category) {
@@ -154,9 +171,9 @@ const resolveCategory = (product, map) => {
   return { name: "", slug: "" };
 };
 
-const matchesCategoryChip = (product, chip, catInfo) => {
+const matchesCategoryChip = (product, chip, catInfo, groups = {}) => {
   if (!chip || chip === "All") return true;
-  const group = CATEGORY_GROUPS[chip] || [chip.toLowerCase()];
+  const group = groups[chip] || [chip.toLowerCase()];
   const slug = (catInfo.slug || "").toLowerCase();
   const name = (catInfo.name || "").toLowerCase();
   const chipLower = chip.toLowerCase();
@@ -291,6 +308,7 @@ const SearchModal = ({ open, onClose }) => {
   const [query, setQuery] = useState("");
   const [allProducts, setAllProducts] = useState([]);
   const [categoryMap, setCategoryMap] = useState({ byId: {}, bySlug: {} });
+  const [categoryNav, setCategoryNav] = useState({ chips: ["All"], groups: {} });
   const [results, setResults] = useState([]);
   const [isSearching, setIsSearching] = useState(false);
   const [activeCategory, setActiveCategory] = useState("All");
@@ -317,14 +335,14 @@ const SearchModal = ({ open, onClose }) => {
           const catInfo = resolveCategory(product, categoryMap);
           return { product, catInfo, score: scoreProduct(product, lowerQuery, catInfo) };
         })
-        .filter((entry) => entry.score > 0 && matchesCategoryChip(entry.product, cat, entry.catInfo))
+        .filter((entry) => entry.score > 0 && matchesCategoryChip(entry.product, cat, entry.catInfo, categoryNav.groups))
         .sort((a, b) => b.score - a.score)
         .map((entry) => ({ ...entry.product, _catName: entry.catInfo.name }));
 
       setResults(scored);
       setIsSearching(false);
     },
-    [allProducts, categoryMap]
+    [allProducts, categoryMap, categoryNav]
   );
 
   // Load catalogue (cached) when the modal first opens; refresh recent searches
@@ -345,6 +363,7 @@ const SearchModal = ({ open, onClose }) => {
         if (!active) return;
         setAllProducts(data.products);
         setCategoryMap(buildCategoryMap(data.categories));
+        setCategoryNav(buildCategoryNav(data.categories));
       })
       .catch((err) => {
         if (active) console.error("Failed to load search data:", err);
@@ -515,7 +534,7 @@ const SearchModal = ({ open, onClose }) => {
 
             {/* Category Filter Chips */}
             <div className={styles.categoryFilters}>
-              {CATEGORY_FILTERS.map((cat) => (
+              {categoryNav.chips.map((cat) => (
                 <button
                   key={cat}
                   type="button"

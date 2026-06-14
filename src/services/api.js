@@ -1579,9 +1579,41 @@ const apiService = {
 
     deleteCategory: async (id) => {
       try {
-        const response = await api.delete(IS_MOCK_API ? `/categories/${id}` : `/admin/categories/${id}`);
-        return IS_MOCK_API ? response.data : extractData(response);
-      } catch (error) { console.error("Admin delete category error:", error); throw error; }
+        if (IS_MOCK_API) {
+          // Enforce referential integrity the way the Laravel endpoint would:
+          // refuse the delete while subcategories or products still reference
+          // this category, so nothing is left orphaned. (The mock server
+          // intentionally does NOT cascade-delete dependents — that would
+          // silently destroy real catalogue data.)
+          const [catsRes, prodsRes] = await Promise.all([
+            api.get("/categories"),
+            api.get("/products", { params: { categoryId: id } }),
+          ]);
+          const children = (Array.isArray(catsRes.data) ? catsRes.data : []).filter(
+            (c) => String(c.parentId) === String(id)
+          );
+          const products = Array.isArray(prodsRes.data) ? prodsRes.data : [];
+          if (children.length || products.length) {
+            const parts = [];
+            if (children.length) parts.push(`${children.length} subcategor${children.length === 1 ? "y" : "ies"}`);
+            if (products.length) parts.push(`${products.length} product${products.length === 1 ? "" : "s"}`);
+            const err = new Error(
+              `Cannot delete this category — ${parts.join(" and ")} still ${children.length + products.length === 1 ? "references" : "reference"} it. Reassign or remove ${children.length && products.length ? "them" : "it"} first.`
+            );
+            err.code = "CATEGORY_IN_USE";
+            throw err;
+          }
+          const response = await api.delete(`/categories/${id}`);
+          return response.data;
+        }
+        const response = await api.delete(`/admin/categories/${id}`);
+        return extractData(response);
+      } catch (error) {
+        // A blocked delete is an expected validation outcome, not a fault —
+        // keep the console clean and let the UI surface the message.
+        if (error.code !== "CATEGORY_IN_USE") console.error("Admin delete category error:", error);
+        throw error;
+      }
     },
 
     // --- Orders ---
