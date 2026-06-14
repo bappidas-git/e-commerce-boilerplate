@@ -328,11 +328,13 @@
       "description": "jdsb jkdbdsk kjdbds kjsksdjc",
       "image": "https://placehold.co/600x400/1a1a2e/FFFFFF?text=Maharathi+Books",
       "parentId": null,
-      "isActive": false,
+      "isActive": true,
       "sortOrder": 11,
       "createdAt": "2026-06-14T05:11:13.803Z",
-      "updatedAt": "2026-06-14T05:11:54.687Z",
-      "id": 16
+      "updatedAt": "2026-06-14T08:01:05.804Z",
+      "id": 16,
+      "showInMainMenu": false,
+      "menuOrder": 11
     }
   ],
   "products": [
