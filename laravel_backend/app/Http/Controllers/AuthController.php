@@ -2,99 +2,118 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\User;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
-use App\Models\User;
-use Illuminate\Support\Facades\Http;
 
 class AuthController extends Controller
 {
-    public function register(Request $request)
-    {
-        $request->validate([
-            'name' => 'required|string|max:255',
-            'email' => 'required|email|unique:users,email',
-            'password' => 'required|string|min:6|confirmed',
-        ]);
-
-        $user = User::create([
-            'name' => $request->name,
-            'email' => $request->email,
-            'password' => bcrypt($request->password),
-        ]);
-
-        $token = $user->createToken('api-token')->plainTextToken;
-
-        return response()->json([
-            'user' => $user,
-            'token' => $token
-        ], 201);
-    }
-
     public function login(Request $request)
     {
-        $request->validate([
-            'email' => 'required|email',
-            'password' => 'required',
+        $data = $request->validate([
+            'email' => ['required', 'email'],
+            'password' => ['required', 'string'],
+            'remember' => ['sometimes', 'boolean'],
         ]);
 
-        $user = User::where('email', $request->email)->first();
-
-        if (! $user || ! Hash::check($request->password, $user->password)) {
-            return response()->json(['message' => 'Invalid credentials'], 401);
+        $user = User::whereRaw('LOWER(email) = ?', [strtolower($data['email'])])->first();
+        if (! $user || ! Hash::check($data['password'], $user->password)) {
+            return $this->fail('Invalid email or password', 401);
+        }
+        if (! $user->isActive) {
+            return $this->fail('This account has been deactivated', 401);
         }
 
-        $token = $user->createToken('api-token')->plainTextToken;
+        $token = $user->createToken('customer', ['customer'])->plainTextToken;
 
-        return response()->json(['token' => $token]);
+        return $this->ok(['token' => $token, 'user' => $user]);
+    }
+
+    public function register(Request $request)
+    {
+        $data = $request->validate([
+            'firstName' => ['required', 'string', 'max:100'],
+            'lastName' => ['required', 'string', 'max:100'],
+            'email' => ['required', 'email', 'unique:users,email'],
+            'phone' => ['nullable', 'string', 'max:20'],
+            'password' => ['required', 'string', 'min:6', 'confirmed'],
+        ], [
+            'email.unique' => 'An account with this email already exists. Please log in instead.',
+        ]);
+
+        $now = Carbon::now('UTC');
+        $user = new User([
+            'firstName' => $data['firstName'],
+            'lastName' => $data['lastName'],
+            'email' => $data['email'],
+            'phone' => $data['phone'] ?? '',
+            'password' => $data['password'],
+            'addresses' => [],
+            'isActive' => true,
+            'storeCredit' => 0,
+        ]);
+        $user->createdAt = $now;
+        $user->updatedAt = $now;
+        $user->save();
+
+        return $this->ok($user, null, 201);
     }
 
     public function logout(Request $request)
     {
         $request->user()->currentAccessToken()->delete();
-        return response()->json(['message' => 'Logged out']);
+
+        return $this->ok(['success' => true]);
     }
 
-    //method to change the password
+    public function user(Request $request)
+    {
+        return $this->ok($request->user());
+    }
+
+    public function updateUser(Request $request)
+    {
+        $user = $request->user();
+
+        $data = $request->validate([
+            'firstName' => ['sometimes', 'string', 'max:100'],
+            'lastName' => ['sometimes', 'string', 'max:100'],
+            'phone' => ['sometimes', 'nullable', 'string', 'max:20'],
+            'avatar' => ['sometimes', 'nullable', 'string'],
+            'addresses' => ['sometimes', 'array'],
+        ]);
+
+        foreach (['firstName', 'lastName', 'phone', 'avatar', 'addresses'] as $field) {
+            if (array_key_exists($field, $data)) {
+                $user->{$field} = $data[$field];
+            }
+        }
+        $user->updatedAt = Carbon::now('UTC');
+        $user->save();
+
+        return $this->ok($user);
+    }
+
     public function changePassword(Request $request)
     {
-        try {
-            $request->validate([
-                'email' => 'required|email',
-                'wp_user_id' => 'required|integer',
-                'current_password' => 'required',
-                'new_password' => 'required|string|min:6|confirmed',
+        $user = $request->user();
+
+        $data = $request->validate([
+            'current_password' => ['required', 'string'],
+            'password' => ['required', 'string', 'min:6', 'confirmed'],
+        ]);
+
+        if (! Hash::check($data['current_password'], $user->password)) {
+            return $this->fail('The given data was invalid.', 422, [
+                'current_password' => ['Current password is incorrect.'],
             ]);
-
-            $user = $request->email ? User::where('email', $request->email)->first() : null;
-            if($user === null){
-                return response()->json(['message' => 'User not found'], 404);
-            }
-            $userId = $request->wp_user_id;
-            $newPassword = $request->new_password;
-
-            if (! Hash::check($request->current_password, $user->password)) {
-                return response()->json(['message' => 'Current password is incorrect'], 401);
-            }
-
-            $user->password = bcrypt($request->new_password);
-            $user->save();
-
-            $response = Http::withBasicAuth($request->email, $newPassword)
-                ->put(env('WP_SITE_URL') . "/users/{$userId}", [
-                    'password' => $newPassword
-                ]);
-
-            if ($response->failed()) {
-                return response()->json(['message' => "WordPress error: " . $response->body()], 500);
-            }
-
-            return response()->json(['message' => 'Password changed successfully']);
-        } catch (\Exception $ex) {
-            return response()->json([
-                'message' => 'An error occurred while changing password.',
-                'error' => $ex->getMessage()
-            ], 500);
         }
+
+        $user->password = $data['password'];
+        $user->updatedAt = Carbon::now('UTC');
+        $user->save();
+
+        return $this->ok(['success' => true]);
     }
 }

@@ -5,23 +5,23 @@ namespace App\Models;
 use App\Models\Concerns\SerializesIsoDates;
 use Illuminate\Database\Eloquent\Model;
 
-class Payment extends Model
+class Review extends Model
 {
     use SerializesIsoDates;
 
-    protected $table = 'payments';
+    protected $table = 'reviews';
     protected $guarded = ['id'];
 
     protected $casts = [
         'id' => 'integer',
-        'orderId' => 'integer',
+        'productId' => 'integer',
         'userId' => 'integer',
-        'amount' => 'integer',
-        'gatewayResponse' => 'array',
-        'storeCreditApplied' => 'integer',
-        'refundAmount' => 'integer',
-        'refunds' => 'array',
-        'pendingRefund' => 'array',
+        'rating' => 'integer',
+        'status' => 'string',
+        'isVerifiedPurchase' => 'boolean',
+        'helpfulCount' => 'integer',
+        'orderId' => 'integer',
+        'photos' => 'array',
         'createdAt' => 'datetime',
         'updatedAt' => 'datetime',
     ];

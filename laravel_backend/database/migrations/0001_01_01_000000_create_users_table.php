@@ -6,19 +6,22 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
         Schema::create('users', function (Blueprint $table) {
             $table->id();
-            $table->string('name');
             $table->string('email')->unique();
-            $table->timestamp('email_verified_at')->nullable();
             $table->string('password');
+            $table->string('firstName', 100);
+            $table->string('lastName', 100);
+            $table->string('phone', 20)->default('');
+            $table->string('avatar')->nullable();
+            $table->json('addresses')->nullable();
+            $table->boolean('isActive')->default(true);
+            $table->integer('storeCredit')->default(0);
             $table->rememberToken();
-            $table->timestamps();
+            $table->timestamp('createdAt')->nullable();
+            $table->timestamp('updatedAt')->nullable();
         });
 
         Schema::create('password_reset_tokens', function (Blueprint $table) {
@@ -37,9 +40,6 @@ return new class extends Migration
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
         Schema::dropIfExists('users');
