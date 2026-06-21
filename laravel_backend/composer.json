@@ -14,6 +14,7 @@
         "laravel/sanctum": "^4.2",
         "laravel/tinker": "^2.10.1",
         "mailchimp/transactional": "^1.0",
+        "opcodesio/log-viewer": "^3.24",
         "razorpay/razorpay": "2.*"
     },
     "require-dev": {
