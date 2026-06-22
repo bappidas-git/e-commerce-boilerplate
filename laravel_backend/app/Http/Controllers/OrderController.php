@@ -4,17 +4,12 @@ namespace App\Http\Controllers;
 
 use App\Exceptions\ApiException;
 use App\Models\Order;
-use App\Models\Payment;
 use App\Services\OrderService;
-use App\Services\StripeService;
 use Illuminate\Http\Request;
 
 class OrderController extends Controller
 {
-    public function __construct(
-        private OrderService $orders,
-        private StripeService $stripe,
-    ) {}
+    public function __construct(private OrderService $orders) {}
 
     public function store(Request $request)
     {
@@ -24,29 +19,7 @@ class OrderController extends Controller
             'paymentMethod' => ['required', 'string'],
         ]);
 
-        $payload = $request->all();
-
-        // When the client sends a stripePaymentIntentId, verify with Stripe
-        // that the payment actually succeeded before creating the order.
-        if (! empty($payload['stripePaymentIntentId'])) {
-            $intentId = $payload['stripePaymentIntentId'];
-
-            // Guard: don't create a duplicate order for the same payment intent.
-            $existing = Payment::where('transactionId', $intentId)
-                ->orWhere('stripePaymentIntentId', $intentId)
-                ->first();
-            if ($existing) {
-                $order = Order::find($existing->orderId);
-                if ($order && $order->userId === $request->user()->id) {
-                    return $this->ok($order);
-                }
-            }
-
-            // Verify with Stripe that the intent is succeeded.
-            $this->stripe->assertSucceeded($intentId);
-        }
-
-        $order = $this->orders->create($payload, $request->user());
+        $order = $this->orders->create($request->all(), $request->user());
 
         return $this->ok($order, null, 201);
     }

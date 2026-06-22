@@ -112,18 +112,6 @@ class OrderService
                 'gatewayOrderId' => null,
                 'status' => 'pending',
             ]);
-        } elseif ($p['paymentMethod'] === 'card' && ! empty($p['stripePaymentIntentId'])) {
-            // Stripe card payment — payment intent already confirmed by the customer
-            // on the frontend; status is captured immediately.
-            $row = array_merge($base, [
-                'amount'               => $p['amountPayable'],
-                'paymentMethod'        => 'card',
-                'gateway'              => 'stripe',
-                'transactionId'        => $p['stripePaymentIntentId'],
-                'gatewayOrderId'       => $p['stripePaymentIntentId'],
-                'stripePaymentIntentId' => $p['stripePaymentIntentId'],
-                'status'               => 'captured',
-            ]);
         } else {
             $row = array_merge($base, [
                 'amount' => $p['amountPayable'],

@@ -8,9 +8,7 @@ use App\Models\Payment;
 use App\Models\Refund;
 use App\Models\User;
 use App\Services\Concerns\BuildsHistory;
-use App\Services\StripeService;
 use Carbon\Carbon;
-use Illuminate\Support\Facades\Log;
 
 /**
  * Refund ledger + payment booking mechanics (file 03 §4, §4d). The order/payment
@@ -30,8 +28,6 @@ class RefundService
      * Append a refund onto a payment's refunds[] history, advance the running
      * refundAmount and flip status (partially_refunded → refunded). Returns the
      * actually-settled amount (capped at the remaining balance).
-     *
-     * For Stripe payments, the Stripe Refund API is called automatically.
      */
     public function appendPaymentRefund(Payment $payment, int $amount, string $reason, string $actor): int
     {
@@ -41,34 +37,14 @@ class RefundService
             return 0;
         }
 
-        $stripeRefundId = null;
-        if ($payment->gateway === 'stripe' && ! empty($payment->stripePaymentIntentId)) {
-            try {
-                $stripeRefund   = app(StripeService::class)->createRefund($payment->stripePaymentIntentId, $settle, 'requested_by_customer');
-                $stripeRefundId = $stripeRefund->id;
-            } catch (\Exception $e) {
-                Log::error('Stripe refund failed', [
-                    'paymentId'            => $payment->id,
-                    'stripePaymentIntentId' => $payment->stripePaymentIntentId,
-                    'error'                => $e->getMessage(),
-                ]);
-                throw new ApiException('Stripe refund failed: ' . $e->getMessage(), 502);
-            }
-        }
-
         $refunds = $payment->refunds ?? [];
-        $entry = [
-            'id'     => $stripeRefundId ?? 'ref_'.bin2hex(random_bytes(5)),
+        $refunds[] = [
+            'id' => 'ref_'.bin2hex(random_bytes(5)),
             'amount' => $settle,
             'reason' => $reason,
-            'at'     => $this->nowIso(),
-            'by'     => $actor,
+            'at' => $this->nowIso(),
+            'by' => $actor,
         ];
-        if ($stripeRefundId) {
-            $entry['stripeRefundId'] = $stripeRefundId;
-        }
-        $refunds[] = $entry;
-
         $payment->refunds = $refunds;
         $payment->refundAmount = (int) $payment->refundAmount + $settle;
         $payment->refundReason = $reason;
