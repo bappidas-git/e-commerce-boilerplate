@@ -1,0 +1,3691 @@
+{
+	"info": {
+		"_postman_id": "a46f3ac0-3876-445f-90e1-fd6a2c661d9e",
+		"name": "E-Commerce Laravel API (v1)",
+		"description": "All endpoints of the Laravel storefront + admin API (base path /api/v1). Run \"Login\" and \"Admin login\" first — they auto-store the bearer tokens into the {{customer_token}} and {{admin_token}} collection variables.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Auth (Customer)",
+			"item": [
+				{
+					"name": "Login",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"var d = pm.response.json().data;",
+									"if (d && d.token) { pm.collectionVariables.set('customer_token', d.token); }"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"mail4bappidas@gmail.com\",\n  \"password\": \"Bappi@12345\",\n  \"remember\": true\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/auth/login",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"auth",
+								"login"
+							]
+						},
+						"description": "Stores data.token into the {{customer_token}} variable automatically."
+					},
+					"response": []
+				},
+				{
+					"name": "Register",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"firstName\": \"New\",\n  \"lastName\": \"Customer\",\n  \"email\": \"new.customer@example.com\",\n  \"phone\": \"+91 9000000000\",\n  \"password\": \"secret123\",\n  \"password_confirmation\": \"secret123\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/auth/register",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"auth",
+								"register"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Logout",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{customer_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/auth/logout",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"auth",
+								"logout"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get current user",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{customer_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/auth/user",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"auth",
+								"user"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update profile",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{customer_token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"firstName\": \"Bappi\",\n  \"lastName\": \"Das\",\n  \"phone\": \"+91 9876543210\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/auth/user",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"auth",
+								"user"
+							]
+						},
+						"description": "Profile shape. To replace addresses send { addresses: [ ... ] } (full-array replace)."
+					},
+					"response": []
+				},
+				{
+					"name": "Update addresses (full replace)",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{customer_token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"addresses\": [\n    {\n      \"firstName\": \"Bappi\",\n      \"lastName\": \"Das\",\n      \"phone\": \"+91 9876543210\",\n      \"addressLine1\": \"123 Main Street\",\n      \"addressLine2\": \"Apt 4B\",\n      \"city\": \"Mumbai\",\n      \"state\": \"Maharashtra\",\n      \"postalCode\": \"400001\",\n      \"country\": \"India\",\n      \"id\": 1,\n      \"label\": \"Home\",\n      \"isDefault\": true\n    }\n  ]\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/auth/user",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"auth",
+								"user"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Change password",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{customer_token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"current_password\": \"Bappi@12345\",\n  \"password\": \"newsecret123\",\n  \"password_confirmation\": \"newsecret123\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/auth/password",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"auth",
+								"password"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Products (Public)",
+			"item": [
+				{
+					"name": "List all products",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/products",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"products"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Search products",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/products?search=laptop",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"products"
+							],
+							"query": [
+								{
+									"key": "search",
+									"value": "laptop"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get product by id",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/products/1",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"products",
+								"1"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get product by slug",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/products/slug/probook-ultra-laptop-15",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"products",
+								"slug",
+								"probook-ultra-laptop-15"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Featured products",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/products/featured?limit=10",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"products",
+								"featured"
+							],
+							"query": [
+								{
+									"key": "limit",
+									"value": "10"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Trending products",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/products/trending?limit=10",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"products",
+								"trending"
+							],
+							"query": [
+								{
+									"key": "limit",
+									"value": "10"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Products by category",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/products/category/6",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"products",
+								"category",
+								"6"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Product reviews (approved)",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/products/2/reviews",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"products",
+								"2",
+								"reviews"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Categories (Public)",
+			"item": [
+				{
+					"name": "List categories",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/categories",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"categories"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get category by id",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/categories/1",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"categories",
+								"1"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get category by slug",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/categories/slug/electronics",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"categories",
+								"slug",
+								"electronics"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Banners (Public)",
+			"item": [
+				{
+					"name": "List banners",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/banners",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"banners"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Cart (Customer)",
+			"item": [
+				{
+					"name": "Get cart",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{customer_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/cart",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"cart"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Add to cart",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{customer_token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"productId\": 1,\n  \"variantId\": \"v2\",\n  \"variantName\": \"16GB RAM / 512GB SSD\",\n  \"name\": \"ProBook Ultra Laptop 15\\\"\",\n  \"image\": \"https://placehold.co/600x400\",\n  \"price\": 74999,\n  \"comparePrice\": 89999,\n  \"currency\": \"INR\",\n  \"quantity\": 1,\n  \"stock\": 15\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/cart",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"cart"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update cart item",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{customer_token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"quantity\": 2\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/cart/1",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"cart",
+								"1"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Remove cart item",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{customer_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/cart/1",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"cart",
+								"1"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Clear cart",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{customer_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/cart",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"cart"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Orders (Customer)",
+			"item": [
+				{
+					"name": "Create order",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{customer_token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"items\": [\n    {\n      \"productId\": 2,\n      \"variantId\": \"v1\",\n      \"name\": \"SoundWave Pro Wireless Earbuds - Midnight Black\",\n      \"image\": \"https://placehold.co/600x400\",\n      \"sku\": \"AUD-SWP-TWS-BLK\",\n      \"price\": 8999,\n      \"quantity\": 1,\n      \"subtotal\": 8999\n    }\n  ],\n  \"shippingAddress\": {\n    \"firstName\": \"Bappi\",\n    \"lastName\": \"Das\",\n    \"phone\": \"+91 9876543210\",\n    \"addressLine1\": \"123 Main Street\",\n    \"addressLine2\": \"Apt 4B\",\n    \"city\": \"Mumbai\",\n    \"state\": \"Maharashtra\",\n    \"postalCode\": \"400001\",\n    \"country\": \"India\"\n  },\n  \"billingAddress\": {\n    \"firstName\": \"Bappi\",\n    \"lastName\": \"Das\",\n    \"phone\": \"+91 9876543210\",\n    \"addressLine1\": \"123 Main Street\",\n    \"addressLine2\": \"Apt 4B\",\n    \"city\": \"Mumbai\",\n    \"state\": \"Maharashtra\",\n    \"postalCode\": \"400001\",\n    \"country\": \"India\"\n  },\n  \"subtotal\": 8999,\n  \"discountAmount\": 0,\n  \"couponCode\": null,\n  \"shippingAmount\": 0,\n  \"taxAmount\": 1620,\n  \"total\": 10619,\n  \"storeCreditUsed\": 0,\n  \"amountPayable\": 10619,\n  \"paymentMethod\": \"upi\",\n  \"paymentStatus\": \"paid\",\n  \"fulfillmentStatus\": \"unfulfilled\",\n  \"shippingStatus\": \"pending\",\n  \"trackingNumber\": null,\n  \"notes\": \"\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/orders",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"orders"
+							]
+						},
+						"description": "Server recomputes ALL money/coupon/shipping/tax and ignores any client orderNumber/totals."
+					},
+					"response": []
+				},
+				{
+					"name": "List my orders",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{customer_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/orders",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"orders"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get order by id",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{customer_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/orders/1",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"orders",
+								"1"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get order by number",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{customer_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/orders/number/ORD-20250310-0001",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"orders",
+								"number",
+								"ORD-20250310-0001"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Cancel order",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{customer_token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"reason\": \"Cancelled by customer\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/orders/1/cancel",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"orders",
+								"1",
+								"cancel"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Wallet (Customer)",
+			"item": [
+				{
+					"name": "Wallet balance",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{customer_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/wallet/balance",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"wallet",
+								"balance"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Wallet transactions",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{customer_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/wallet/transactions",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"wallet",
+								"transactions"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Reviews (Customer)",
+			"item": [
+				{
+					"name": "My reviews",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{customer_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/reviews/mine",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"reviews",
+								"mine"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Submit / update review",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{customer_token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"rating\": 5,\n  \"title\": \"Great product\",\n  \"body\": \"Highly recommended.\",\n  \"orderId\": 1\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/products/2/reviews",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"products",
+								"2",
+								"reviews"
+							]
+						},
+						"description": "Purchase-gated: requires a delivered, non-returned order for that product."
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Returns (Customer)",
+			"item": [
+				{
+					"name": "Create return",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{customer_token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"orderId\": 1,\n  \"orderNumber\": \"ORD-20250310-0001\",\n  \"items\": [\n    {\n      \"productId\": 2,\n      \"variantId\": \"v1\",\n      \"name\": \"SoundWave Pro\",\n      \"sku\": \"AUD-SWP-TWS-BLK\",\n      \"price\": 8999,\n      \"quantity\": 1,\n      \"subtotal\": 8999\n    }\n  ],\n  \"reason\": \"defective\",\n  \"reasonDetails\": \"Left earbud has no sound\",\n  \"refundAmount\": 8999,\n  \"refundMethod\": \"original_payment\",\n  \"images\": []\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/returns",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"returns"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "List my returns",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{customer_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/returns",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"returns"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get return by id",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{customer_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/returns/1",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"returns",
+								"1"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Coupons (Public)",
+			"item": [
+				{
+					"name": "List active coupons",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/coupons",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"coupons"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Validate coupon",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"code\": \"WELCOME500\",\n  \"orderAmount\": 5000\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/coupons/validate",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"coupons",
+								"validate"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Wishlist (Customer)",
+			"item": [
+				{
+					"name": "Get wishlist",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{customer_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/wishlist",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"wishlist"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Add to wishlist",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{customer_token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"productId\": 1,\n  \"slug\": \"probook-ultra-laptop-15\",\n  \"name\": \"ProBook Ultra Laptop 15\\\"\",\n  \"image\": \"https://placehold.co/600x400\",\n  \"brand\": \"ProBook\",\n  \"price\": 74999,\n  \"comparePrice\": 89999,\n  \"rating\": 4.6,\n  \"totalReviews\": 128\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/wishlist",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"wishlist"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Remove from wishlist",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{customer_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/wishlist/1",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"wishlist",
+								"1"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Shipping / Settings / Deals (Public)",
+			"item": [
+				{
+					"name": "Shipping methods",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/shipping/methods",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"shipping",
+								"methods"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Settings",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/settings",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"settings"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Deals config",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/deals/config",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"deals",
+								"config"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Leads (Public)",
+			"item": [
+				{
+					"name": "Contact lead",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"John Doe\",\n  \"email\": \"john@example.com\",\n  \"phone\": \"+91 9876543210\",\n  \"orderNumber\": \"ORD-20250310-0001\",\n  \"category\": \"shipping\",\n  \"subject\": \"Delivery update\",\n  \"message\": \"Please share the delivery status of my order.\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/leads/contact",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"leads",
+								"contact"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Newsletter subscribe",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"subscriber@example.com\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/leads/newsletter",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"leads",
+								"newsletter"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Admin · Auth & Dashboard",
+			"item": [
+				{
+					"name": "Admin login",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"var d = pm.response.json().data;",
+									"if (d && d.token) { pm.collectionVariables.set('admin_token', d.token); }"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"admin@store.com\",\n  \"password\": \"admin123\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/admin/auth/login",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"admin",
+								"auth",
+								"login"
+							]
+						},
+						"description": "Stores data.token into the {{admin_token}} variable automatically."
+					},
+					"response": []
+				},
+				{
+					"name": "Admin logout",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{admin_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/admin/auth/logout",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"admin",
+								"auth",
+								"logout"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Dashboard stats",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{admin_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/admin/dashboard/stats",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"admin",
+								"dashboard",
+								"stats"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Admin · Products",
+			"item": [
+				{
+					"name": "List products (incl. inactive)",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{admin_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/admin/products",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"admin",
+								"products"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get product",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{admin_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/admin/products/1",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"admin",
+								"products",
+								"1"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Create product",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{admin_token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"New Product\",\n  \"slug\": \"new-product\",\n  \"sku\": \"NP-001\",\n  \"shortDescription\": \"A short description\",\n  \"description\": \"Full description here.\",\n  \"categoryId\": 6,\n  \"brand\": \"BrandName\",\n  \"price\": 9999,\n  \"comparePrice\": 12999,\n  \"costPrice\": 6000,\n  \"stock\": 50,\n  \"lowStockThreshold\": 10,\n  \"weight\": 1.2,\n  \"dimensions\": {\n    \"length\": 30,\n    \"width\": 20,\n    \"height\": 5\n  },\n  \"variants\": [\n    {\n      \"id\": \"v1\",\n      \"name\": \"Standard\",\n      \"price\": 9999,\n      \"stock\": 50,\n      \"sku\": \"NP-001-STD\",\n      \"attributes\": {\n        \"Color\": \"Black\"\n      },\n      \"swatchHex\": \"#000000\"\n    }\n  ],\n  \"images\": [\n    \"https://placehold.co/600x400\"\n  ],\n  \"tags\": [\n    \"new\",\n    \"featured\"\n  ],\n  \"featured\": true,\n  \"trending\": false,\n  \"hot\": false,\n  \"isActive\": true,\n  \"metaTitle\": \"New Product\",\n  \"metaDescription\": \"Buy New Product online\",\n  \"frequentlyBoughtTogetherIds\": [],\n  \"relatedProductIds\": []\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/admin/products",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"admin",
+								"products"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update product",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{admin_token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"New Product\",\n  \"slug\": \"new-product\",\n  \"sku\": \"NP-001\",\n  \"shortDescription\": \"A short description\",\n  \"description\": \"Full description here.\",\n  \"categoryId\": 6,\n  \"brand\": \"BrandName\",\n  \"price\": 9999,\n  \"comparePrice\": 12999,\n  \"costPrice\": 6000,\n  \"stock\": 50,\n  \"lowStockThreshold\": 10,\n  \"weight\": 1.2,\n  \"dimensions\": {\n    \"length\": 30,\n    \"width\": 20,\n    \"height\": 5\n  },\n  \"variants\": [\n    {\n      \"id\": \"v1\",\n      \"name\": \"Standard\",\n      \"price\": 9999,\n      \"stock\": 50,\n      \"sku\": \"NP-001-STD\",\n      \"attributes\": {\n        \"Color\": \"Black\"\n      },\n      \"swatchHex\": \"#000000\"\n    }\n  ],\n  \"images\": [\n    \"https://placehold.co/600x400\"\n  ],\n  \"tags\": [\n    \"new\",\n    \"featured\"\n  ],\n  \"featured\": true,\n  \"trending\": false,\n  \"hot\": false,\n  \"isActive\": true,\n  \"metaTitle\": \"New Product\",\n  \"metaDescription\": \"Buy New Product online\",\n  \"frequentlyBoughtTogetherIds\": [],\n  \"relatedProductIds\": []\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/admin/products/1",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"admin",
+								"products",
+								"1"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Delete product",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{admin_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/admin/products/1",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"admin",
+								"products",
+								"1"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Admin · Categories",
+			"item": [
+				{
+					"name": "List categories (incl. inactive)",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{admin_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/admin/categories",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"admin",
+								"categories"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Create category",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{admin_token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"New Category\",\n  \"slug\": \"new-category\",\n  \"description\": \"Category description\",\n  \"image\": \"https://placehold.co/400x300\",\n  \"parentId\": null,\n  \"isActive\": true,\n  \"sortOrder\": 1,\n  \"showInMainMenu\": true,\n  \"menuOrder\": 1\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/admin/categories",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"admin",
+								"categories"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update category",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{admin_token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"New Category\",\n  \"slug\": \"new-category\",\n  \"description\": \"Category description\",\n  \"image\": \"https://placehold.co/400x300\",\n  \"parentId\": null,\n  \"isActive\": true,\n  \"sortOrder\": 1,\n  \"showInMainMenu\": true,\n  \"menuOrder\": 1\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/admin/categories/1",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"admin",
+								"categories",
+								"1"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Delete category (409 if in use)",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{admin_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/admin/categories/1",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"admin",
+								"categories",
+								"1"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Admin · Orders",
+			"item": [
+				{
+					"name": "List orders",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{admin_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/admin/orders?userId=3",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"admin",
+								"orders"
+							],
+							"query": [
+								{
+									"key": "userId",
+									"value": "3"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get order",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{admin_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/admin/orders/1",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"admin",
+								"orders",
+								"1"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update order (fulfil & ship)",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{admin_token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"fulfillmentStatus\": \"fulfilled\",\n  \"shippingStatus\": \"shipped\",\n  \"trackingNumber\": \"SHIP123456789IN\",\n  \"trackingUrl\": \"https://shiprocket.co/tracking/SHIP123456789IN\",\n  \"event\": {\n    \"action\": \"Fulfilled & shipped\",\n    \"note\": \"Tracking SHIP123456789IN\"\n  }\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/admin/orders/1",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"admin",
+								"orders",
+								"1"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update order (mark delivered)",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{admin_token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"shippingStatus\": \"delivered\",\n  \"event\": {\n    \"action\": \"Marked delivered\"\n  }\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/admin/orders/1",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"admin",
+								"orders",
+								"1"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Cancel order (admin options)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{admin_token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"reason\": \"Out of stock\",\n  \"restock\": true,\n  \"refund\": {\n    \"method\": \"original_payment\"\n  },\n  \"voidPayment\": false,\n  \"recall\": {\n    \"trackingNumber\": \"RC123\",\n    \"carrier\": \"Shiprocket\"\n  }\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/admin/orders/1/cancel",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"admin",
+								"orders",
+								"1",
+								"cancel"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Refund initiate",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{admin_token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"amount\": 10439,\n  \"method\": \"original_payment\",\n  \"reason\": \"Customer request\",\n  \"reference\": \"REF-EXT-1\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/admin/orders/1/refund/initiate",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"admin",
+								"orders",
+								"1",
+								"refund",
+								"initiate"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Refund complete",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{admin_token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/admin/orders/1/refund/complete",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"admin",
+								"orders",
+								"1",
+								"refund",
+								"complete"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Refund fail",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{admin_token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"note\": \"Gateway declined\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/admin/orders/1/refund/fail",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"admin",
+								"orders",
+								"1",
+								"refund",
+								"fail"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Admin · Returns",
+			"item": [
+				{
+					"name": "List returns",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{admin_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/admin/returns",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"admin",
+								"returns"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get return",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{admin_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/admin/returns/1",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"admin",
+								"returns",
+								"1"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Create return",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{admin_token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"orderId\": 1,\n  \"orderNumber\": \"ORD-20250310-0001\",\n  \"userId\": 1,\n  \"items\": [\n    {\n      \"productId\": 2,\n      \"variantId\": \"v1\",\n      \"name\": \"SoundWave Pro\",\n      \"sku\": \"AUD-SWP-TWS-BLK\",\n      \"price\": 8999,\n      \"quantity\": 1,\n      \"subtotal\": 8999\n    }\n  ],\n  \"reason\": \"defective\",\n  \"reasonDetails\": \"No sound\",\n  \"refundAmount\": 8999,\n  \"refundMethod\": \"original_payment\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/admin/returns",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"admin",
+								"returns"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Approve return",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{admin_token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"status\": \"approved\",\n  \"event\": {\n    \"action\": \"Return approved\"\n  }\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/admin/returns/1",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"admin",
+								"returns",
+								"1"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Schedule pickup",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{admin_token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"status\": \"pickup_scheduled\",\n  \"returnTrackingNumber\": \"RETN-SR-1029384\",\n  \"returnTrackingUrl\": \"https://shiprocket.co/tracking/RETN-SR-1029384\",\n  \"returnCarrier\": \"Shiprocket\",\n  \"pickupScheduledAt\": \"2026-01-21T11:30:00.000Z\",\n  \"event\": {\n    \"action\": \"Pickup scheduled\"\n  }\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/admin/returns/1",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"admin",
+								"returns",
+								"1"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Process refund (cascade + restock)",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{admin_token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"status\": \"refunded\",\n  \"refundStatus\": \"processed\",\n  \"deductionAmount\": 0,\n  \"refundMethod\": \"store_credit\",\n  \"notes\": \"Refunded to wallet\",\n  \"event\": {\n    \"action\": \"Refund processed\"\n  },\n  \"restock\": true\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/admin/returns/1",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"admin",
+								"returns",
+								"1"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Admin · Payments & Refunds",
+			"item": [
+				{
+					"name": "List payments",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{admin_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/admin/payments?orderId=1",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"admin",
+								"payments"
+							],
+							"query": [
+								{
+									"key": "orderId",
+									"value": "1"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get payment",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{admin_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/admin/payments/1",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"admin",
+								"payments",
+								"1"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Issue partial refund",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{admin_token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"amount\": 5000,\n  \"reason\": \"Partial refund\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/admin/payments/1/refund",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"admin",
+								"payments",
+								"1",
+								"refund"
+							]
+						},
+						"description": "Rejects amount > remaining with 422 (REFUND_EXCEEDS)."
+					},
+					"response": []
+				},
+				{
+					"name": "Refund ledger",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{admin_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/admin/refunds",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"admin",
+								"refunds"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Admin · Shipping Methods",
+			"item": [
+				{
+					"name": "List shipping methods",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{admin_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/admin/shipping-methods",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"admin",
+								"shipping-methods"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Create shipping method",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{admin_token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"Standard Delivery\",\n  \"carrier\": \"Shiprocket\",\n  \"description\": \"Delivered in 5-7 business days\",\n  \"rateType\": \"flat\",\n  \"flatRate\": 99,\n  \"freeAbove\": 999,\n  \"estimatedDays\": \"5-7\",\n  \"isActive\": true\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/admin/shipping-methods",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"admin",
+								"shipping-methods"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update shipping method",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{admin_token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"Standard Delivery\",\n  \"carrier\": \"Shiprocket\",\n  \"description\": \"Delivered in 5-7 business days\",\n  \"rateType\": \"flat\",\n  \"flatRate\": 99,\n  \"freeAbove\": 999,\n  \"estimatedDays\": \"5-7\",\n  \"isActive\": true\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/admin/shipping-methods/1",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"admin",
+								"shipping-methods",
+								"1"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Delete shipping method",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{admin_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/admin/shipping-methods/1",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"admin",
+								"shipping-methods",
+								"1"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Shiprocket create order (stub)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{admin_token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"orderId\": 1\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/admin/shipping/shiprocket/order",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"admin",
+								"shipping",
+								"shiprocket",
+								"order"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Shiprocket track (stub)",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{admin_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/admin/shipping/shiprocket/track/SHIP123456789IN",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"admin",
+								"shipping",
+								"shiprocket",
+								"track",
+								"SHIP123456789IN"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Admin · Coupons",
+			"item": [
+				{
+					"name": "List coupons",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{admin_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/admin/coupons",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"admin",
+								"coupons"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Create coupon",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{admin_token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"code\": \"SAVE20\",\n  \"description\": \"20% off\",\n  \"type\": \"percentage\",\n  \"value\": 20,\n  \"minOrderAmount\": 1000,\n  \"maxDiscount\": 2000,\n  \"usageLimit\": 100,\n  \"perUserLimit\": 1,\n  \"isActive\": true,\n  \"expiresAt\": \"2026-12-31T23:59:59.000Z\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/admin/coupons",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"admin",
+								"coupons"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update coupon (merge, preserves usedCount)",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{admin_token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"code\": \"SAVE20\",\n  \"description\": \"20% off\",\n  \"type\": \"percentage\",\n  \"value\": 20,\n  \"minOrderAmount\": 1000,\n  \"maxDiscount\": 2000,\n  \"usageLimit\": 100,\n  \"perUserLimit\": 1,\n  \"isActive\": true,\n  \"expiresAt\": \"2026-12-31T23:59:59.000Z\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/admin/coupons/1",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"admin",
+								"coupons",
+								"1"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Delete coupon",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{admin_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/admin/coupons/1",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"admin",
+								"coupons",
+								"1"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Admin · Reviews",
+			"item": [
+				{
+					"name": "List reviews (all statuses)",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{admin_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/admin/reviews",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"admin",
+								"reviews"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Create admin review",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{admin_token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"productId\": 1,\n  \"userName\": \"Store Team\",\n  \"rating\": 5,\n  \"title\": \"Editor's pick\",\n  \"body\": \"A staff favourite.\",\n  \"isVerifiedPurchase\": false,\n  \"status\": \"approved\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/admin/reviews",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"admin",
+								"reviews"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update review status",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{admin_token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"status\": \"approved\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/admin/reviews/1",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"admin",
+								"reviews",
+								"1"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Delete review",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{admin_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/admin/reviews/1",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"admin",
+								"reviews",
+								"1"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Admin · Users",
+			"item": [
+				{
+					"name": "List users",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{admin_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/admin/users",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"admin",
+								"users"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get user",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{admin_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/admin/users/3",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"admin",
+								"users",
+								"3"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update user (toggle active)",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{admin_token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"isActive\": true\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/admin/users/3",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"admin",
+								"users",
+								"3"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Admin · Leads",
+			"item": [
+				{
+					"name": "List leads",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{admin_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/admin/leads",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"admin",
+								"leads"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get lead",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{admin_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/admin/leads/1",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"admin",
+								"leads",
+								"1"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update lead",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{admin_token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"status\": \"resolved\",\n  \"notes\": \"Handled by support\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/admin/leads/1",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"admin",
+								"leads",
+								"1"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Delete lead",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{admin_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/admin/leads/1",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"admin",
+								"leads",
+								"1"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Admin · Settings & Deals",
+			"item": [
+				{
+					"name": "Get settings",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{admin_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/admin/settings",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"admin",
+								"settings"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update settings section (store)",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{admin_token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"taxRate\": 18,\n  \"currency\": \"INR\",\n  \"currencySymbol\": \"\\u20b9\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/admin/settings/store",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"admin",
+								"settings",
+								"store"
+							]
+						},
+						"description": "section in store|shipping|payment|notifications|seo|social. Shallow-merge; returns whole object."
+					},
+					"response": []
+				},
+				{
+					"name": "Get deals config",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{admin_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/admin/deals/config",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"admin",
+								"deals",
+								"config"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update deals config (full replace)",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{admin_token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"enabled\": true,\n  \"hero\": {\n    \"tag\": \"Limited Time\",\n    \"title\": \"Special Offers & Deals\",\n    \"subtitle\": \"New deals daily\"\n  },\n  \"timer\": {\n    \"enabled\": true,\n    \"endAt\": \"\",\n    \"onExpiry\": \"endOfDay\"\n  },\n  \"featuredCouponIds\": [\n    1,\n    2\n  ],\n  \"dealOfTheDayIds\": [\n    1,\n    3,\n    4\n  ],\n  \"featuredProductIds\": [\n    10,\n    12,\n    16\n  ]\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/admin/deals/config",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"admin",
+								"deals",
+								"config"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "https://phplaravel-780646-6503526.cloudwaysapps.com/api/v1"
+		},
+		{
+			"key": "customer_token",
+			"value": ""
+		},
+		{
+			"key": "admin_token",
+			"value": ""
+		}
+	]
+}
