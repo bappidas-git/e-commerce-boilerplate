@@ -17,12 +17,13 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        $path = env('SEED_DB_JSON', base_path('../db.json'));
-        if (! is_file($path)) {
-            $this->command->warn("db.json not found at {$path}; skipping data seed.");
+        $path = $this->resolveSeedPath();
+        if (! $path) {
+            $this->command->warn('No db.json seed file found; skipping data seed.');
 
             return;
         }
+        $this->command->info("Seeding from {$path}");
 
         $db = json_decode(file_get_contents($path), true);
 
@@ -109,6 +110,29 @@ class DatabaseSeeder extends Seeder
         ]);
 
         Schema::enableForeignKeyConstraints();
+    }
+
+    /**
+     * Resolve the db.json fixture to import. Priority:
+     *   1. SEED_DB_JSON env override
+     *   2. the copy bundled with the app (database/seeders/data/db.json)
+     *   3. the repo-root db.json the frontend mock uses
+     */
+    private function resolveSeedPath(): ?string
+    {
+        $candidates = array_filter([
+            env('SEED_DB_JSON'),
+            database_path('seeders/data/db.json'),
+            base_path('../db.json'),
+        ]);
+
+        foreach ($candidates as $candidate) {
+            if (is_file($candidate)) {
+                return $candidate;
+            }
+        }
+
+        return null;
     }
 
     private function normalize(string $col, $value)
