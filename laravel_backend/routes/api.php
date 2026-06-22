@@ -13,6 +13,7 @@ use App\Http\Controllers\ReturnController;
 use App\Http\Controllers\ReviewController;
 use App\Http\Controllers\SettingsController;
 use App\Http\Controllers\ShippingController;
+use App\Http\Controllers\StripeController;
 use App\Http\Controllers\WalletController;
 use App\Http\Controllers\WishlistController;
 use App\Http\Controllers\Admin;
@@ -55,6 +56,15 @@ Route::prefix('v1')->group(function () {
         Route::patch('/cart/{id}', [CartController::class, 'update']);
         Route::delete('/cart/{id}', [CartController::class, 'destroy']);
         Route::delete('/cart', [CartController::class, 'clear']);
+    });
+
+    // ===================== Stripe Payment Gateway =====================
+    // Webhook has no auth so Stripe can POST to it directly.
+    Route::post('/stripe/webhook', [StripeController::class, 'webhook']);
+
+    // Payment-intent creation requires an authenticated customer.
+    Route::middleware(['auth:sanctum', 'customer'])->group(function () {
+        Route::post('/stripe/payment-intent', [StripeController::class, 'createPaymentIntent']);
     });
 
     // ===================== Orders (customer) =====================

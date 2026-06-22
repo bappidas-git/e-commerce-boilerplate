@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { useTheme } from "../../context/ThemeContext";
@@ -7,17 +7,22 @@ import { useAuth } from "../../hooks/useAuth";
 import { useOrder } from "../../context/OrderContext";
 import apiService from "../../services/api";
 import { formatCurrency } from "../../utils/helpers";
+import StripePayment from "../../components/StripePayment/StripePayment";
 import styles from "./Checkout.module.css";
 
 const STEPS = ["Cart", "Shipping", "Payment", "Review"];
 
 const PAYMENT_OPTIONS = [
-  { id: "card", label: "Credit / Debit Card", icon: "💳", desc: "Visa, Mastercard, RuPay" },
+  { id: "card", label: "Credit / Debit Card", icon: "💳", desc: "Visa, Mastercard, RuPay — powered by Stripe" },
   { id: "upi", label: "UPI", icon: "📱", desc: "Google Pay, PhonePe, Paytm" },
   { id: "net_banking", label: "Net Banking", icon: "🏦", desc: "All major banks supported" },
   { id: "wallet", label: "Wallet", icon: "👛", desc: "Paytm, PhonePe, Amazon Pay" },
   { id: "cod", label: "Cash on Delivery", icon: "💵", desc: "Pay when you receive" },
 ];
+
+// Stripe is used for card payments. Other methods (UPI, net banking, wallet)
+// are placeholders — wire them to an actual gateway when needed.
+const STRIPE_METHODS = ["card"];
 
 // Discount for an applied coupon at the current subtotal. Derived (never
 // stored), so qty changes can't leave a stale amount and re-applying a coupon
@@ -39,6 +44,8 @@ const Checkout = () => {
   const { user, isAuthenticated, openAuthModal } = useAuth();
   const { createOrder } = useOrder();
 
+  const stripeCardRef = useRef(null);
+
   const [step, setStep] = useState(0);
   const [couponCode, setCouponCode] = useState("");
   const [couponError, setCouponError] = useState("");
@@ -50,6 +57,7 @@ const Checkout = () => {
   const [paymentMethod, setPaymentMethod] = useState("card");
   const [isProcessing, setIsProcessing] = useState(false);
   const [orderPlaced, setOrderPlaced] = useState(null);
+  const [stripeError, setStripeError] = useState("");
 
   // Store-credit wallet
   const [walletBalance, setWalletBalance] = useState(0);
@@ -209,6 +217,7 @@ const Checkout = () => {
   };
 
   const handleNext = () => {
+    setStripeError("");
     if (step === 0) {
       if (cartItems.length === 0) return;
       if (!isAuthenticated) { openAuthModal("login"); return; }
@@ -227,9 +236,12 @@ const Checkout = () => {
 
   const placeOrder = async () => {
     setIsProcessing(true);
+    setStripeError("");
     try {
       const addr = useExistingAddress || shippingAddress;
-      const orderData = {
+      const effectiveMethod = fullyCovered ? "store_credit" : paymentMethod;
+
+      const baseOrderData = {
         items: cartItems.map((item) => ({
           productId: item.productId, variantId: item.variantId,
           name: `${item.name}${item.variantName ? ` - ${item.variantName}` : ""}`,
@@ -244,25 +256,69 @@ const Checkout = () => {
         shippingAmount: shippingCost,
         taxAmount,
         total,
-        // Store credit applied at checkout, and what's left for the gateway.
         storeCreditUsed: storeCreditApplied,
         amountPayable,
-        // A fully store-credit order needs no further payment, so it is "paid"
-        // via store credit; otherwise the chosen method settles the remainder.
-        paymentMethod: fullyCovered ? "store_credit" : paymentMethod,
-        paymentStatus: fullyCovered ? "paid" : paymentMethod === "cod" ? "pending" : "paid",
+        paymentMethod: effectiveMethod,
+        paymentStatus: fullyCovered ? "paid" : effectiveMethod === "cod" ? "pending" : "paid",
         fulfillmentStatus: "unfulfilled",
         shippingStatus: "pending",
         trackingNumber: null,
         notes: "",
       };
 
-      const result = await createOrder(orderData);
+      // ── Stripe card payment ──────────────────────────────────────────────
+      // 1. Ask the backend to create a Stripe PaymentIntent.
+      // 2. Confirm the card payment on the frontend via Stripe.js
+      //    (card details never touch our server).
+      // 3. Include the verified paymentIntentId in the order payload so the
+      //    backend can confirm the payment succeeded before creating the order.
+      if (!fullyCovered && STRIPE_METHODS.includes(effectiveMethod)) {
+        if (!stripeCardRef.current) {
+          setStripeError("Card form is not ready. Please go back to the payment step.");
+          return;
+        }
+
+        // Step 1: create PaymentIntent
+        let clientSecret;
+        try {
+          const intentData = await apiService.stripe.createPaymentIntent({
+            items: baseOrderData.items,
+            shippingAddress: addr,
+            couponCode: baseOrderData.couponCode,
+            shippingAmount: baseOrderData.shippingAmount,
+            storeCreditUsed: baseOrderData.storeCreditUsed,
+            paymentMethod: effectiveMethod,
+          });
+          clientSecret = intentData.client_secret;
+        } catch (e) {
+          const msg = e.response?.data?.message || e.message || "Could not initialise payment. Please try again.";
+          setStripeError(msg);
+          return;
+        }
+
+        // Step 2: confirm card with Stripe.js
+        const paymentIntentId = await stripeCardRef.current.confirmPayment(clientSecret);
+        if (!paymentIntentId) {
+          // confirmPayment already called onError / setStripeError
+          return;
+        }
+
+        // Step 3: create order with the verified PaymentIntent ID
+        const result = await createOrder({ ...baseOrderData, stripePaymentIntentId: paymentIntentId });
+        if (result.success) {
+          setOrderPlaced(result.order);
+          clearCart({ silent: true });
+          navigate(`/order-confirmation/${result.order.orderNumber || result.order.id}`);
+        }
+        return;
+      }
+
+      // ── All other methods (COD, store credit, UPI, net banking, wallet) ──
+      const result = await createOrder(baseOrderData);
       if (result.success) {
         setOrderPlaced(result.order);
         clearCart({ silent: true });
-        const orderNum = result.order.orderNumber || result.order.id;
-        navigate(`/order-confirmation/${orderNum}`);
+        navigate(`/order-confirmation/${result.order.orderNumber || result.order.id}`);
       }
     } catch (e) {
       console.error("Order error:", e);
@@ -568,17 +624,11 @@ const Checkout = () => {
                 </div>
 
                 {paymentMethod === "card" && (
-                  <div className={styles.cardForm}>
-                    <div className={styles.formGroup}>
-                      <label>Card Number</label>
-                      <input type="text" placeholder="1234 5678 9012 3456" maxLength={19} />
-                    </div>
-                    <div className={styles.formRow}>
-                      <div className={styles.formGroup}><label>Expiry</label><input type="text" placeholder="MM/YY" maxLength={5} /></div>
-                      <div className={styles.formGroup}><label>CVV</label><input type="password" placeholder="***" maxLength={4} /></div>
-                    </div>
-                    <div className={styles.formGroup}><label>Name on Card</label><input type="text" placeholder="Full name" /></div>
-                  </div>
+                  <StripePayment
+                    ref={stripeCardRef}
+                    isDarkMode={isDarkMode}
+                    onError={(msg) => setStripeError(msg)}
+                  />
                 )}
 
                 {paymentMethod === "upi" && (
@@ -671,6 +721,9 @@ const Checkout = () => {
                     ) : (
                       <>
                         <p className={styles.reviewName}>{selectedPaymentOption?.icon} {selectedPaymentOption?.label}</p>
+                        {STRIPE_METHODS.includes(paymentMethod) && (
+                          <p className={styles.reviewStripeNote}>🔒 Secured by Stripe</p>
+                        )}
                         {storeCreditApplied > 0 && (
                           <p>Store credit applied: -{formatCurrency(storeCreditApplied)}</p>
                         )}
@@ -688,8 +741,21 @@ const Checkout = () => {
           </AnimatePresence>
 
           {/* Navigation Buttons */}
+          {stripeError && (
+            <div className={styles.stripeError}>
+              <span>⚠</span> {stripeError}
+            </div>
+          )}
           <div className={styles.navButtons}>
-            {step > 0 && <button className={styles.backBtn} onClick={() => setStep(step - 1)} disabled={isProcessing}>&#8592; Back</button>}
+            {step > 0 && (
+              <button
+                className={styles.backBtn}
+                onClick={() => { setStep(step - 1); setStripeError(""); }}
+                disabled={isProcessing}
+              >
+                &#8592; Back
+              </button>
+            )}
             <button
               className={styles.primaryBtn}
               onClick={handleNext}

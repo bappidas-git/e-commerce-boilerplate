@@ -24,5 +24,6 @@ class Payment extends Model
         'pendingRefund' => 'array',
         'createdAt' => 'datetime',
         'updatedAt' => 'datetime',
+        'stripePaymentIntentId' => 'string',
     ];
 }
