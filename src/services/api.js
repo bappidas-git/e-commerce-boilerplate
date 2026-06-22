@@ -2453,25 +2453,6 @@ const apiService = {
       } catch (error) { console.error("Admin update deals config error:", error); throw error; }
     },
   },
-
-  // ---------------------------------------------------------------------------
-  // Stripe Payment Gateway
-  // ---------------------------------------------------------------------------
-  stripe: {
-    /**
-     * Ask the backend to create a Stripe PaymentIntent for the given order
-     * payload. Returns { client_secret, payment_intent_id, amount }.
-     */
-    createPaymentIntent: async (orderPayload) => {
-      try {
-        const response = await api.post("/stripe/payment-intent", orderPayload);
-        return extractData(response);
-      } catch (error) {
-        console.error("Stripe createPaymentIntent error:", error);
-        throw error;
-      }
-    },
-  },
 };
 
 export { api };

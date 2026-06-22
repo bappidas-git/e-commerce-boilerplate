@@ -15,8 +15,7 @@
         "laravel/tinker": "^2.10.1",
         "mailchimp/transactional": "^1.0",
         "opcodesio/log-viewer": "^3.24",
-        "razorpay/razorpay": "2.*",
-        "stripe/stripe-php": "^20.2"
+        "razorpay/razorpay": "2.*"
     },
     "require-dev": {
         "barryvdh/laravel-debugbar": "^3.16",

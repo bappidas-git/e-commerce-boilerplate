@@ -123,8 +123,6 @@ class PricingService
             'fullyCovered' => $fullyCovered,
             'paymentMethod' => $chosenMethod,
             'paymentStatus' => $paymentStatus,
-            // Stripe-specific: forwarded as-is so OrderService can store it.
-            'stripePaymentIntentId' => $payload['stripePaymentIntentId'] ?? null,
         ];
     }
 
