@@ -38,8 +38,15 @@ return [
         'key_id' => env('RAZORPAY_KEY_ID'),
         'key_secret' => env('RAZORPAY_KEY_SECRET'),
     ],
+
+    'stripe' => [
+        'key'            => env('STRIPE_KEY'),
+        'secret'         => env('STRIPE_SECRET'),
+        'webhook_secret' => env('STRIPE_WEBHOOK_SECRET', ''),
+    ],
+
     'mailchimp' => [
-    'transactional_key' => env('MAILCHIMP_TRANSACTIONAL_KEY'),
+        'transactional_key' => env('MAILCHIMP_TRANSACTIONAL_KEY'),
     ],
 
 ];
