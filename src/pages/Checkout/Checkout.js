@@ -235,6 +235,7 @@ const Checkout = () => {
   // Re-create the intent if the payment method changes while on step 2.
   useEffect(() => {
     if (step !== 2) return;
+    setStripeError("");
     if (!fullyCovered && STRIPE_METHODS.includes(paymentMethod)) {
       setStripeClientSecret(null);
       setConfirmedStripeIntentId(null);
