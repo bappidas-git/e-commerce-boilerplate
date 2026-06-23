@@ -65,6 +65,7 @@ const Checkout = () => {
   // is stored and passed to order creation on step 3.
   const [stripeClientSecret, setStripeClientSecret] = useState(null);
   const [confirmedStripeIntentId, setConfirmedStripeIntentId] = useState(null);
+  const [stripeIntentFailed, setStripeIntentFailed] = useState(false);
 
   // Store-credit wallet
   const [walletBalance, setWalletBalance] = useState(0);
@@ -187,6 +188,7 @@ const Checkout = () => {
   const fetchStripeIntent = async () => {
     if (fullyCovered) return;
     const addr = useExistingAddress || shippingAddress;
+    setStripeIntentFailed(false);
     try {
       const data = await apiService.stripe.createPaymentIntent({
         items: cartItems.map((item) => ({
@@ -203,7 +205,9 @@ const Checkout = () => {
       });
       setStripeClientSecret(data.client_secret);
       setStripeError("");
+      setStripeIntentFailed(false);
     } catch (e) {
+      setStripeIntentFailed(true);
       setStripeError(
         e.response?.data?.message || e.message || "Could not initialise payment. Please try again."
       );
@@ -215,6 +219,7 @@ const Checkout = () => {
       // Refresh the intent whenever the user arrives at step 2 with a Stripe method.
       setStripeClientSecret(null);
       setConfirmedStripeIntentId(null);
+      setStripeIntentFailed(false);
       fetchStripeIntent();
     }
     if (step < 2) {
@@ -222,6 +227,7 @@ const Checkout = () => {
       // created if the user returns to step 2.
       setStripeClientSecret(null);
       setConfirmedStripeIntentId(null);
+      setStripeIntentFailed(false);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [step]);
@@ -232,10 +238,12 @@ const Checkout = () => {
     if (!fullyCovered && STRIPE_METHODS.includes(paymentMethod)) {
       setStripeClientSecret(null);
       setConfirmedStripeIntentId(null);
+      setStripeIntentFailed(false);
       fetchStripeIntent();
     } else {
       setStripeClientSecret(null);
       setConfirmedStripeIntentId(null);
+      setStripeIntentFailed(false);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [paymentMethod]);
@@ -797,6 +805,16 @@ const Checkout = () => {
           {stripeError && (
             <div className={styles.stripeError}>
               <span>⚠</span> {stripeError}
+              {stripeIntentFailed && (
+                <button
+                  type="button"
+                  className={styles.stripeRetryBtn}
+                  onClick={() => { setStripeError(""); fetchStripeIntent(); }}
+                  disabled={isProcessing}
+                >
+                  Retry
+                </button>
+              )}
             </div>
           )}
           <div className={styles.navButtons}>
@@ -812,7 +830,11 @@ const Checkout = () => {
             <button
               className={styles.primaryBtn}
               onClick={handleNext}
-              disabled={isProcessing || cartItems.length === 0}
+              disabled={
+                isProcessing ||
+                cartItems.length === 0 ||
+                (step === 2 && !fullyCovered && STRIPE_METHODS.includes(paymentMethod) && stripeIntentFailed)
+              }
             >
               {isProcessing
                 ? "Processing..."
