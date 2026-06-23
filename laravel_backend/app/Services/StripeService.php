@@ -19,14 +19,18 @@ class StripeService
     /**
      * Create a PaymentIntent for the given amount in the smallest currency unit
      * (paise for INR). Returns the PaymentIntent object.
+     *
+     * We explicitly set payment_method_types instead of automatic_payment_methods
+     * because automatic detection requires payment methods to be pre-activated in
+     * the Stripe Dashboard per currency — which fails for INR on new accounts.
      */
     public function createPaymentIntent(int $amount, string $currency = 'inr', array $metadata = []): PaymentIntent
     {
         return PaymentIntent::create([
-            'amount'                    => $amount,
-            'currency'                  => strtolower($currency),
-            'metadata'                  => $metadata,
-            'automatic_payment_methods' => ['enabled' => true],
+            'amount'               => $amount,
+            'currency'             => strtolower($currency),
+            'metadata'             => $metadata,
+            'payment_method_types' => ['card'],
         ]);
     }
 
