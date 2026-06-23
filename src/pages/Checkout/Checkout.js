@@ -59,6 +59,13 @@ const Checkout = () => {
   const [orderPlaced, setOrderPlaced] = useState(null);
   const [stripeError, setStripeError] = useState("");
 
+  // Stripe two-step: clientSecret is fetched when entering step 2 so that the
+  // PaymentElement (with Apple Pay / Google Pay / Link) can render. After the
+  // customer confirms payment on step 2's "Continue", confirmedStripeIntentId
+  // is stored and passed to order creation on step 3.
+  const [stripeClientSecret, setStripeClientSecret] = useState(null);
+  const [confirmedStripeIntentId, setConfirmedStripeIntentId] = useState(null);
+
   // Store-credit wallet
   const [walletBalance, setWalletBalance] = useState(0);
   const [applyStoreCredit, setApplyStoreCredit] = useState(false);
@@ -173,6 +180,66 @@ const Checkout = () => {
     }
   }, [applyStoreCredit, creditAmount, maxApplicableCredit]);
 
+  // When entering the Payment step with a Stripe method, eagerly create a
+  // PaymentIntent so the PaymentElement (and Apple Pay / Google Pay buttons)
+  // can render immediately. If the user goes back to a previous step the intent
+  // is discarded — a fresh one is created on re-entry.
+  const fetchStripeIntent = async () => {
+    if (fullyCovered) return;
+    const addr = useExistingAddress || shippingAddress;
+    try {
+      const data = await apiService.stripe.createPaymentIntent({
+        items: cartItems.map((item) => ({
+          productId: item.productId, variantId: item.variantId,
+          name: item.name, image: item.image, sku: item.sku || "",
+          price: item.price, quantity: item.quantity,
+          subtotal: item.price * item.quantity,
+        })),
+        shippingAddress: addr,
+        couponCode: couponApplied?.code || null,
+        shippingAmount: shippingCost,
+        storeCreditUsed: storeCreditApplied,
+        paymentMethod: "card",
+      });
+      setStripeClientSecret(data.client_secret);
+      setStripeError("");
+    } catch (e) {
+      setStripeError(
+        e.response?.data?.message || e.message || "Could not initialise payment. Please try again."
+      );
+    }
+  };
+
+  useEffect(() => {
+    if (step === 2 && !fullyCovered && STRIPE_METHODS.includes(paymentMethod)) {
+      // Refresh the intent whenever the user arrives at step 2 with a Stripe method.
+      setStripeClientSecret(null);
+      setConfirmedStripeIntentId(null);
+      fetchStripeIntent();
+    }
+    if (step < 2) {
+      // Going back discards any in-progress Stripe state so a fresh intent is
+      // created if the user returns to step 2.
+      setStripeClientSecret(null);
+      setConfirmedStripeIntentId(null);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [step]);
+
+  // Re-create the intent if the payment method changes while on step 2.
+  useEffect(() => {
+    if (step !== 2) return;
+    if (!fullyCovered && STRIPE_METHODS.includes(paymentMethod)) {
+      setStripeClientSecret(null);
+      setConfirmedStripeIntentId(null);
+      fetchStripeIntent();
+    } else {
+      setStripeClientSecret(null);
+      setConfirmedStripeIntentId(null);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [paymentMethod]);
+
   // A coupon only stays applied while the cart still meets its minimum.
   useEffect(() => {
     if (couponApplied && subtotal < (couponApplied.minOrderAmount || 0)) {
@@ -216,7 +283,7 @@ const Checkout = () => {
     return Object.keys(errs).length === 0;
   };
 
-  const handleNext = () => {
+  const handleNext = async () => {
     setStripeError("");
     if (step === 0) {
       if (cartItems.length === 0) return;
@@ -228,6 +295,20 @@ const Checkout = () => {
       setShippingError("");
       setStep(2);
     } else if (step === 2) {
+      // For Stripe methods: confirm payment here (PaymentElement is visible and
+      // mounted). The confirmed paymentIntentId is stored and used when the
+      // customer clicks "Place Order" on the Review step.
+      if (!fullyCovered && STRIPE_METHODS.includes(paymentMethod)) {
+        if (!stripeCardRef.current || !stripeClientSecret) {
+          setStripeError("Payment form is not ready yet. Please wait a moment and try again.");
+          return;
+        }
+        setIsProcessing(true);
+        const intentId = await stripeCardRef.current.confirmPayment();
+        setIsProcessing(false);
+        if (!intentId) return; // confirmPayment already called onError
+        setConfirmedStripeIntentId(intentId);
+      }
       setStep(3);
     } else {
       placeOrder();
@@ -266,45 +347,16 @@ const Checkout = () => {
         notes: "",
       };
 
-      // ── Stripe card payment ──────────────────────────────────────────────
-      // 1. Ask the backend to create a Stripe PaymentIntent.
-      // 2. Confirm the card payment on the frontend via Stripe.js
-      //    (card details never touch our server).
-      // 3. Include the verified paymentIntentId in the order payload so the
-      //    backend can confirm the payment succeeded before creating the order.
+      // ── Stripe methods ───────────────────────────────────────────────────
+      // Payment was already confirmed on step 2 (handleNext). We just pass the
+      // verified paymentIntentId so the backend can double-check with Stripe
+      // before creating the order.
       if (!fullyCovered && STRIPE_METHODS.includes(effectiveMethod)) {
-        if (!stripeCardRef.current) {
-          setStripeError("Card form is not ready. Please go back to the payment step.");
+        if (!confirmedStripeIntentId) {
+          setStripeError("Payment was not confirmed. Please go back to the Payment step.");
           return;
         }
-
-        // Step 1: create PaymentIntent
-        let clientSecret;
-        try {
-          const intentData = await apiService.stripe.createPaymentIntent({
-            items: baseOrderData.items,
-            shippingAddress: addr,
-            couponCode: baseOrderData.couponCode,
-            shippingAmount: baseOrderData.shippingAmount,
-            storeCreditUsed: baseOrderData.storeCreditUsed,
-            paymentMethod: effectiveMethod,
-          });
-          clientSecret = intentData.client_secret;
-        } catch (e) {
-          const msg = e.response?.data?.message || e.message || "Could not initialise payment. Please try again.";
-          setStripeError(msg);
-          return;
-        }
-
-        // Step 2: confirm card with Stripe.js
-        const paymentIntentId = await stripeCardRef.current.confirmPayment(clientSecret);
-        if (!paymentIntentId) {
-          // confirmPayment already called onError / setStripeError
-          return;
-        }
-
-        // Step 3: create order with the verified PaymentIntent ID
-        const result = await createOrder({ ...baseOrderData, stripePaymentIntentId: paymentIntentId });
+        const result = await createOrder({ ...baseOrderData, stripePaymentIntentId: confirmedStripeIntentId });
         if (result.success) {
           setOrderPlaced(result.order);
           clearCart({ silent: true });
@@ -623,8 +675,14 @@ const Checkout = () => {
                   })}
                 </div>
 
-                {/* Stripe card form rendered outside AnimatePresence below
-                    so the ref stays alive when the user advances to Review. */}
+                {STRIPE_METHODS.includes(paymentMethod) && (
+                  <StripePayment
+                    ref={stripeCardRef}
+                    isDarkMode={isDarkMode}
+                    clientSecret={stripeClientSecret}
+                    onError={(msg) => setStripeError(msg)}
+                  />
+                )}
 
                 {paymentMethod === "upi" && (
                   <div className={styles.upiForm}>
@@ -734,19 +792,6 @@ const Checkout = () => {
               </motion.div>
             )}
           </AnimatePresence>
-
-          {/* StripePayment lives outside AnimatePresence so the ref is never
-              destroyed when the user moves from the Payment step to Review.
-              It is visually hidden on all other steps via inline style. */}
-          {!fullyCovered && STRIPE_METHODS.includes(paymentMethod) && (
-            <div style={{ display: step === 2 ? "block" : "none" }}>
-              <StripePayment
-                ref={stripeCardRef}
-                isDarkMode={isDarkMode}
-                onError={(msg) => setStripeError(msg)}
-              />
-            </div>
-          )}
 
           {/* Navigation Buttons */}
           {stripeError && (

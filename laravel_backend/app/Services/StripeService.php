@@ -20,9 +20,12 @@ class StripeService
      * Create a PaymentIntent for the given amount in the smallest currency unit
      * (paise for INR). Returns the PaymentIntent object.
      *
-     * We explicitly set payment_method_types instead of automatic_payment_methods
-     * because automatic detection requires payment methods to be pre-activated in
-     * the Stripe Dashboard per currency — which fails for INR on new accounts.
+     * payment_method_types is explicit so Stripe doesn't require pre-activation
+     * of methods in the Dashboard per currency.
+     * - 'card'  → covers Credit/Debit cards, Apple Pay, and Google Pay
+     *             (wallets are surfaced automatically by PaymentElement on
+     *              compatible devices; no separate type is needed)
+     * - 'link'  → Stripe Link one-click checkout
      */
     public function createPaymentIntent(int $amount, string $currency = 'inr', array $metadata = []): PaymentIntent
     {
@@ -30,7 +33,7 @@ class StripeService
             'amount'               => $amount,
             'currency'             => strtolower($currency),
             'metadata'             => $metadata,
-            'payment_method_types' => ['card'],
+            'payment_method_types' => ['card', 'link'],
         ]);
     }
 
