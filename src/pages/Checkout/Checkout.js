@@ -623,13 +623,8 @@ const Checkout = () => {
                   })}
                 </div>
 
-                {paymentMethod === "card" && (
-                  <StripePayment
-                    ref={stripeCardRef}
-                    isDarkMode={isDarkMode}
-                    onError={(msg) => setStripeError(msg)}
-                  />
-                )}
+                {/* Stripe card form rendered outside AnimatePresence below
+                    so the ref stays alive when the user advances to Review. */}
 
                 {paymentMethod === "upi" && (
                   <div className={styles.upiForm}>
@@ -739,6 +734,19 @@ const Checkout = () => {
               </motion.div>
             )}
           </AnimatePresence>
+
+          {/* StripePayment lives outside AnimatePresence so the ref is never
+              destroyed when the user moves from the Payment step to Review.
+              It is visually hidden on all other steps via inline style. */}
+          {!fullyCovered && STRIPE_METHODS.includes(paymentMethod) && (
+            <div style={{ display: step === 2 ? "block" : "none" }}>
+              <StripePayment
+                ref={stripeCardRef}
+                isDarkMode={isDarkMode}
+                onError={(msg) => setStripeError(msg)}
+              />
+            </div>
+          )}
 
           {/* Navigation Buttons */}
           {stripeError && (
