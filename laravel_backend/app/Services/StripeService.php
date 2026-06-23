@@ -25,7 +25,9 @@ class StripeService
      * - 'card'  → covers Credit/Debit cards, Apple Pay, and Google Pay
      *             (wallets are surfaced automatically by PaymentElement on
      *              compatible devices; no separate type is needed)
-     * - 'link'  → Stripe Link one-click checkout
+     *
+     * Note: 'link' (Stripe Link) is intentionally omitted — it is not
+     * supported for INR and causes PaymentIntent creation to fail.
      */
     public function createPaymentIntent(int $amount, string $currency = 'inr', array $metadata = []): PaymentIntent
     {
@@ -33,7 +35,7 @@ class StripeService
             'amount'               => $amount,
             'currency'             => strtolower($currency),
             'metadata'             => $metadata,
-            'payment_method_types' => ['card', 'link'],
+            'payment_method_types' => ['card'],
         ]);
     }
 

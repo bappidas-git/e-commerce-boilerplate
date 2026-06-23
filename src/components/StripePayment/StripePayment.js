@@ -131,8 +131,7 @@ const StripePayment = forwardRef(({ isDarkMode, clientSecret, onError }, ref) =>
         <span>RuPay</span><span>·</span>
         <span>Amex</span><span>·</span>
         <span>Apple Pay</span><span>·</span>
-        <span>Google Pay</span><span>·</span>
-        <span>Link</span>
+        <span>Google Pay</span>
       </div>
     </div>
   );
